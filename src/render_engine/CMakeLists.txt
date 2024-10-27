@@ -5,12 +5,9 @@ project(render_engine)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi")
 
 set(HEADER_DIR ".")
-set(HEADERS "${SOURCE_DIR}/main.h")
-
 set(SOURCE_DIR ".")
 
 set(
@@ -32,8 +29,8 @@ set(
 )
 
 
-add_library(render_engine STATIC ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-target_include_directories(render_engine PUBLIC ${HEADER_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
