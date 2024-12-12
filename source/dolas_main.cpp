@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-    Dolas dolas;
+    Dolas::Dolas dolas;
     dolas.initialize();
 
     if (dolas.isInitialized())
