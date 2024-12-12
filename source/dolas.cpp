@@ -1,4 +1,5 @@
 #include "dolas.h"
+#include <iostream>
 namespace Dolas
 {
 
