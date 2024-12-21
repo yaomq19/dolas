@@ -15,7 +15,7 @@ namespace Dolas
         m_timer = new Timer();
         m_scene = new Scene();
         m_render_pipeline = new RenderPipeline();
-
+        m_render_pipeline->initialize();
         m_initialized = true;
     }
 

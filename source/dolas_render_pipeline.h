@@ -10,8 +10,11 @@ class RenderPipeline
 public:
     RenderPipeline();
     ~RenderPipeline();
+    bool initialize();
     void render(const Scene* const scene);
 private:
+    bool initMainWindow();
+    bool initDirect3D();
     ID3D11Device* m_device;
     ID3D11DeviceContext* m_device_context;
 };
