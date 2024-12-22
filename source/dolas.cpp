@@ -3,33 +3,43 @@
 namespace Dolas
 {
 
-    Dolas::Dolas() : m_initialized(false)
-    {}
-
-    Dolas::~Dolas()
-    {
-    }
-
-    void Dolas::initialize()
+    Dolas::Dolas()
     {
         m_timer = new Timer();
         m_scene = new Scene();
         m_render_pipeline = new RenderPipeline();
-        m_render_pipeline->initialize();
-        m_initialized = true;
+        m_rhi = new RHI();
     }
 
-    bool Dolas::isInitialized() const
+    Dolas::~Dolas()
     {
-        return m_initialized;
-    }
-
-    void Dolas::destroy()
-    {
+        delete m_rhi;
         delete m_render_pipeline;
         delete m_scene;
         delete m_timer;
-        m_initialized = false;
+    }
+
+    bool Dolas::initialize()
+    {
+        // initialize the RHI
+        if (m_rhi->initialize() == false)
+        {
+            return false;
+        }
+
+        // initialize the render pipeline
+        if (m_render_pipeline->initialize(m_rhi) == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool Dolas::destroy()
+    {
+
+        return true;
     }
 
     void Dolas::run()

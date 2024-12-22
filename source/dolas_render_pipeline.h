@@ -3,6 +3,7 @@
 #include "dolas_common.h"
 #include "dolas_scene.h"
 #include "d3d11.h"
+#include "dolas_rhi.h"
 namespace Dolas
 {
 class RenderPipeline
@@ -10,13 +11,10 @@ class RenderPipeline
 public:
     RenderPipeline();
     ~RenderPipeline();
-    bool initialize();
-    void render(const Scene* const scene);
+    bool initialize(RHI* rhi);
+    void render(Scene* scene);
 private:
-    bool initMainWindow();
-    bool initDirect3D();
-    ID3D11Device* m_device;
-    ID3D11DeviceContext* m_device_context;
+    RHI* m_rhi;
 };
 }
 #endif

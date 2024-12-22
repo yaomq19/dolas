@@ -3,9 +3,8 @@
 int main(int argc, char** argv)
 {
     Dolas::Dolas dolas;
-    dolas.initialize();
 
-    if (dolas.isInitialized())
+    if (dolas.initialize())
     {
         dolas.run();
     }
