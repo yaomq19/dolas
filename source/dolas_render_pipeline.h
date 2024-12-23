@@ -11,10 +11,10 @@ class RenderPipeline
 public:
     RenderPipeline();
     ~RenderPipeline();
-    bool initialize(RHI* rhi);
-    void render(Scene* scene);
+    bool initialize();
+    void render(const Scene& scene);
 private:
-    RHI* m_rhi;
+    RHI m_rhi;
 };
 }
 #endif

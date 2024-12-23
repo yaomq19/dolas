@@ -19,9 +19,8 @@ public:
 
     D3D11_VIEWPORT getViewPort() { return m_viewport; }
 private:
-    bool initMainWindow();
     bool initResources();
-    GLFWwindow* m_window;
+    
     ID3D11Device* m_device;
     ID3D11DeviceContext* m_device_context;
     IDXGISwapChain* m_swap_chain;

@@ -3,5 +3,6 @@
 namespace Dolas
 {
 #define Float float
+#define UInt unsigned int
 }
 #endif

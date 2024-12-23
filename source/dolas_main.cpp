@@ -1,14 +1,15 @@
 #include "dolas.h"
 
+
 int main(int argc, char** argv)
 {
-    Dolas::Dolas dolas;
+    
 
-    if (dolas.initialize())
+    if (Dolas::g_dolas.initialize())
     {
-        dolas.run();
+        Dolas::g_dolas.run();
     }
 
-    dolas.destroy();
+    Dolas::g_dolas.destroy();
     return 0;
 }

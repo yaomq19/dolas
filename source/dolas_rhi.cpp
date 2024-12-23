@@ -3,7 +3,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
-
+#include "dolas.h"
 #include "dolas_rhi.h"
 
 namespace Dolas
@@ -18,26 +18,8 @@ RHI::~RHI()
 
 }
 
-bool RHI::initMainWindow()
-{
-    if (!glfwInit())
-    {
-        return false;
-    }
-
-    m_window = glfwCreateWindow(800, 600, "Dolas Window", nullptr, nullptr);
-    if (!m_window)
-    {
-        glfwTerminate();
-        return false;
-    }
-    glfwMakeContextCurrent(m_window);
-    return true;
-}
-
 bool RHI::initialize()
 {
-    initMainWindow();
     // Create a Direct3D swap chain.
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -48,7 +30,7 @@ bool RHI::initialize()
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = glfwGetWin32Window(m_window);
+    sd.OutputWindow = glfwGetWin32Window(g_dolas.m_window);
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;

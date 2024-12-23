@@ -9,7 +9,7 @@ class Triangle : public RenderEntity
 public:
     Triangle();
     ~Triangle();
-    virtual void render(RHI* rhi) override;
+    virtual void render(const RHI& rhi) override;
 private:
     Float m_vertices[9] = {
         0.0f, 0.5f, 0.0f,

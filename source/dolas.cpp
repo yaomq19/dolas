@@ -2,33 +2,34 @@
 #include <iostream>
 namespace Dolas
 {
-
-    Dolas::Dolas()
+    class Dolas g_dolas(1280, 720);
+    Dolas::Dolas(UInt window_width, UInt window_height)
     {
-        m_timer = new Timer();
-        m_scene = new Scene();
-        m_render_pipeline = new RenderPipeline();
-        m_rhi = new RHI();
+        m_window_width = window_width;
+        m_window_height = window_height;
     }
 
     Dolas::~Dolas()
     {
-        delete m_rhi;
-        delete m_render_pipeline;
-        delete m_scene;
-        delete m_timer;
     }
 
     bool Dolas::initialize()
     {
-        // initialize the RHI
-        if (m_rhi->initialize() == false)
-        {
-            return false;
-        }
+		if (!glfwInit())
+		{
+			return false;
+		}
+
+		m_window = glfwCreateWindow(m_window_width, m_window_height, "Dolas Window", nullptr, nullptr);
+		if (!m_window)
+		{
+			glfwTerminate();
+			return false;
+		}
+		return true;
 
         // initialize the render pipeline
-        if (m_render_pipeline->initialize(m_rhi) == false)
+        if (m_render_pipeline.initialize() == false)
         {
             return false;
         }
@@ -46,12 +47,12 @@ namespace Dolas
     {
         while (true)
         {
-            m_timer->tick();
-            Float delta_time = m_timer->getDeltaTime();
+            m_timer.tick();
+            Float delta_time = m_timer.getDeltaTime();
             if (delta_time > 0.0f)
             {
-                m_scene->tick(delta_time);
-                m_render_pipeline->render(m_scene);
+                m_scene.tick(delta_time);
+                m_render_pipeline.render(m_scene);
             }
         }
     }

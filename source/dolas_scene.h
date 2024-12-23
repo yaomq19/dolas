@@ -16,8 +16,6 @@ public:
     void addRenderEntity(RenderEntity* render_entity);
     void removeRenderEntity(RenderEntity* render_entity);
 
-    std::vector<RenderEntity*> getRenderEntitys() { return m_render_entitys; }
-private:
     std::vector<RenderEntity*> m_render_entitys;
 };
 }

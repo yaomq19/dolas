@@ -12,7 +12,7 @@ Triangle::~Triangle()
 
 }
 
-void Triangle::render(RHI* rhi)
+void Triangle::render(const RHI& rhi)
 {
     
 }

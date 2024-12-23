@@ -9,7 +9,7 @@ class RenderEntity
 public:
     RenderEntity();
     ~RenderEntity();
-    virtual void render(RHI* rhi) = 0;
+    virtual void render(const RHI& rhi) = 0;
 };
 }
 #endif

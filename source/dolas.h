@@ -12,23 +12,22 @@ namespace Dolas
 class Dolas
 {
 public:
-    Dolas();
+    Dolas(UInt window_width, UInt window_height);
     ~Dolas();
 
     bool initialize();
     bool destroy();
     void run();
     
-
-private:
-    bool initRHI();
-
-    Timer* m_timer;
-    Scene* m_scene;
-    RenderPipeline* m_render_pipeline;
-    RHI* m_rhi;    
+    GLFWwindow* m_window;
+    UInt m_window_width{ 0 };
+    UInt m_window_height{ 0 };
+    Timer m_timer;
+    Scene m_scene;
+    RenderPipeline m_render_pipeline;
+    
 };
+extern Dolas g_dolas;
 }
-
 
 #endif

@@ -13,16 +13,16 @@ RenderPipeline::~RenderPipeline()
 
 }
 
-bool RenderPipeline::initialize(RHI* rhi)
+bool RenderPipeline::initialize()
 {
-    m_rhi = rhi;
+    m_rhi.initialize();
     return true;
 }
 
 
-void RenderPipeline::render(Scene* scene)
+void RenderPipeline::render(const Scene& scene)
 {
-    std::vector<RenderEntity*> render_entitys = scene->getRenderEntitys();
+    std::vector<RenderEntity*> render_entitys = scene.m_render_entitys;
     for (auto render_entity : render_entitys)
     {
         // Do rendering
