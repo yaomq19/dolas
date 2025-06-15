@@ -1,71 +1,33 @@
 #include <fstream>
 #include <iostream>
 #include "base/dolas_paths.h"
-#include "dolas_render_entity.h"
-#include "nlohmann/json.hpp"
-using json = nlohmann::json;
+#include "base/dolas_base.h"
+#include "core/dolas_engine.h"
+#include "manager/dolas_mesh_manager.h"
+#include "manager/dolas_material_manager.h"
+#include "render/dolas_render_entity.h"
+#include "render/dolas_mesh.h"
+#include "render/dolas_material.h"
+
 
 namespace Dolas
 {
-    Mesh::Mesh()
+    RenderEntity::RenderEntity()
     {
 
     }
 
-    Mesh::~Mesh()
+    RenderEntity::~RenderEntity()
     {
 
     }
 
-    Material::Material()
+    bool RenderEntity::Clear()
     {
-
+        return true;
     }
 
-    Material::~Material()
-    {
-
-    }
-
-    MeshRenderEntity::MeshRenderEntity()
-    {
-
-    }
-
-    MeshRenderEntity::~MeshRenderEntity()
-    {
-
-    }
-
-    void MeshRenderEntity::Load(const std::string& file_path)
-    {
-        json json_data;
-        std::ifstream file(Dolas::Paths::BuildContentPath(file_path));
-        file >> json_data;
-        file.close();
-
-        if (json_data.contains("mesh"))
-        {
-            m_mesh.Load(json_data["mesh"]);
-        }
-        else
-        {
-            std::cerr << "MeshRenderEntity::Load: mesh is not found in " << file_path << std::endl;
-        }
-
-        if (json_data.contains("material"))
-        {
-            m_material.Load(json_data["material"]);
-        }
-        else
-        {
-            std::cerr << "MeshRenderEntity::Load: material is not found in " << file_path << std::endl;
-        }
-
-        m_file_path = file_path;
-    }
-
-    void MeshRenderEntity::Draw(DolasRHI* rhi)
+    void RenderEntity::Draw(DolasRHI* rhi)
     {
   //      // 获取shader
   //      std::string vs_shader_file_path = Dolas::Paths::GetBinDir() + "/shaders/test_VS_Entry_Test.cso";

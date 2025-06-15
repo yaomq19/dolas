@@ -1,15 +1,17 @@
 #ifndef DOLAS_RENDER_PIPELINE_H
 #define DOLAS_RENDER_PIPELINE_H
 
-#include "dolas_rhi.h"
 namespace Dolas
 {
+    class DolasRHI;
     class RenderPipeline
     {
+        friend class RenderPipelineManager;
     public:
         RenderPipeline();
         ~RenderPipeline();
         bool Initialize();
+        bool Clear();
         void Render(DolasRHI* rhi);
     private:
         void ClearPass(DolasRHI* rhi);

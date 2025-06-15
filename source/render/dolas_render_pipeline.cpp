@@ -4,10 +4,13 @@
 #include <cstddef>  // for offsetof
 
 #include "base/dolas_paths.h"
-#include "base/dolas_string_utils.h"
-#include "dolas_render_pipeline.h"
+#include "base/dolas_base.h"
+#include "core/dolas_engine.h"
+#include "manager/dolas_render_entity_manager.h"
+#include "render/dolas_render_pipeline.h"
+#include "render/dolas_render_entity.h"
+
 #include "DirectXTex/DDSTextureLoader11.h"
-#include "dolas_render_entity.h"
 
 namespace Dolas
 {
@@ -22,6 +25,11 @@ namespace Dolas
     }
 
     bool RenderPipeline::Initialize()
+    {
+        return true;
+    }
+
+    bool RenderPipeline::Clear()
     {
         return true;
     }
@@ -44,10 +52,13 @@ namespace Dolas
 
     void RenderPipeline::GBufferPass(DolasRHI* rhi)
     {
-		MeshRenderEntity* mesh_render_entity = new MeshRenderEntity();
-        mesh_render_entity->Load("entities/cube.entity");
-		mesh_render_entity->Draw(rhi);
-		delete mesh_render_entity;
+        RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
+        DOLAS_RETURN_IF_NULL(render_entity_manager);
+
+        std::shared_ptr<RenderEntity> render_entity = render_entity_manager->GetOrCreateRenderEntity("cube.entity");
+        DOLAS_RETURN_IF_NULL(render_entity);
+
+        render_entity->Draw(rhi);
     }
 
     void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)

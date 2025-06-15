@@ -3,7 +3,10 @@
 namespace Dolas
 {
 	class DolasRHI;
-	class RenderPipeline;
+	class MeshManager;
+	class MaterialManager;
+	class RenderEntityManager;
+	class RenderPipelineManager;
 
 	class DolasEngine
 	{
@@ -13,10 +16,14 @@ namespace Dolas
 
 		bool Initialize();
 		void Run();
+		void Update();
 		void Render();
 		
 		DolasRHI* m_rhi;
-		RenderPipeline* m_render_pipeline;
+		RenderPipelineManager* m_render_pipeline_manager;
+		MeshManager* m_mesh_manager;
+		MaterialManager* m_material_manager;
+		RenderEntityManager* m_render_entity_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

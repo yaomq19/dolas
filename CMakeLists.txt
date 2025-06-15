@@ -29,19 +29,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # 设置静态库的输出目录为构建目录下的lib文件夹
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# ============ 全局变量和宏定义 ============
-# 定义项目根目录CMake变量，供CMakeLists.txt使用
-set(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-# 定义项目根目录宏，供C++代码使用
-add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-# 定义项目名称宏
-add_definitions(-DPROJECT_NAME="${PROJECT_NAME}")
-# 定义项目版本宏
-add_definitions(-DPROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
-# 定义项目版本宏
-add_definitions(-DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-
 # ============ 子目录包含 ============
 # 添加第三方库子目录
 add_subdirectory(third_party)
