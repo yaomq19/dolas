@@ -2,12 +2,6 @@
 #define DOLAS_ENGINE_H
 namespace Dolas
 {
-	class DolasRHI;
-	class MeshManager;
-	class MaterialManager;
-	class RenderEntityManager;
-	class RenderPipelineManager;
-
 	class DolasEngine
 	{
 	public:
@@ -19,11 +13,12 @@ namespace Dolas
 		void Update();
 		void Render();
 		
-		DolasRHI* m_rhi;
-		RenderPipelineManager* m_render_pipeline_manager;
-		MeshManager* m_mesh_manager;
-		MaterialManager* m_material_manager;
-		RenderEntityManager* m_render_entity_manager;
+		class DolasRHI* m_rhi;
+		class RenderPipelineManager* m_render_pipeline_manager;
+		class MeshManager* m_mesh_manager;
+		class MaterialManager* m_material_manager;
+		class RenderEntityManager* m_render_entity_manager;
+		class ShaderManager* m_shader_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

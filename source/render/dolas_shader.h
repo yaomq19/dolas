@@ -25,7 +25,6 @@ namespace Dolas
         ~Shader();
 
         bool LoadFromFile(const std::string& file_path, ShaderType type, const std::string& entry_point = "main");
-        bool LoadFromMemory(const void* data, size_t size, ShaderType type, const std::string& entry_point = "main");
         void Release();
 
         // Getters
@@ -43,8 +42,6 @@ namespace Dolas
         ShaderType m_shader_type;
 
     private:
-        bool CompileShader(const std::string& source_code, const std::string& target, const std::string& entry_point);
-
         ID3D11VertexShader* m_vertex_shader = nullptr;
         ID3D11PixelShader* m_pixel_shader = nullptr;
         ID3D11GeometryShader* m_geometry_shader = nullptr;

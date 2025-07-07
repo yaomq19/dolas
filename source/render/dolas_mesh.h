@@ -22,6 +22,7 @@ namespace Dolas
         std::vector<DirectX::XMFLOAT3> m_bitangents;
         std::vector<unsigned int> m_indices;
             
+        std::vector<float> m_final_vertices;
     }; // class Mesh
 } // namespace Dolas
 

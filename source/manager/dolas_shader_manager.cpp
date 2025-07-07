@@ -56,15 +56,6 @@ namespace Dolas
     {
         std::string shader_path = PathUtils::GetShadersSourceDir() + file_name;
 
-        // 检查文件是否存在
-        std::ifstream file(shader_path);
-        if (!file.is_open())
-        {
-            std::cerr << "ShaderManager::CreateShader: file is not found in " << shader_path << std::endl;
-            return nullptr;
-        }
-        file.close();
-
         // 创建着色器对象
         std::shared_ptr<Shader> shader = std::make_shared<Shader>();
         
@@ -76,31 +67,6 @@ namespace Dolas
         }
 
         std::cout << "ShaderManager::CreateShader: Successfully created shader from " << shader_path << std::endl;
-        return shader;
-    }
-
-    std::shared_ptr<Shader> ShaderManager::CreateShaderFromMemory(const std::string& name, const void* data, size_t size, ShaderType type, const std::string& entry_point)
-    {
-        std::string key = GenerateShaderKey(name, type, entry_point);
-        
-        // 检查是否已存在
-        if (m_shaders.find(key) != m_shaders.end())
-        {
-            return m_shaders[key];
-        }
-
-        // 创建着色器对象
-        std::shared_ptr<Shader> shader = std::make_shared<Shader>();
-        
-        // 从内存加载着色器
-        if (!shader->LoadFromMemory(data, size, type, entry_point))
-        {
-            std::cerr << "ShaderManager::CreateShaderFromMemory: Failed to load shader from memory" << std::endl;
-            return nullptr;
-        }
-
-        m_shaders[key] = shader;
-        std::cout << "ShaderManager::CreateShaderFromMemory: Successfully created shader from memory: " << name << std::endl;
         return shader;
     }
 

@@ -1,3 +1,5 @@
+#include "core/dolas_engine.h"
+#include "manager/dolas_shader_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
 #include "base/dolas_base.h"
@@ -91,17 +93,26 @@ namespace Dolas
         std::shared_ptr<Material> material = std::make_shared<Material>();
         material->m_file_path = material_path;
 
-        // 解析着色器信息
-        if (json_data.contains("shader"))
+        // 顶点着色器
+        if (json_data.contains("vertex_shader"))
         {
-            std::string shader_file = json_data["shader"];
-            // TODO: 在这里加载编译着色器文件
-            std::cout << "Material shader: " << shader_file << std::endl;
+            std::string vertex_shader_file_name = json_data["vertex_shader"];
+            std::shared_ptr<Shader> shader = g_dolas_engine.m_shader_manager->CreateShader(vertex_shader_file_name, ShaderType::VERTEX_SHADER, "VS");
+            material->m_vertex_shader = shader->GetVertexShader();
+            material->m_vertex_shader_blob = shader->GetShaderBlob();
         }
         else
         {
             std::cerr << "MaterialManager::CreateMaterial: shader is not found in " << material_path << std::endl;
             return nullptr;
+        }
+
+        // 像素着色器
+        if (json_data.contains("pixel_shader"))
+        {
+			std::string pixel_shader_file_name = json_data["pixel_shader"];
+            std::shared_ptr<Shader> shader = g_dolas_engine.m_shader_manager->CreateShader(pixel_shader_file_name, ShaderType::PIXEL_SHADER, "PS");
+            material->m_pixel_shader = shader->GetPixelShader();
         }
 
         // 解析纹理信息

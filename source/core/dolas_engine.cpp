@@ -9,7 +9,7 @@
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_pipeline.h"
-
+#include "manager/dolas_shader_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -21,6 +21,7 @@ namespace Dolas
 		m_mesh_manager = DOLAS_NEW(MeshManager);
 		m_material_manager = DOLAS_NEW(MaterialManager);
 		m_render_entity_manager = DOLAS_NEW(RenderEntityManager);
+		m_shader_manager = DOLAS_NEW(ShaderManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -30,6 +31,7 @@ namespace Dolas
 		DOLAS_DELETE(m_mesh_manager);
 		DOLAS_DELETE(m_material_manager);
 		DOLAS_DELETE(m_render_entity_manager);
+		DOLAS_DELETE(m_shader_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -39,6 +41,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
 		return true;
 	}
 

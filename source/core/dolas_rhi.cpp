@@ -75,11 +75,11 @@ namespace Dolas
         wc.hCursor = LoadCursor(0, IDC_ARROW);
         wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
         wc.lpszMenuName = 0;
-        wc.lpszClassName = "D3DWndClassName";
+        wc.lpszClassName = L"D3DWndClassName";
 
         if (!RegisterClass(&wc))
         {
-            MessageBox(0, "RegisterClass Failed.", 0, 0);
+            MessageBox(0, L"RegisterClass Failed.", 0, 0);
             return false;
         }
 
@@ -89,11 +89,11 @@ namespace Dolas
         int width = R.right - R.left;
         int height = R.bottom - R.top;
 
-        m_window_handle = CreateWindow("D3DWndClassName", "Dolas Engine",
+        m_window_handle = CreateWindowW(L"D3DWndClassName", L"Dolas Engine",
             WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, NULL, 0);
         if (!m_window_handle)
         {
-            MessageBox(0, "CreateWindow Failed.", 0, 0);
+            MessageBoxW(0, L"CreateWindow Failed.", 0, 0);
             return false;
         }
 

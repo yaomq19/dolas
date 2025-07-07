@@ -16,7 +16,6 @@ namespace Dolas {
     class PathUtils
     {
     public:
-        static std::wstring StringToWString(const std::string& str);
         static std::string GetContentDir();
         static std::string GetShadersSourceDir();
         static std::string GetShadersCompiledDir();

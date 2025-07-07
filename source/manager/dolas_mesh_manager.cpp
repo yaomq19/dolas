@@ -147,6 +147,25 @@ namespace Dolas
                 // UV坐标是可选的，如果没有就设置为默认值
                 mesh->m_uvs.emplace_back(0.0f, 0.0f);
             }
+
+			if (vertex.contains("normal"))
+			{
+				const auto& normal = vertex["normal"];
+				if (normal.size() >= 3)
+				{
+					mesh->m_normals.emplace_back(normal[0], normal[1], normal[2]);
+				}
+				else
+				{
+					std::cerr << "MeshManager::CreateMesh: invalid normal data in " << mesh_path << std::endl;
+					return nullptr;
+				}
+			}
+			else
+			{
+				std::cerr << "MeshManager::CreateMesh: normal not found for vertex in " << mesh_path << std::endl;
+				return nullptr;
+			}
         }
 
         // 解析索引数据
@@ -168,6 +187,18 @@ namespace Dolas
             }
         }
 
+        // 合并到最终的大缓冲区
+        for (int i = 0; i < mesh->m_vertices.size(); i++)
+        {
+            mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
+            mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
+            mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
+            mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
+            mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
+			mesh->m_final_vertices.push_back(mesh->m_normals[i].x);
+			mesh->m_final_vertices.push_back(mesh->m_normals[i].y);
+			mesh->m_final_vertices.push_back(mesh->m_normals[i].z);
+        }
         std::cout << "MeshManager::CreateMesh: Successfully created mesh from " << mesh_path << std::endl;
         std::cout << "  Vertices: " << mesh->m_vertices.size() << std::endl;
         std::cout << "  UVs: " << mesh->m_uvs.size() << std::endl;

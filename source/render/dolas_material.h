@@ -16,6 +16,7 @@ namespace Dolas
 
         std::string m_file_path;
         ID3D11VertexShader* m_vertex_shader = nullptr;
+        ID3DBlob* m_vertex_shader_blob = nullptr;
         ID3D11PixelShader* m_pixel_shader = nullptr;
         std::vector<std::pair<int, std::string>> m_textures;
     }; // class Material

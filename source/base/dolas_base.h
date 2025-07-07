@@ -21,5 +21,22 @@
 #define DOLAS_RETURN_NULL_IF_FALSE(condition) if (!(condition)) { return nullptr; }
 #define DOLAS_RETURN_NULL_IF_TRUE(condition) if ((condition)) { return nullptr; }
 
+#if defined(DEBUG) | defined(_DEBUG)
+#ifndef HR
+#define HR(x)                                                \
+    {                                                            \
+        HRESULT hr = (x);                                        \
+        if(FAILED(hr))                                            \
+        {                                                        \
+            DXTraceW(__FILEW__, (DWORD)__LINE__, hr, L#x, true);\
+        }                                                        \
+    }
+#endif
+#else
+#ifndef HR
+#define HR(x) (x)
+#endif 
+#endif
+
 #endif // DOLAS_BASE_H
 

@@ -9,12 +9,6 @@ namespace Dolas
 #define TEXTURE_DIR_NAME "texture/"
 
 //--------public begin
-	std::wstring PathUtils::StringToWString(const std::string& str)
-	{
-		std::wstring wstrTo(str.begin(), str.end());
-		return wstrTo;
-	}
-
 	std::string PathUtils::GetContentDir()
 	{
 		return GetProjectRoot() + CONTENT_DIR_NAME;
