@@ -14,3 +14,12 @@ mesh 和 material 要能匹配生效的关键在于 material 中 vs 的输入要
 要有vs 代码和 ps 代码，要有 SRV 和 Texture 的指针
 GeometricPrimitivesManager 可以返回一个 MeshRenderEntity 对象的指针，对象本身在 Manager 中进行管理
 
+# 2025.6.15
+- RenderView 类
+- RenderViewManager 类
+- RenderCamera 类
+- RenderCameraManager 类
+- RenderResource 类
+- RenderResouceManager 类
+- RenderScene 类
+- RenderSceneManager 类
