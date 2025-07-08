@@ -28,10 +28,14 @@ namespace Dolas
         }
         // Windows SDK 8.0起DirectX的错误信息已经集成进错误码中，可以通过FormatMessageW获取错误信息字符串
         // 不需要分配字符串内存
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        DWORD res = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
             nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             strBufferError, 256, nullptr);
-
+        if (res == 0)
+        {
+            swprintf_s(strBufferError, 256, L"FormatMessageW failed: %lu", hr);
+            return hr;
+        }
         WCHAR* errorStr = wcsrchr(strBufferError, L'\r');    
         if (errorStr)
         {

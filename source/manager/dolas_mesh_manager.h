@@ -16,10 +16,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        std::shared_ptr<Mesh> GetOrCreateMesh(const std::string& file_name);
+        Mesh* GetOrCreateMesh(const std::string& file_name);
     private:
-        std::shared_ptr<Mesh> CreateMesh(const std::string& file_name);
-        std::unordered_map<std::string, std::shared_ptr<Mesh>> m_meshes;
+        Mesh* CreateMesh(const std::string& file_name);
+        std::unordered_map<std::string, Mesh*> m_meshes;
     };// class MeshManager
 }// namespace Dolas
 #endif // DOLAS_MESH_MANAGER_H

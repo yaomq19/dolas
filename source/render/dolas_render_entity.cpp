@@ -1,5 +1,7 @@
 #include <fstream>
 #include <iostream>
+#include <d3d11shader.h>
+#include <d3dcompiler.h>
 #include "base/dolas_paths.h"
 #include "base/dolas_base.h"
 #include "core/dolas_engine.h"
@@ -9,6 +11,7 @@
 #include "render/dolas_mesh.h"
 #include "render/dolas_material.h"
 #include "base/dolas_dx_trace.h"
+#include "render/dolas_shader.h"
 
 namespace Dolas
 {
@@ -80,13 +83,20 @@ namespace Dolas
           { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
 
-        SIZE_T len = m_material->m_vertex_shader_blob->GetBufferSize();
-        HR(rhi->m_d3d_device->CreateInputLayout(local_layout, 3, m_material->m_vertex_shader_blob->GetBufferPointer(), len, &input_layout));
+
+        HR(
+            rhi->m_d3d_device->CreateInputLayout(
+                local_layout,
+                3,
+                m_material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
+                m_material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
+                &input_layout)
+        );
 
         rhi->m_d3d_immediate_context->IASetInputLayout(input_layout);
         // 绑定 Shader
-        rhi->m_d3d_immediate_context->VSSetShader(m_material->m_vertex_shader, nullptr, 0);
-        rhi->m_d3d_immediate_context->PSSetShader(m_material->m_pixel_shader, nullptr, 0);
+        rhi->m_d3d_immediate_context->VSSetShader(m_material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
+        rhi->m_d3d_immediate_context->PSSetShader(m_material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
         // 设置 RTV 和 DSV
         rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, nullptr);
         // 设置渲染状态

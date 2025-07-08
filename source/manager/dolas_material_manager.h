@@ -16,10 +16,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        std::shared_ptr<Material> GetOrCreateMaterial(const std::string& file_name);
+        Material* GetOrCreateMaterial(const std::string& file_name);
     private:
-        std::shared_ptr<Material> CreateMaterial(const std::string& file_name);
-        std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
+        Material* CreateMaterial(const std::string& file_name);
+        std::unordered_map<std::string, Material*> m_materials;
     };// class MaterialManager
 }// namespace Dolas
 #endif // DOLAS_MATERIAL_MANAGER_H

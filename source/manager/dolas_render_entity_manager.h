@@ -16,11 +16,11 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        std::shared_ptr<RenderEntity> GetOrCreateRenderEntity(const std::string& file_name);
+        RenderEntity* GetOrCreateRenderEntity(const std::string& file_name);
 
     private:
-        std::shared_ptr<RenderEntity> CreateRenderEntity(const std::string& file_name);
-        std::unordered_map<std::string, std::shared_ptr<RenderEntity>> m_render_entities;
+        RenderEntity* CreateRenderEntity(const std::string& file_name);
+        std::unordered_map<std::string, RenderEntity*> m_render_entities;
     };// class RenderEntityManager
 }// namespace Dolas
 #endif // DOLAS_RENDER_ENTITY_MANAGER_H

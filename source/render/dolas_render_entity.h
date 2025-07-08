@@ -22,8 +22,8 @@ namespace Dolas
         void Draw(DolasRHI* rhi);
     private:
         std::string m_file_path;
-        std::shared_ptr<Mesh> m_mesh = nullptr;
-        std::shared_ptr<Material> m_material = nullptr;
+        Mesh* m_mesh = nullptr;
+        Material* m_material = nullptr;
     };
 } // namespace Dolas
 

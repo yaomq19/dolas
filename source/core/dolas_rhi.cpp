@@ -75,11 +75,11 @@ namespace Dolas
         wc.hCursor = LoadCursor(0, IDC_ARROW);
         wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
         wc.lpszMenuName = 0;
-        wc.lpszClassName = L"D3DWndClassName";
+        wc.lpszClassName = "D3DWndClassName";
 
         if (!RegisterClass(&wc))
         {
-            MessageBox(0, L"RegisterClass Failed.", 0, 0);
+            MessageBoxW(0, L"RegisterClass Failed.", 0, 0);
             return false;
         }
 

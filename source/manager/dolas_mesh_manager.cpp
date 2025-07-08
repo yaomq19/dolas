@@ -29,7 +29,7 @@ namespace Dolas
     {
         for (auto it = m_meshes.begin(); it != m_meshes.end(); ++it)
         {
-            std::shared_ptr<Mesh> mesh = it->second;
+            Mesh* mesh = it->second;
             if (mesh)
             {
                 // 清理网格数据
@@ -45,11 +45,11 @@ namespace Dolas
         return true;
     }
 
-    std::shared_ptr<Mesh> MeshManager::GetOrCreateMesh(const std::string& file_name)
+    Mesh* MeshManager::GetOrCreateMesh(const std::string& file_name)
     {
         if (m_meshes.find(file_name) == m_meshes.end())
         {
-            std::shared_ptr<Mesh> mesh = CreateMesh(file_name);
+            Mesh* mesh = CreateMesh(file_name);
             if (mesh != nullptr)
             {
                 m_meshes[file_name] = mesh;
@@ -59,7 +59,7 @@ namespace Dolas
         return m_meshes[file_name];
     }
 
-    std::shared_ptr<Mesh> MeshManager::CreateMesh(const std::string& file_name)
+    Mesh* MeshManager::CreateMesh(const std::string& file_name)
     {
         json json_data;
         std::string mesh_path = PathUtils::GetMeshDir() + file_name;
@@ -85,7 +85,7 @@ namespace Dolas
         }
 
         // 创建网格对象
-        std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+        Mesh* mesh = DOLAS_NEW(Mesh);
         mesh->m_file_path = mesh_path;
 
         // 验证顶点数量

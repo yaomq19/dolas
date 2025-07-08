@@ -55,7 +55,7 @@ namespace Dolas
         RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
         DOLAS_RETURN_IF_NULL(render_entity_manager);
 
-        std::shared_ptr<RenderEntity> render_entity = render_entity_manager->GetOrCreateRenderEntity("cube.entity");
+        RenderEntity* render_entity = render_entity_manager->GetOrCreateRenderEntity("cube.entity");
         DOLAS_RETURN_IF_NULL(render_entity);
 
         render_entity->Draw(rhi);

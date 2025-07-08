@@ -13,11 +13,16 @@ namespace Dolas
     public:
         Material();
         ~Material();
-
+        bool BuildFromFile(const std::string& file_path);
+        std::string GetFilePath();
+        class VertexShader* GetVertexShader();
+        class PixelShader* GetPixelShader();
+        std::vector<std::pair<int, std::string>> GetTextures();
+        
+    protected:
         std::string m_file_path;
-        ID3D11VertexShader* m_vertex_shader = nullptr;
-        ID3DBlob* m_vertex_shader_blob = nullptr;
-        ID3D11PixelShader* m_pixel_shader = nullptr;
+        class VertexShader* m_vertex_shader = nullptr;
+        class PixelShader* m_pixel_shader = nullptr;
         std::vector<std::pair<int, std::string>> m_textures;
     }; // class Material
 } // namespace Dolas
