@@ -17,8 +17,11 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        TextureID CreateTexture(const std::string& file_name);
+        TextureID CreateTextureFromFile(const std::string& file_name);
+        TextureID CreateTexture();
         Texture* GetTexture(TextureID texture_id);
+        DXGI_FORMAT ConvertToDXGIFormat(TextureFormat format);
+
     private:
         std::unordered_map<TextureID, Texture*> m_textures;
     }; // class TextureManager

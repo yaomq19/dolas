@@ -37,19 +37,11 @@ namespace Dolas
         Texture();
         ~Texture();
 
-        /*bool LoadFromFile(const std::string& file_path, bool generate_mips = true);
-        bool LoadFromMemory(const void* data, size_t size, bool generate_mips = true);*/
-        bool CreateTexture(uint32_t width, uint32_t height, TextureFormat format, const void* initial_data = nullptr);
-        bool CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat format);
-        bool CreateDepthStencil(uint32_t width, uint32_t height);
         void Release();
 
         // Getters
-        ID3D11Texture2D* GetTexture2D() const { return m_texture_2d; }
-        ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shader_resource_view; }
-        ID3D11RenderTargetView* GetRenderTargetView() const { return m_render_target_view; }
-        ID3D11DepthStencilView* GetDepthStencilView() const { return m_depth_stencil_view; }
-        ID3D11UnorderedAccessView* GetUnorderedAccessView() const { return m_unordered_access_view; }
+        ID3D11Texture2D* GetD3DTexture2D() const { return m_d3d_texture_2d; }
+        ID3D11ShaderResourceView* GetShaderResourceView() const { return m_d3d_shader_resource_view; }
         
         uint32_t GetWidth() const { return m_width; }
         uint32_t GetHeight() const { return m_height; }
@@ -62,14 +54,9 @@ namespace Dolas
         TextureFormat m_texture_format;
 
     private:
-        DXGI_FORMAT ConvertToDXGIFormat(TextureFormat format);
-        /*bool CreateTextureFromImage(const DirectX::ScratchImage& image, bool generate_mips);*/
 
-        ID3D11Texture2D* m_texture_2d = nullptr;
-        ID3D11ShaderResourceView* m_shader_resource_view = nullptr;
-        ID3D11RenderTargetView* m_render_target_view = nullptr;
-        ID3D11DepthStencilView* m_depth_stencil_view = nullptr;
-        ID3D11UnorderedAccessView* m_unordered_access_view = nullptr;
+        ID3D11Texture2D* m_d3d_texture_2d = nullptr;
+        ID3D11ShaderResourceView* m_d3d_shader_resource_view = nullptr;
 
         uint32_t m_width = 0;
         uint32_t m_height = 0;
