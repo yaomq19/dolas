@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+
 #include "core/dolas_engine.h"
 #include "manager/dolas_shader_manager.h"
 #include "manager/dolas_material_manager.h"
@@ -6,8 +9,8 @@
 #include "base/dolas_paths.h"
 #include "nlohmann/json.hpp"
 #include "base/dolas_dx_trace.h"
-#include <iostream>
-#include <fstream>
+#include "manager/dolas_asset_manager.h"
+#include "manager/dolas_texture_manager.h"
 
 using json = nlohmann::json;
 
@@ -52,47 +55,20 @@ namespace Dolas
         return true;
     }
 
-    Material* MaterialManager::GetOrCreateMaterial(const std::string& file_name)
+    MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
     {
-        if (m_materials.find(file_name) == m_materials.end())
-        {
-            Material* material = CreateMaterial(file_name);
-            if (material != nullptr)
-            {
-                m_materials[file_name] = material;
-            }
-        }
-        return m_materials[file_name];
-    }
+        std::string material_file_path = PathUtils::GetMaterialDir() + file_name;
 
-    Material* MaterialManager::CreateMaterial(const std::string& file_name)
-    {
         json json_data;
-        std::string material_path = PathUtils::GetMaterialDir() + file_name;
-
-        // 读取JSON文件
-        std::ifstream file(material_path);
-        if (!file.is_open())
+        Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(material_file_path, json_data);
+        if (!ret)
         {
-            std::cerr << "MaterialManager::CreateMaterial: file is not found in " << material_path << std::endl;
-            return nullptr;
-        }
-
-        try 
-        {
-            file >> json_data;
-            file.close();
-        }
-        catch (const json::parse_error& e)
-        {
-            std::cerr << "MaterialManager::CreateMaterial: JSON parse error in " << material_path << ": " << e.what() << std::endl;
-            file.close();
-            return nullptr;
+            return MATERIAL_ID_EMPTY;
         }
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
-        material->m_file_path = material_path;
+        material->m_file_id = STRING_ID(material_file_path);
 
         // 顶点着色器
         if (json_data.contains("vertex_shader"))
@@ -113,8 +89,14 @@ namespace Dolas
             for (auto it = textures.begin(); it != textures.end(); ++it)
             {
                 std::string texture_name = it.key();
-                std::string texture_file = it.value();
+                std::string texture_file_name = it.value();
                 
+                TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTexture(texture_file_name);
+                if (texture_id == TEXTURE_ID_EMPTY)
+                {
+                    return MATERIAL_ID_EMPTY;
+                }
+
                 // 根据纹理名称分配插槽
                 int slot = 0;
                 if (texture_name == "albedo_map") slot = 0;
@@ -123,8 +105,7 @@ namespace Dolas
                 else if (texture_name == "metallic_map") slot = 3;
                 // 可以扩展更多纹理类型
                 
-                material->m_textures.push_back(std::make_pair(slot, texture_file));
-                std::cout << "Material texture [" << texture_name << "]: " << texture_file << " -> slot " << slot << std::endl;
+                material->m_textures[slot] = texture_id;
             }
         }
 
@@ -134,17 +115,20 @@ namespace Dolas
             const auto& parameters = json_data["parameter"];
             for (auto it = parameters.begin(); it != parameters.end(); ++it)
             {
-                std::string param_name = it.key();
-                auto param_value = it.value();
-                
-                // TODO: 在这里处理材质参数
-                // 可能需要扩展Material类来存储这些参数
-                std::cout << "Material parameter [" << param_name << "]: " << param_value << std::endl;
             }
         }
 
-        std::cout << "MaterialManager::CreateMaterial: Successfully created material from " << material_path << std::endl;
-        return material;
+        m_materials[material->m_file_id] = material;
+        return material->m_file_id;
+    }
+
+    Material* MaterialManager::GetMaterial(MaterialID material_id)
+    {
+        if (m_materials.find(material_id) == m_materials.end())
+        {
+            return nullptr;
+        }
+        return m_materials[material_id];
     }
     
 } // namespace Dolas

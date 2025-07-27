@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     class RenderEntity;
@@ -16,11 +16,11 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        RenderEntity* GetOrCreateRenderEntity(const std::string& file_name);
-
-    private:
-        RenderEntity* CreateRenderEntity(const std::string& file_name);
-        std::unordered_map<std::string, RenderEntity*> m_render_entities;
+        RenderEntityID CreateRenderEntity(const std::string& render_entity_file_name);
+        RenderEntity* GetRenderEntity(RenderEntityID render_entity_id);
+        RenderEntity* GetRenderEntityByFileName(const std::string& render_entity_file_name);
+    protected:
+        std::unordered_map<RenderEntityID, RenderEntity*> m_render_entities;
     };// class RenderEntityManager
 }// namespace Dolas
 #endif // DOLAS_RENDER_ENTITY_MANAGER_H

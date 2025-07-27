@@ -1,11 +1,13 @@
+#include <iostream>
+#include <fstream>
+
+#include "core/dolas_engine.h"
 #include "manager/dolas_mesh_manager.h"
 #include "render/dolas_mesh.h"
 #include "base/dolas_base.h"
 #include "base/dolas_paths.h"
 #include "nlohmann/json.hpp"
-#include <iostream>
-#include <fstream>
-
+#include "manager/dolas_asset_manager.h"
 using json = nlohmann::json;
 
 namespace Dolas
@@ -45,54 +47,23 @@ namespace Dolas
         return true;
     }
 
-    Mesh* MeshManager::GetOrCreateMesh(const std::string& file_name)
+    MeshID MeshManager::CreateMesh(const std::string& mesh_file_name)
     {
-        if (m_meshes.find(file_name) == m_meshes.end())
-        {
-            Mesh* mesh = CreateMesh(file_name);
-            if (mesh != nullptr)
-            {
-                m_meshes[file_name] = mesh;
-            }
-            return mesh;
-        }
-        return m_meshes[file_name];
-    }
+        std::string mesh_file_path = PathUtils::GetMeshDir() + mesh_file_name;
 
-    Mesh* MeshManager::CreateMesh(const std::string& file_name)
-    {
         json json_data;
-        std::string mesh_path = PathUtils::GetMeshDir() + file_name;
-
-        // 读取JSON文件
-        std::ifstream file(mesh_path);
-        if (!file.is_open())
-        {
-            std::cerr << "MeshManager::CreateMesh: file is not found in " << mesh_path << std::endl;
-            return nullptr;
-        }
-
-        try 
-        {
-            file >> json_data;
-            file.close();
-        }
-        catch (const json::parse_error& e)
-        {
-            std::cerr << "MeshManager::CreateMesh: JSON parse error in " << mesh_path << ": " << e.what() << std::endl;
-            file.close();
-            return nullptr;
-        }
+        Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(mesh_file_path, json_data);
+        DOLAS_RETURN_FALSE_IF_FALSE(ret);
 
         // 创建网格对象
         Mesh* mesh = DOLAS_NEW(Mesh);
-        mesh->m_file_path = mesh_path;
+        mesh->m_file_id = STRING_ID(mesh_file_path);
 
         // 验证顶点数量
         if (!json_data.contains("vertex_count") || !json_data.contains("vertex_list"))
         {
-            std::cerr << "MeshManager::CreateMesh: vertex_count or vertex_list not found in " << mesh_path << std::endl;
-            return nullptr;
+            std::cerr << "MeshManager::CreateMesh: vertex_count or vertex_list not found in " << mesh_file_path << std::endl;
+            return MESH_ID_EMPTY;
         }
 
         int vertex_count = json_data["vertex_count"];
@@ -100,8 +71,8 @@ namespace Dolas
 
         if (vertex_count != vertex_list.size())
         {
-            std::cerr << "MeshManager::CreateMesh: vertex_count mismatch in " << mesh_path << std::endl;
-            return nullptr;
+            std::cerr << "MeshManager::CreateMesh: vertex_count mismatch in " << mesh_file_path << std::endl;
+            return MESH_ID_EMPTY;
         }
 
         // 解析顶点数据
@@ -119,14 +90,14 @@ namespace Dolas
                 }
                 else
                 {
-                    std::cerr << "MeshManager::CreateMesh: invalid position data in " << mesh_path << std::endl;
-                    return nullptr;
+                    std::cerr << "MeshManager::CreateMesh: invalid position data in " << mesh_file_path << std::endl;
+                    return MESH_ID_EMPTY;
                 }
             }
             else
             {
-                std::cerr << "MeshManager::CreateMesh: position not found for vertex in " << mesh_path << std::endl;
-                return nullptr;
+                std::cerr << "MeshManager::CreateMesh: position not found for vertex in " << mesh_file_path << std::endl;
+                return MESH_ID_EMPTY;
             }
 
             if (vertex.contains("uv"))
@@ -138,8 +109,8 @@ namespace Dolas
                 }
                 else
                 {
-                    std::cerr << "MeshManager::CreateMesh: invalid uv data in " << mesh_path << std::endl;
-                    return nullptr;
+                    std::cerr << "MeshManager::CreateMesh: invalid uv data in " << mesh_file_path << std::endl;
+                    return MESH_ID_EMPTY;
                 }
             }
             else
@@ -157,14 +128,14 @@ namespace Dolas
 				}
 				else
 				{
-					std::cerr << "MeshManager::CreateMesh: invalid normal data in " << mesh_path << std::endl;
-					return nullptr;
+					std::cerr << "MeshManager::CreateMesh: invalid normal data in " << mesh_file_path << std::endl;
+					return MESH_ID_EMPTY;
 				}
 			}
 			else
 			{
-				std::cerr << "MeshManager::CreateMesh: normal not found for vertex in " << mesh_path << std::endl;
-				return nullptr;
+				std::cerr << "MeshManager::CreateMesh: normal not found for vertex in " << mesh_file_path << std::endl;
+				return MESH_ID_EMPTY;
 			}
         }
 
@@ -176,8 +147,8 @@ namespace Dolas
 
             if (index_count != index_list.size())
             {
-                std::cerr << "MeshManager::CreateMesh: index_count mismatch in " << mesh_path << std::endl;
-                return nullptr;
+                std::cerr << "MeshManager::CreateMesh: index_count mismatch in " << mesh_file_path << std::endl;
+                return MESH_ID_EMPTY;
             }
 
             mesh->m_indices.reserve(index_count);
@@ -199,11 +170,17 @@ namespace Dolas
 			mesh->m_final_vertices.push_back(mesh->m_normals[i].y);
 			mesh->m_final_vertices.push_back(mesh->m_normals[i].z);
         }
-        std::cout << "MeshManager::CreateMesh: Successfully created mesh from " << mesh_path << std::endl;
-        std::cout << "  Vertices: " << mesh->m_vertices.size() << std::endl;
-        std::cout << "  UVs: " << mesh->m_uvs.size() << std::endl;
-        std::cout << "  Indices: " << mesh->m_indices.size() << std::endl;
 
-        return mesh;
+        m_meshes[mesh->m_file_id] = mesh;
+        return mesh->m_file_id;
+    }
+
+    Mesh* MeshManager::GetMesh(MeshID mesh_id)
+    {
+        if (m_meshes.find(mesh_id) == m_meshes.end())
+        {
+            return nullptr;
+        }
+        return m_meshes[mesh_id];
     }
 }

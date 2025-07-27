@@ -2,6 +2,12 @@
 #include "dolas_engine.h"
 #include "dxgi_helper.h"
 
+#if defined(DEBUG) || defined(_DEBUG)
+#include <d3d11sdklayers.h>  // For D3D11 debug interfaces
+#endif
+
+#include <iostream>
+
 namespace Dolas
 {
     LRESULT CALLBACK
@@ -39,6 +45,14 @@ namespace Dolas
 		if (!InitializeWindow()) return false;
 		if (!InitializeD3D()) return false;
 		return true;
+	}
+
+	void DolasRHI::Clear()
+	{
+		if (m_back_buffer) m_back_buffer->Release();
+		if (m_d3d_immediate_context) m_d3d_immediate_context->Release();
+		if (m_d3d_device) m_d3d_device->Release();
+		if (m_swap_chain) m_swap_chain->Release();
 	}
 
 	void DolasRHI::Present()
@@ -137,10 +151,15 @@ namespace Dolas
 			D3D_FEATURE_LEVEL_10_0
 		};
 		D3D_FEATURE_LEVEL feature_level;
-#ifdef _DEBUG
+
+		// 设置设备创建标志
 		UINT d3d_device_create_flags = 0;
-		d3d_device_create_flags |= D3D11_CREATE_DEVICE_DEBUG;  // 开发时启用调试信息
+#if defined(DEBUG) || defined(_DEBUG)
+		// 在调试模式下启用D3D11 debug layer
+		d3d_device_create_flags |= D3D11_CREATE_DEVICE_DEBUG;
+		std::cout << "D3D11 Debug Layer enabled!" << std::endl;
 #endif
+
 		HRESULT hr = D3D11CreateDeviceAndSwapChain(
 			best_adapter,                    // pAdapter
 			D3D_DRIVER_TYPE_UNKNOWN,         // DriverType (使用指定适配器时必须是UNKNOWN)
@@ -156,6 +175,15 @@ namespace Dolas
 			&m_d3d_immediate_context         // ppImmediateContext
 		);
 
+		// 释放适配器
+		best_adapter->Release();
+
+		if (FAILED(hr)) {
+			std::cout << "Failed to create D3D11 device and swap chain! HRESULT: 0x" 
+					  << std::hex << hr << std::dec << std::endl;
+			return false;
+		}
+
         hr = m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_back_buffer));
         if (FAILED(hr)) {
             std::cout << "Failed to get back buffer! HRESULT: 0x" 
@@ -170,14 +198,26 @@ namespace Dolas
             return false;
         }
 
-		// 释放适配器
-		best_adapter->Release();
-
-		if (FAILED(hr)) {
-			std::cout << "Failed to create D3D11 device and swap chain! HRESULT: 0x" 
-					  << std::hex << hr << std::dec << std::endl;
-			return false;
+#if defined(DEBUG) || defined(_DEBUG)
+		// 启用D3D11 debug layer的额外配置
+		ID3D11Debug* d3d_debug = nullptr;
+		hr = m_d3d_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&d3d_debug));
+		if (SUCCEEDED(hr)) {
+			ID3D11InfoQueue* d3d_info_queue = nullptr;
+			hr = d3d_debug->QueryInterface(__uuidof(ID3D11InfoQueue), reinterpret_cast<void**>(&d3d_info_queue));
+			if (SUCCEEDED(hr)) {
+				// 设置断点在错误和警告时
+				d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+				d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+				// 可选：在警告时也断点（可能会比较频繁）
+				// d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+				
+				std::cout << "D3D11 Debug Info Queue configured!" << std::endl;
+				d3d_info_queue->Release();
+			}
+			d3d_debug->Release();
 		}
+#endif
 
 		std::cout << "Successfully created D3D11 device and swap chain!" << std::endl;
 		std::cout << "Feature Level: " << std::hex << feature_level << std::dec << std::endl;

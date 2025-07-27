@@ -4,7 +4,8 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-
+#include "base/dolas_base.h"
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     class Mesh;
@@ -16,10 +17,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        Mesh* GetOrCreateMesh(const std::string& file_name);
+        MeshID CreateMesh(const std::string& mesh_file_name);
+        Mesh* GetMesh(MeshID mesh_id);
     private:
-        Mesh* CreateMesh(const std::string& file_name);
-        std::unordered_map<std::string, Mesh*> m_meshes;
+        std::unordered_map<MeshID, Mesh*> m_meshes;
     };// class MeshManager
 }// namespace Dolas
 #endif // DOLAS_MESH_MANAGER_H

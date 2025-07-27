@@ -6,6 +6,7 @@
 #include <string>
 #include <DirectXMath.h>
 #include <memory>
+#include "common/dolas_hash.h"
 #include "core/dolas_rhi.h"
 
 namespace Dolas
@@ -20,10 +21,10 @@ namespace Dolas
         ~RenderEntity();
         bool Clear();
         void Draw(DolasRHI* rhi);
-    private:
-        std::string m_file_path;
-        Mesh* m_mesh = nullptr;
-        Material* m_material = nullptr;
+    protected:
+        RenderEntityID m_file_id = RENDER_ENTITY_ID_EMPTY;
+        MeshID m_mesh_id = MESH_ID_EMPTY;
+        MaterialID m_material_id = MATERIAL_ID_EMPTY;
     };
 } // namespace Dolas
 

@@ -4,7 +4,8 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-
+#include "base/dolas_base.h"
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     class Material;
@@ -16,10 +17,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        Material* GetOrCreateMaterial(const std::string& file_name);
+        MaterialID CreateMaterial(const std::string& file_name);
+        Material* GetMaterial(MaterialID material_id);
     private:
-        Material* CreateMaterial(const std::string& file_name);
-        std::unordered_map<std::string, Material*> m_materials;
+        std::unordered_map<MaterialID, Material*> m_materials;
     };// class MaterialManager
 }// namespace Dolas
 #endif // DOLAS_MATERIAL_MANAGER_H

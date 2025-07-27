@@ -10,6 +10,9 @@
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_pipeline.h"
 #include "manager/dolas_shader_manager.h"
+#include "manager/dolas_asset_manager.h"
+#include "manager/dolas_texture_manager.h"
+
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -22,6 +25,8 @@ namespace Dolas
 		m_material_manager = DOLAS_NEW(MaterialManager);
 		m_render_entity_manager = DOLAS_NEW(RenderEntityManager);
 		m_shader_manager = DOLAS_NEW(ShaderManager);
+		m_asset_manager = DOLAS_NEW(AssetManager);
+		m_texture_manager = DOLAS_NEW(TextureManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -32,6 +37,8 @@ namespace Dolas
 		DOLAS_DELETE(m_material_manager);
 		DOLAS_DELETE(m_render_entity_manager);
 		DOLAS_DELETE(m_shader_manager);
+		DOLAS_DELETE(m_asset_manager);
+		DOLAS_DELETE(m_texture_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -42,7 +49,21 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
 		return true;
+	}
+
+	void DolasEngine::Clear()
+	{
+		m_rhi->Clear();
+		m_render_pipeline_manager->Clear();
+		m_mesh_manager->Clear();
+		m_material_manager->Clear();
+		m_render_entity_manager->Clear();
+		m_shader_manager->Clear();
+		m_asset_manager->Clear();
+		m_texture_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -51,7 +72,7 @@ namespace Dolas
 		
 		while (msg.message != WM_QUIT)
 		{
-			// 处理Windows消息
+			// handle windows message
 			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
 				TranslateMessage(&msg);
@@ -60,7 +81,7 @@ namespace Dolas
 			else
 			{
 				Update();
-				// 渲染帧
+				// render frame
 				Render();
 			}
 		}

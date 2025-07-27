@@ -1,10 +1,11 @@
 #include "render/dolas_render_camera.h"
 #include <iostream>
 
-using namespace DirectX;
 
 namespace Dolas
 {
+    using namespace DirectX;
+
     RenderCamera::RenderCamera()
     {
         m_position = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -20,8 +21,8 @@ namespace Dolas
         m_ortho_width = 10.0f;
         m_ortho_height = 10.0f;
 
-        XMStoreFloat4x4(&m_view_matrix, XMMatrixIdentity());
-        XMStoreFloat4x4(&m_projection_matrix, XMMatrixIdentity());
+        DirectX::XMStoreFloat4x4(&m_view_matrix, XMMatrixIdentity());
+        DirectX::XMStoreFloat4x4(&m_projection_matrix, XMMatrixIdentity());
         
         m_view_matrix_dirty = true;
         m_projection_matrix_dirty = true;
@@ -85,30 +86,34 @@ namespace Dolas
 
     void RenderCamera::MoveForward(float distance)
     {
-        XMVECTOR forward = XMLoadFloat3(&GetForwardVector());
-        XMVECTOR position = XMLoadFloat3(&m_position);
+        XMFLOAT3 forward_vector = GetForwardVector();
+        XMVECTOR forward = DirectX::XMLoadFloat3(&forward_vector);
+        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
         position = XMVectorAdd(position, XMVectorScale(forward, distance));
-        XMStoreFloat3(&m_position, position);
+        DirectX::XMStoreFloat3(&m_position, position);
         m_view_matrix_dirty = true;
         m_frustum_dirty = true;
     }
 
     void RenderCamera::MoveRight(float distance)
     {
-        XMVECTOR right = XMLoadFloat3(&GetRightVector());
-        XMVECTOR position = XMLoadFloat3(&m_position);
+        XMFLOAT3 right_vector = GetRightVector();
+        XMVECTOR right = DirectX::XMLoadFloat3(&right_vector);
+        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
         position = XMVectorAdd(position, XMVectorScale(right, distance));
-        XMStoreFloat3(&m_position, position);
+        DirectX::XMStoreFloat3(&m_position, position);
         m_view_matrix_dirty = true;
         m_frustum_dirty = true;
     }
 
     void RenderCamera::MoveUp(float distance)
     {
-        XMVECTOR up = XMLoadFloat3(&GetUpVector());
-        XMVECTOR position = XMLoadFloat3(&m_position);
+        XMFLOAT3 up_vector = GetUpVector();
+
+        XMVECTOR up = DirectX::XMLoadFloat3(&up_vector);
+        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
         position = XMVectorAdd(position, XMVectorScale(up, distance));
-        XMStoreFloat3(&m_position, position);
+        DirectX::XMStoreFloat3(&m_position, position);
         m_view_matrix_dirty = true;
         m_frustum_dirty = true;
     }
@@ -135,7 +140,7 @@ namespace Dolas
         {
             UpdateViewMatrix();
         }
-        return XMLoadFloat4x4(&m_view_matrix);
+        return DirectX::XMLoadFloat4x4(&m_view_matrix);
     }
 
     XMMATRIX RenderCamera::GetProjectionMatrix()
@@ -144,7 +149,7 @@ namespace Dolas
         {
             UpdateProjectionMatrix();
         }
-        return XMLoadFloat4x4(&m_projection_matrix);
+        return DirectX::XMLoadFloat4x4(&m_projection_matrix);
     }
 
     XMMATRIX RenderCamera::GetViewProjectionMatrix()
@@ -157,7 +162,7 @@ namespace Dolas
         XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
         XMVECTOR forward = XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), rotation_matrix);
         XMFLOAT3 result;
-        XMStoreFloat3(&result, forward);
+        DirectX::XMStoreFloat3(&result, forward);
         return result;
     }
 
@@ -166,7 +171,7 @@ namespace Dolas
         XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
         XMVECTOR right = XMVector3TransformNormal(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), rotation_matrix);
         XMFLOAT3 result;
-        XMStoreFloat3(&result, right);
+        DirectX::XMStoreFloat3(&result, right);
         return result;
     }
 
@@ -175,7 +180,7 @@ namespace Dolas
         XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
         XMVECTOR up = XMVector3TransformNormal(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), rotation_matrix);
         XMFLOAT3 result;
-        XMStoreFloat3(&result, up);
+        DirectX::XMStoreFloat3(&result, up);
         return result;
     }
 
@@ -186,11 +191,11 @@ namespace Dolas
             UpdateFrustumPlanes();
         }
 
-        XMVECTOR point_vec = XMLoadFloat3(&point);
+        XMVECTOR point_vec = DirectX::XMLoadFloat3(&point);
         
         for (int i = 0; i < 6; ++i)
         {
-            XMVECTOR plane = XMLoadFloat4(&m_frustum_planes[i]);
+            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
             float distance = XMVectorGetX(XMPlaneDotCoord(plane, point_vec));
             if (distance < 0.0f)
             {
@@ -207,11 +212,11 @@ namespace Dolas
             UpdateFrustumPlanes();
         }
 
-        XMVECTOR center_vec = XMLoadFloat3(&center);
+        XMVECTOR center_vec = DirectX::XMLoadFloat3(&center);
         
         for (int i = 0; i < 6; ++i)
         {
-            XMVECTOR plane = XMLoadFloat4(&m_frustum_planes[i]);
+            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
             float distance = XMVectorGetX(XMPlaneDotCoord(plane, center_vec));
             if (distance < -radius)
             {
@@ -223,14 +228,16 @@ namespace Dolas
 
     void RenderCamera::UpdateViewMatrix()
     {
-        XMVECTOR position = XMLoadFloat3(&m_position);
-        XMVECTOR forward = XMLoadFloat3(&GetForwardVector());
-        XMVECTOR up = XMLoadFloat3(&GetUpVector());
+        XMFLOAT3 forward_vector = GetForwardVector();
+        XMFLOAT3 up_vector = GetUpVector();
+        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
+        XMVECTOR forward = DirectX::XMLoadFloat3(&forward_vector);
+        XMVECTOR up = DirectX::XMLoadFloat3(&up_vector);
         
         XMVECTOR target = XMVectorAdd(position, forward);
         XMMATRIX view = XMMatrixLookAtLH(position, target, up);
         
-        XMStoreFloat4x4(&m_view_matrix, view);
+        DirectX::XMStoreFloat4x4(&m_view_matrix, view);
         m_view_matrix_dirty = false;
     }
 
@@ -247,7 +254,7 @@ namespace Dolas
             projection = XMMatrixOrthographicLH(m_ortho_width, m_ortho_height, m_near_plane, m_far_plane);
         }
         
-        XMStoreFloat4x4(&m_projection_matrix, projection);
+        DirectX::XMStoreFloat4x4(&m_projection_matrix, projection);
         m_projection_matrix_dirty = false;
     }
 
@@ -257,7 +264,7 @@ namespace Dolas
         
         // 提取视锥体平面
         XMFLOAT4X4 vp_matrix;
-        XMStoreFloat4x4(&vp_matrix, view_projection);
+        DirectX::XMStoreFloat4x4(&vp_matrix, view_projection);
         
         // Left plane
         m_frustum_planes[0].x = vp_matrix._14 + vp_matrix._11;
@@ -298,9 +305,9 @@ namespace Dolas
         // 归一化平面
         for (int i = 0; i < 6; ++i)
         {
-            XMVECTOR plane = XMLoadFloat4(&m_frustum_planes[i]);
+            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
             plane = XMPlaneNormalize(plane);
-            XMStoreFloat4(&m_frustum_planes[i], plane);
+            DirectX::XMStoreFloat4(&m_frustum_planes[i], plane);
         }
 
         m_frustum_dirty = false;

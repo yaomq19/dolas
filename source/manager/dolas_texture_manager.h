@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include <memory>
 #include "render/dolas_texture.h"
-
+#include "base/dolas_base.h"
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     class TextureManager
@@ -16,19 +17,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        std::shared_ptr<Texture> GetOrCreateTexture(const std::string& file_name, bool generate_mips = true);
-        std::shared_ptr<Texture> CreateTexture(const std::string& file_name, bool generate_mips = true);
-        
-        // 创建自定义纹理
-        std::shared_ptr<Texture> CreateTexture(const std::string& name, uint32_t width, uint32_t height, TextureFormat format, const void* initial_data = nullptr);
-        std::shared_ptr<Texture> CreateRenderTarget(const std::string& name, uint32_t width, uint32_t height, TextureFormat format);
-        std::shared_ptr<Texture> CreateDepthStencil(const std::string& name, uint32_t width, uint32_t height);
-        
-        // 从内存加载纹理
-        std::shared_ptr<Texture> CreateTextureFromMemory(const std::string& name, const void* data, size_t size, bool generate_mips = true);
-
+        TextureID CreateTexture(const std::string& file_name);
+        Texture* GetTexture(TextureID texture_id);
     private:
-        std::unordered_map<std::string, std::shared_ptr<Texture>> m_textures;
+        std::unordered_map<TextureID, Texture*> m_textures;
     }; // class TextureManager
 } // namespace Dolas
 

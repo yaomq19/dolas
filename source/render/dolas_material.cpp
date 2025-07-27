@@ -12,16 +12,6 @@ namespace Dolas
 
 	}
 
-	bool Material::BuildFromFile(const std::string& file_path)
-	{
-		return true;
-	}
-
-	std::string Material::GetFilePath()
-	{
-		return m_file_path;
-	}
-
 	VertexShader* Material::GetVertexShader()
 	{
 		return m_vertex_shader;
@@ -32,8 +22,4 @@ namespace Dolas
 		return m_pixel_shader;
 	}
 
-	std::vector<std::pair<int, std::string>> Material::GetTextures()
-	{
-		return m_textures;
-	}
 }

@@ -3,7 +3,7 @@
 
 #include <string>
 #include <d3d11.h>
-
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     enum class TextureType
@@ -57,7 +57,7 @@ namespace Dolas
         TextureType GetTextureType() const { return m_texture_type; }
         TextureFormat GetTextureFormat() const { return m_texture_format; }
 
-        std::string m_file_path;
+        TextureID m_file_id;
         TextureType m_texture_type;
         TextureFormat m_texture_format;
 

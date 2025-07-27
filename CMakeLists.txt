@@ -5,9 +5,9 @@ cmake_minimum_required(VERSION 3.10)
 project(Dolas VERSION 0.1.0 LANGUAGES CXX)
 
 # ============ C++标准设置 ============
-# 设置项目使用C++17标准
-set(CMAKE_CXX_STANDARD 17)
-# 强制要求C++17，如果编译器不支持则报错
+# 设置项目使用C++20标准
+set(CMAKE_CXX_STANDARD 20)
+# 强制要求C++20，如果编译器不支持则报错
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ============ Windows平台特定设置 ============
@@ -19,6 +19,9 @@ if(WIN32)
     include_directories("$ENV{WindowsSdkDir}Include/$ENV{WindowsSDKVersion}/um")
     # 添加Windows SDK的库目录，针对x64架构
     link_directories("$ENV{WindowsSdkDir}Lib/$ENV{WindowsSDKVersion}/um/x64")
+
+    # 设置为 UTF-8 编码
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
 
 # ============ 输出目录配置 ============

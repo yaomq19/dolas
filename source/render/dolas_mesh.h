@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <DirectXMath.h>
+#include "common/dolas_hash.h"
 
 namespace Dolas
 {
@@ -14,7 +15,7 @@ namespace Dolas
         Mesh();
         ~Mesh();
 
-        std::string m_file_path;
+        MeshID m_file_id;
         std::vector<DirectX::XMFLOAT3> m_vertices;
         std::vector<DirectX::XMFLOAT2> m_uvs;
         std::vector<DirectX::XMFLOAT3> m_normals;

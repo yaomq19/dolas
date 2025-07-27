@@ -55,9 +55,19 @@ namespace Dolas
         RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
         DOLAS_RETURN_IF_NULL(render_entity_manager);
 
-        RenderEntity* render_entity = render_entity_manager->GetOrCreateRenderEntity("cube.entity");
+		const std::string render_entity_name = "cube.entity";
+
+        RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
+        if (render_entity == nullptr)
+        {
+            RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntity(render_entity_name);
+            render_entity = render_entity_manager->GetRenderEntity(render_entity_id);
+        }
         DOLAS_RETURN_IF_NULL(render_entity);
 
+        // 设置 RT 和 视口
+        /*rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, rhi->m_depth_stencil_view);
+        rhi->m_d3d_immediate_context->RSSetViewports(1, &rhi->m_viewport);*/
         render_entity->Draw(rhi);
     }
 

@@ -32,8 +32,10 @@ namespace Dolas
 
     void RenderEntity::Draw(DolasRHI* rhi)
     {
-        if (m_mesh == nullptr || m_material == nullptr)
-            return;
+		Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
+		DOLAS_RETURN_IF_NULL(mesh);
+		Material* material = g_dolas_engine.m_material_manager->GetMaterial(m_material_id);
+		DOLAS_RETURN_IF_NULL(material);
 
         // 根据 mesh 创建顶点缓冲区
         // 设置顶点缓冲区描述
@@ -42,13 +44,13 @@ namespace Dolas
         D3D11_BUFFER_DESC vbd;
         ZeroMemory(&vbd, sizeof(vbd));
         vbd.Usage = D3D11_USAGE_IMMUTABLE;
-        vbd.ByteWidth = m_mesh->m_final_vertices.size() * sizeof(float);
+        vbd.ByteWidth = mesh->m_final_vertices.size() * sizeof(float);
         vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         vbd.CPUAccessFlags = 0;
         // 新建顶点缓冲区
         D3D11_SUBRESOURCE_DATA InitData;
         ZeroMemory(&InitData, sizeof(InitData));
-        InitData.pSysMem = m_mesh->m_final_vertices.data();
+        InitData.pSysMem = mesh->m_final_vertices.data();
 
             ID3D11Buffer* vertex_buffer = nullptr;
         HR(rhi->m_d3d_device->CreateBuffer(&vbd, &InitData, &vertex_buffer));
@@ -57,11 +59,11 @@ namespace Dolas
         D3D11_BUFFER_DESC ibd;
         ZeroMemory(&ibd, sizeof(ibd));
         ibd.Usage = D3D11_USAGE_IMMUTABLE;
-            ibd.ByteWidth = m_mesh->m_indices.size() * sizeof(unsigned int);
+            ibd.ByteWidth = mesh->m_indices.size() * sizeof(unsigned int);
         ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;  // 修正绑定标志
         ibd.CPUAccessFlags = 0;
 
-            InitData.pSysMem = m_mesh->m_indices.data();
+            InitData.pSysMem = mesh->m_indices.data();
 
         ID3D11Buffer* index_buffer = nullptr;
         HR(rhi->m_d3d_device->CreateBuffer(&ibd, &InitData, &index_buffer));  // 修正缓冲区描述
@@ -88,20 +90,20 @@ namespace Dolas
             rhi->m_d3d_device->CreateInputLayout(
                 local_layout,
                 3,
-                m_material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
-                m_material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
+                material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
+                material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
                 &input_layout)
         );
 
         rhi->m_d3d_immediate_context->IASetInputLayout(input_layout);
         // 绑定 Shader
-        rhi->m_d3d_immediate_context->VSSetShader(m_material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
-        rhi->m_d3d_immediate_context->PSSetShader(m_material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
+        rhi->m_d3d_immediate_context->VSSetShader(material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
+        rhi->m_d3d_immediate_context->PSSetShader(material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
         // 设置 RTV 和 DSV
         rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, nullptr);
         // 设置渲染状态
         // 
         // 发起DC
-        rhi->m_d3d_immediate_context->DrawIndexed(m_mesh->m_indices.size(), 0, 0);
+        rhi->m_d3d_immediate_context->DrawIndexed(mesh->m_indices.size(), 0, 0);
     }
 }
