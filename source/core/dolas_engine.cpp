@@ -12,6 +12,7 @@
 #include "manager/dolas_shader_manager.h"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
+#include "manager/dolas_test_manager.h"
 
 namespace Dolas
 {
@@ -27,6 +28,7 @@ namespace Dolas
 		m_shader_manager = DOLAS_NEW(ShaderManager);
 		m_asset_manager = DOLAS_NEW(AssetManager);
 		m_texture_manager = DOLAS_NEW(TextureManager);
+		m_test_manager = DOLAS_NEW(TestManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -39,6 +41,7 @@ namespace Dolas
 		DOLAS_DELETE(m_shader_manager);
 		DOLAS_DELETE(m_asset_manager);
 		DOLAS_DELETE(m_texture_manager);
+		DOLAS_DELETE(m_test_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -51,6 +54,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_test_manager->Initialize());
 		return true;
 	}
 
@@ -64,6 +68,7 @@ namespace Dolas
 		m_shader_manager->Clear();
 		m_asset_manager->Clear();
 		m_texture_manager->Clear();
+		m_test_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -96,6 +101,11 @@ namespace Dolas
 		RenderPipeline* main_render_pipeline = m_render_pipeline_manager->GetMainRenderPipeline();
 		DOLAS_RETURN_IF_NULL(main_render_pipeline);
 		main_render_pipeline->Render(m_rhi);
-	}	
+	}
+
+	void DolasEngine::Test()
+	{
+		m_test_manager->TestTextureManager();
+	}
 }// namespace Dolas
 

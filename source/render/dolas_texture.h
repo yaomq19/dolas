@@ -49,6 +49,7 @@ namespace Dolas
         TextureType GetTextureType() const { return m_texture_type; }
         TextureFormat GetTextureFormat() const { return m_texture_format; }
 
+        bool m_is_from_file = false;
         TextureID m_file_id;
         TextureType m_texture_type;
         TextureFormat m_texture_format;

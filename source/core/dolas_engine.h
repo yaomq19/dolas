@@ -13,6 +13,7 @@ namespace Dolas
 		void Run();
 		void Update();
 		void Render();
+		void Test();
 		
 		class DolasRHI* m_rhi;
 		class RenderPipelineManager* m_render_pipeline_manager;
@@ -22,6 +23,7 @@ namespace Dolas
 		class ShaderManager* m_shader_manager;
 		class AssetManager* m_asset_manager;
 		class TextureManager* m_texture_manager;
+		class TestManager* m_test_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas
