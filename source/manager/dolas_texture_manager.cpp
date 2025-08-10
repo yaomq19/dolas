@@ -13,6 +13,18 @@
 
 namespace Dolas
 {
+    // Helper: set D3D11 debug name for RenderDoc and debug layer
+    static void SetD3DDebugName(ID3D11DeviceChild* object, const std::string& name)
+    {
+    #if defined(DEBUG) || defined(_DEBUG)
+        if (object && !name.empty())
+        {
+            object->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+        }
+    #else
+        (void)object; (void)name;
+    #endif
+    }
     TextureManager::TextureManager()
     {
 
@@ -40,6 +52,15 @@ namespace Dolas
         }
         m_textures.clear();
         return true;
+    }
+
+    Texture* TextureManager::GetTextureByTextureID(TextureID texture_id)
+    {
+        if (m_textures.find(texture_id) == m_textures.end())
+        {
+            return nullptr;
+        }
+        return m_textures[texture_id];
     }
 
     TextureID TextureManager::CreateTextureFromFile(const std::string& file_name)
@@ -82,142 +103,137 @@ namespace Dolas
         texture->m_file_id = STRING_ID(texture_file_path);
         texture->m_d3d_texture_2d = d3d_texture_2d;
         texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
+
+        // Debug names for RenderDoc
+        SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + texture_file_path);
+        SetD3DDebugName(texture->m_d3d_shader_resource_view, std::string("SRV: ") + texture_file_path);
         
         m_textures[texture->m_file_id] = texture;
         
         std::cout << "Successfully loaded texture: " << texture_file_path << std::endl;
         return texture->m_file_id;
     }
-    
-    TextureID TextureManager::CreateTexture2D(
-        ID3D11Device* device, 
-        const TextureDescriptor& desc,
-        const D3D11_SUBRESOURCE_DATA* initData)
+
+    Bool TextureManager::DolasCreateTexture2D(const DolasTexture2DDesc& dolas_texture2d_desc)
     {
-        D3D11_USAGE Usage;
-        UINT BindFlags;
-        UINT CPUAccessFlags;
-        UINT MiscFlags;
-        
+        D3D11_TEXTURE2D_DESC d3d_texture2d_desc = (D3D11_TEXTURE2D_DESC)0;
+		d3d_texture2d_desc.Width = dolas_texture2d_desc.width;
+		d3d_texture2d_desc.Height = dolas_texture2d_desc.width;
+		d3d_texture2d_desc.MipLevels = dolas_texture2d_desc.generateMips ? 0 : 1; // 0表示自动生成所有mip级别
+		d3d_texture2d_desc.ArraySize = dolas_texture2d_desc.arraySize;
+		d3d_texture2d_desc.Format = ConvertToDXGIFormat(dolas_texture2d_desc.format);
+		d3d_texture2d_desc.SampleDesc.Count = dolas_texture2d_desc.sampleCount;
+		d3d_texture2d_desc.SampleDesc.Quality = 0; // 默认质量级别
+        d3d_texture2d_desc.Usage = D3D11_USAGE_DEFAULT; // 默认使用方式
+		d3d_texture2d_desc.BindFlags = 0;
+		d3d_texture2d_desc.CPUAccessFlags = 0;
+		d3d_texture2d_desc.MiscFlags = 0;
         // 核心类型映射
-        switch (desc.usage) {
-        case TextureUsage::Immutable:
-            Usage = D3D11_USAGE_IMMUTABLE;
-            BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        switch (dolas_texture2d_desc.usage) {
+        case DolasTextureUsage::Immutable:
+            d3d_texture2d_desc.Usage = D3D11_USAGE_IMMUTABLE;
+            d3d_texture2d_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
             break;
-        case TextureUsage::Dynamic:
-            Usage = D3D11_USAGE_DYNAMIC;
-            BindFlags = D3D11_BIND_SHADER_RESOURCE;
-            CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        case DolasTextureUsage::Dynamic:
+            d3d_texture2d_desc.Usage = D3D11_USAGE_DYNAMIC;
+            d3d_texture2d_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            d3d_texture2d_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
             break;
-        case TextureUsage::RenderTarget:
-            Usage = D3D11_USAGE_DEFAULT;
-            BindFlags = D3D11_BIND_RENDER_TARGET;
-            if (desc.shaderResource || desc.generateMips) {
-                BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+        case DolasTextureUsage::RenderTarget:
+            d3d_texture2d_desc.Usage = D3D11_USAGE_DEFAULT;
+            d3d_texture2d_desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+            if (dolas_texture2d_desc.shaderResource || dolas_texture2d_desc.generateMips) {
+                d3d_texture2d_desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
             }
-            if (desc.generateMips) {
-                MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
-            }
-            break;
-        case TextureUsage::DepthStencil:
-            Usage = D3D11_USAGE_DEFAULT;
-            BindFlags = D3D11_BIND_DEPTH_STENCIL;
-            if (desc.shaderResource && IsDepthFormatShaderCompatible(ConvertToDXGIFormat(desc.format))) {
-                BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+            if (dolas_texture2d_desc.generateMips) {
+                d3d_texture2d_desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
             }
             break;
-        case TextureUsage::Staging:
-            Usage = D3D11_USAGE_STAGING;
-            CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+        case DolasTextureUsage::DepthStencil:
+            d3d_texture2d_desc.Usage = D3D11_USAGE_DEFAULT;
+            d3d_texture2d_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+            if (dolas_texture2d_desc.shaderResource && IsDepthFormatShaderCompatible(ConvertToDXGIFormat(dolas_texture2d_desc.format))) {
+                d3d_texture2d_desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+            }
+            break;
+        case DolasTextureUsage::Staging:
+            d3d_texture2d_desc.Usage = D3D11_USAGE_STAGING;
+            d3d_texture2d_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
             break;
         }
-    
-        return CreateTexture(
-            TextureType::TEXTURE_2D,
-            desc.format,
-            desc.width,
-            desc.height,
-            desc.generateMips ? 0 : 1,
-            desc.sampleCount,
-            0, // sample_quality
-            desc.arraySize,
-            BindFlags,
-            CPUAccessFlags,
-            MiscFlags,
-            Usage);
+
+        return D3DCreateTexture2D(dolas_texture2d_desc.texture_handle, &d3d_texture2d_desc);
+    }
+    DXGI_FORMAT TextureManager::ConvertToDXGIFormat(DolasTextureFormat texture_format)
+    {
+        switch (texture_format)
+        {
+            case DolasTextureFormat::R8G8B8A8_UNORM:         return DXGI_FORMAT_R8G8B8A8_UNORM;
+            case DolasTextureFormat::R8G8B8A8_SRGB:          return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            case DolasTextureFormat::BC1_UNORM:              return DXGI_FORMAT_BC1_UNORM;
+            case DolasTextureFormat::BC1_SRGB:               return DXGI_FORMAT_BC1_UNORM_SRGB;
+            case DolasTextureFormat::BC3_UNORM:              return DXGI_FORMAT_BC3_UNORM;
+            case DolasTextureFormat::BC3_SRGB:               return DXGI_FORMAT_BC3_UNORM_SRGB;
+            case DolasTextureFormat::BC7_UNORM:              return DXGI_FORMAT_BC7_UNORM;
+            case DolasTextureFormat::BC7_SRGB:               return DXGI_FORMAT_BC7_UNORM_SRGB;
+            case DolasTextureFormat::R32G32B32A32_FLOAT:     return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            case DolasTextureFormat::R16G16B16A16_FLOAT:     return DXGI_FORMAT_R16G16B16A16_FLOAT;
+            case DolasTextureFormat::D24_UNORM_S8_UINT:      return DXGI_FORMAT_D24_UNORM_S8_UINT;
+            case DolasTextureFormat::D32_FLOAT:              return DXGI_FORMAT_D32_FLOAT;
+            case DolasTextureFormat::R32_TYPELESS:           return DXGI_FORMAT_R32_TYPELESS;
+            case DolasTextureFormat::R24G8_TYPELESS:         return DXGI_FORMAT_R24G8_TYPELESS;
+            case DolasTextureFormat::R16_TYPELESS:           return DXGI_FORMAT_R16_TYPELESS;
+            case DolasTextureFormat::R32G8X24_TYPELESS:      return DXGI_FORMAT_R32G8X24_TYPELESS;
+            default:                                    return DXGI_FORMAT_R8G8B8A8_UNORM;
+        }
     }
 
-    TextureID TextureManager::CreateTexture(
-        TextureType texture_type,
-        TextureFormat texture_format,
-        uint32_t width,
-        uint32_t height,
-        uint32_t mip_levels,
-        uint32_t sample_count,
-        uint32_t sample_quality,
-        uint32_t array_size,
-        uint32_t bind_flags,
-        uint32_t cpu_access_flags,
-        uint32_t misc_flags,
-        D3D11_USAGE usage
-    )
+    DolasTextureFormat TextureManager::ConvertToTextureFormat(DXGI_FORMAT dxgi_format)
+    {
+        switch (dxgi_format)
+        {
+        case DXGI_FORMAT_R8G8B8A8_UNORM:            return DolasTextureFormat::R8G8B8A8_UNORM;
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:       return DolasTextureFormat::R8G8B8A8_SRGB;
+        case DXGI_FORMAT_BC1_UNORM:                 return DolasTextureFormat::BC1_UNORM;
+        case DXGI_FORMAT_BC1_UNORM_SRGB:            return DolasTextureFormat::BC1_SRGB;
+        case DXGI_FORMAT_BC3_UNORM:                 return DolasTextureFormat::BC3_UNORM;
+        case DXGI_FORMAT_BC3_UNORM_SRGB:            return DolasTextureFormat::BC3_SRGB;
+        case DXGI_FORMAT_BC7_UNORM:                 return DolasTextureFormat::BC7_UNORM;
+        case DXGI_FORMAT_BC7_UNORM_SRGB:            return DolasTextureFormat::BC7_SRGB;
+        case DXGI_FORMAT_R32G32B32A32_FLOAT:        return DolasTextureFormat::R32G32B32A32_FLOAT;
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:        return DolasTextureFormat::R16G16B16A16_FLOAT;
+        case DXGI_FORMAT_D24_UNORM_S8_UINT:         return DolasTextureFormat::D24_UNORM_S8_UINT;
+        case DXGI_FORMAT_D32_FLOAT:                 return DolasTextureFormat::D32_FLOAT;
+        case DXGI_FORMAT_R32_TYPELESS:              return DolasTextureFormat::R32_TYPELESS;
+        case DXGI_FORMAT_R24G8_TYPELESS:            return DolasTextureFormat::R24G8_TYPELESS;
+        case DXGI_FORMAT_R16_TYPELESS:              return DolasTextureFormat::R16_TYPELESS;
+        case DXGI_FORMAT_R32G8X24_TYPELESS:         return DolasTextureFormat::R32G8X24_TYPELESS;
+        default:                                    return DolasTextureFormat::R8G8B8A8_UNORM;
+        }
+    }
+
+    Bool TextureManager::D3DCreateTexture2D(
+        TextureID texture_handle,
+        const D3D11_TEXTURE2D_DESC* pDesc)
     {
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = false;
         texture->m_file_id = TEXTURE_ID_EMPTY;
-        texture->m_texture_type = texture_type;
-        texture->m_texture_format = texture_format;
-        texture->m_width = width;
-        texture->m_height = height;
-        texture->m_mip_levels = mip_levels;
+        texture->m_texture_type = DolasTextureType::TEXTURE_2D;
+        texture->m_texture_format = ConvertToTextureFormat(pDesc->Format);
+        texture->m_width = pDesc->Width;
+        texture->m_height = pDesc->Height;
+        texture->m_mip_levels = pDesc->MipLevels;
 
-        D3D11_TEXTURE2D_DESC desc;
-        desc.Width = width;
-        desc.Height = height;
-        desc.MipLevels = mip_levels;
-        desc.ArraySize = array_size;
-        desc.Format = ConvertToDXGIFormat(texture_format);
-        desc.SampleDesc.Count = sample_count;
-        desc.SampleDesc.Quality = sample_quality;
-        desc.Usage = usage;
-        desc.BindFlags = bind_flags;
-        desc.CPUAccessFlags = cpu_access_flags;
-        desc.MiscFlags = misc_flags;
+        g_dolas_engine.m_rhi->m_d3d_device->CreateTexture2D(pDesc, nullptr, &texture->m_d3d_texture_2d);
 
-        g_dolas_engine.m_rhi->m_d3d_device->CreateTexture2D(&desc, nullptr, &texture->m_d3d_texture_2d);
-        
-        m_textures[texture->m_file_id] = texture;
-        return texture->m_file_id;
-    }
-    
-    Texture* TextureManager::GetTexture(TextureID texture_id)
-    {
-        if (m_textures.find(texture_id) == m_textures.end())
-        {
-            return nullptr;
-        }
-        return m_textures[texture_id];
-    }
+        // Debug name using string id registry if present
+        std::string tex_name = ID_TO_STRING(texture_handle);
+        SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + tex_name);
 
-    DXGI_FORMAT TextureManager::ConvertToDXGIFormat(TextureFormat format)
-    {
-        switch (format)
-        {
-            case TextureFormat::R8G8B8A8_UNORM:     return DXGI_FORMAT_R8G8B8A8_UNORM;
-            case TextureFormat::R8G8B8A8_SRGB:      return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-            case TextureFormat::BC1_UNORM:          return DXGI_FORMAT_BC1_UNORM;
-            case TextureFormat::BC1_SRGB:           return DXGI_FORMAT_BC1_UNORM_SRGB;
-            case TextureFormat::BC3_UNORM:          return DXGI_FORMAT_BC3_UNORM;
-            case TextureFormat::BC3_SRGB:           return DXGI_FORMAT_BC3_UNORM_SRGB;
-            case TextureFormat::BC7_UNORM:          return DXGI_FORMAT_BC7_UNORM;
-            case TextureFormat::BC7_SRGB:           return DXGI_FORMAT_BC7_UNORM_SRGB;
-            case TextureFormat::R32G32B32A32_FLOAT: return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case TextureFormat::R16G16B16A16_FLOAT:  return DXGI_FORMAT_R16G16B16A16_FLOAT;
-            case TextureFormat::D24_UNORM_S8_UINT:  return DXGI_FORMAT_D24_UNORM_S8_UINT;
-            case TextureFormat::D32_FLOAT:          return DXGI_FORMAT_D32_FLOAT;
-            default:                                 return DXGI_FORMAT_R8G8B8A8_UNORM;
-        }
+        m_textures[texture_handle] = texture;
+
+        return true;
     }
 
     Bool TextureManager::IsDepthFormatShaderCompatible(DXGI_FORMAT format)

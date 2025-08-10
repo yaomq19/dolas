@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <cmath>
+#include <iostream>
 
 #include "base/dolas_base.h"
 #include "core/dolas_engine.h"
@@ -8,6 +9,7 @@
 #include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
+#include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
 #include "manager/dolas_shader_manager.h"
 #include "manager/dolas_asset_manager.h"
@@ -29,6 +31,7 @@ namespace Dolas
 		m_asset_manager = DOLAS_NEW(AssetManager);
 		m_texture_manager = DOLAS_NEW(TextureManager);
 		m_test_manager = DOLAS_NEW(TestManager);
+		m_render_resource_manager = DOLAS_NEW(RenderResourceManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -42,6 +45,7 @@ namespace Dolas
 		DOLAS_DELETE(m_asset_manager);
 		DOLAS_DELETE(m_texture_manager);
 		DOLAS_DELETE(m_test_manager);
+		DOLAS_DELETE(m_render_resource_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -55,6 +59,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_test_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_resource_manager->Initialize());
 		return true;
 	}
 
@@ -69,6 +74,7 @@ namespace Dolas
 		m_asset_manager->Clear();
 		m_texture_manager->Clear();
 		m_test_manager->Clear();
+		m_render_resource_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -105,7 +111,19 @@ namespace Dolas
 
 	void DolasEngine::Test()
 	{
-		m_test_manager->TestTextureManager();
+		std::string str = "LUT_TExuter";
+		StringID string_id = STRING_ID(str);
+		std::cout << "String: " << str << ", ID: " << string_id << std::endl;
+
+		std::string new_str = ID_TO_STRING(string_id);
+		if (new_str == str)
+		{
+			std::cout << "String ID to String conversion successful: " << new_str << std::endl;
+		}
+		else
+		{
+			std::cout << "String ID to String conversion failed!" << new_str << std::endl;
+		}
 	}
 }// namespace Dolas
 

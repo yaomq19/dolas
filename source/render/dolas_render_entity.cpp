@@ -55,7 +55,7 @@ namespace Dolas
             ID3D11Buffer* vertex_buffer = nullptr;
         HR(rhi->m_d3d_device->CreateBuffer(&vbd, &InitData, &vertex_buffer));
 
-            // 根据 mesh 创建索引缓冲区
+        // 根据 mesh 创建索引缓冲区
         D3D11_BUFFER_DESC ibd;
         ZeroMemory(&ibd, sizeof(ibd));
         ibd.Usage = D3D11_USAGE_IMMUTABLE;
@@ -99,10 +99,8 @@ namespace Dolas
         // 绑定 Shader
         rhi->m_d3d_immediate_context->VSSetShader(material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
         rhi->m_d3d_immediate_context->PSSetShader(material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
-        // 设置 RTV 和 DSV
-        rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, nullptr);
+        
         // 设置渲染状态
-        // 
         // 发起DC
         rhi->m_d3d_immediate_context->DrawIndexed(mesh->m_indices.size(), 0, 0);
     }

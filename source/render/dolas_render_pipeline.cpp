@@ -7,6 +7,7 @@
 #include "base/dolas_base.h"
 #include "core/dolas_engine.h"
 #include "manager/dolas_render_entity_manager.h"
+#include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
 #include "render/dolas_render_entity.h"
 
@@ -26,6 +27,11 @@ namespace Dolas
 
     bool RenderPipeline::Initialize()
     {
+        m_render_resource_id = STRING_ID("MainRenderResource");
+        RenderResourceManager* render_resource_manager = g_dolas_engine.m_render_resource_manager;
+        DOLAS_RETURN_FALSE_IF_NULL(render_resource_manager);
+        Bool ret = render_resource_manager->CreateRenderResource(m_render_resource_id);
+        DOLAS_RETURN_FALSE_IF_FALSE(ret);
         return true;
     }
 
@@ -66,6 +72,17 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(render_entity);
 
         // 设置 RT 和 视口
+		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        std::vector<RenderTargetView> rtvs(3);
+        rtvs[0] = RenderTargetView(render_resource->m_gbuffer_a_id);
+        rtvs[1] = RenderTargetView(render_resource->m_gbuffer_b_id);
+        rtvs[2] = RenderTargetView(render_resource->m_gbuffer_c_id);
+        DepthStencilView dsv(render_resource->m_depth_stencil_id);
+
+        ViewPort vp;
+		vp.m_d3d_viewport.TopLeftX = 0.0f;
+        rhi->SetRenderTargetView(3, rtvs, dsv);
+        rhi->SetViewPort(vp);
         /*rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, rhi->m_depth_stencil_view);
         rhi->m_d3d_immediate_context->RSSetViewports(1, &rhi->m_viewport);*/
         render_entity->Draw(rhi);

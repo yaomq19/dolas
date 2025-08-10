@@ -9,7 +9,7 @@
 #include "common/dolas_hash.h"
 namespace Dolas
 {
-    enum class TextureUsage {
+    enum class DolasTextureUsage {
         Immutable,      // 只读纹理 (CPU不可访问，GPU只读)
         Dynamic,        // 动态纹理 (CPU频繁写，GPU读)
         RenderTarget,   // 渲染目标 (GPU读写)
@@ -17,11 +17,12 @@ namespace Dolas
         Staging         // 数据中转 (CPU读写)
     };
     
-    struct TextureDescriptor {
+    struct DolasTexture2DDesc {
+        TextureID texture_handle;
         uint32_t width;             // 纹理宽度
         uint32_t height;            // 纹理高度
-        TextureFormat format;         // 纹理格式
-        TextureUsage usage;           // 核心纹理类型
+        DolasTextureFormat format;         // 纹理格式
+        DolasTextureUsage usage;           // 核心纹理类型
         bool generateMips = false;  // 是否生成mipmaps
         bool shaderResource = true; // 是否绑定为着色器资源
         uint32_t arraySize = 1;     // 纹理数组大小
@@ -36,32 +37,32 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
+		// 根据纹理ID获取纹理
+		// texture_id: 纹理ID
+		// 返回: 指向纹理的指针，如果未找到则返回nullptr
+        Texture* GetTextureByTextureID(TextureID texture_id);
+
+		// 从文件创建纹理
+		// file_name: 纹理文件名
+		// 返回: 纹理ID，如果创建失败则返回 TEXTURE_ID_EMPTY
         TextureID CreateTextureFromFile(const std::string& file_name);
 
-        TextureID CreateTexture2D(
-            ID3D11Device* device, 
-            const TextureDescriptor& desc,
-            const D3D11_SUBRESOURCE_DATA* initData = nullptr);
+		// 创建2D纹理
+		// dolas_texture2d_desc: 2D纹理描述
+		// 返回: 是否成功创建纹理
+        Bool DolasCreateTexture2D(const DolasTexture2DDesc& dolas_texture2d_desc);
+    protected:
 
-        TextureID CreateTexture(
-            TextureType texture_type,
-            TextureFormat texture_format,
-            uint32_t width,
-            uint32_t height,
-            uint32_t mip_levels,
-            uint32_t sample_count,
-            uint32_t sample_quality,
-            uint32_t array_size,
-            uint32_t bind_flags,
-            uint32_t cpu_access_flags,
-            uint32_t misc_flags,
-            D3D11_USAGE usage
-        );
-        Texture* GetTexture(TextureID texture_id);
+        DXGI_FORMAT ConvertToDXGIFormat(DolasTextureFormat format);
 
-    private:
-        DXGI_FORMAT ConvertToDXGIFormat(TextureFormat format);
+        DolasTextureFormat ConvertToTextureFormat(DXGI_FORMAT dxgi_format);
+
+        Bool D3DCreateTexture2D(
+            TextureID texture_handle,
+            const D3D11_TEXTURE2D_DESC* pDesc);
+        
         Bool IsDepthFormatShaderCompatible(DXGI_FORMAT format);
+
         std::unordered_map<TextureID, Texture*> m_textures;
     }; // class TextureManager
 } // namespace Dolas

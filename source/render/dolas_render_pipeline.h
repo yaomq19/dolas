@@ -1,6 +1,8 @@
 #ifndef DOLAS_RENDER_PIPELINE_H
 #define DOLAS_RENDER_PIPELINE_H
 #include <d3d11.h>
+#include "common/dolas_hash.h"
+
 namespace Dolas
 {
     class DolasRHI;
@@ -22,6 +24,7 @@ namespace Dolas
         void PresentPass(DolasRHI* rhi);
 
 		D3D11_VIEWPORT m_viewport;
+        RenderResourceID m_render_resource_id;
     };
 }
 

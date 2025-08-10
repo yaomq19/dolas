@@ -8,8 +8,8 @@ namespace Dolas
 {
     Texture::Texture()
     {
-        m_texture_type = TextureType::TEXTURE_2D;
-        m_texture_format = TextureFormat::R8G8B8A8_UNORM;
+        m_texture_type = DolasTextureType::TEXTURE_2D;
+        m_texture_format = DolasTextureFormat::R8G8B8A8_UNORM;
     }
 
     Texture::~Texture()

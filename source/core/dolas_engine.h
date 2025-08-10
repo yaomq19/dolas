@@ -23,6 +23,7 @@ namespace Dolas
 		class ShaderManager* m_shader_manager;
 		class AssetManager* m_asset_manager;
 		class TextureManager* m_texture_manager;
+		class RenderResourceManager* m_render_resource_manager;
 		class TestManager* m_test_manager;
 	};
 	extern DolasEngine g_dolas_engine;
