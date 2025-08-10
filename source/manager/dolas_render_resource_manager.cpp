@@ -1,7 +1,7 @@
 #include "manager/dolas_render_resource_manager.h"
 #include "core/dolas_engine.h"
 #include "manager/dolas_texture_manager.h"
-
+#include "core/dolas_rhi.h"
 namespace Dolas
 {
     RenderResourceManager::RenderResourceManager()
@@ -43,8 +43,8 @@ namespace Dolas
 
 		TextureID gbuffer_a_texture_id = STRING_ID(gbuffer_a_map);
         desc.texture_handle = gbuffer_a_texture_id;
-        desc.width = 1024;
-        desc.height = 1024;
+        desc.width = DEFAULT_CLIENT_WIDTH;
+        desc.height = DEFAULT_CLIENT_HEIGHT;
         desc.format = DolasTextureFormat::R8G8B8A8_UNORM;
         desc.usage = DolasTextureUsage::RenderTarget;
         desc.generateMips = false;
@@ -56,8 +56,8 @@ namespace Dolas
 
         TextureID gbuffer_b_texture_id = STRING_ID(gbuffer_b_map);
         desc.texture_handle = gbuffer_b_texture_id;
-        desc.width = 1024;
-        desc.height = 1024;
+        desc.width = DEFAULT_CLIENT_WIDTH;
+        desc.height = DEFAULT_CLIENT_HEIGHT;
         desc.format = DolasTextureFormat::R8G8B8A8_UNORM;
         desc.usage = DolasTextureUsage::RenderTarget;
         desc.generateMips = false;
@@ -69,8 +69,8 @@ namespace Dolas
 
         TextureID gbuffer_c_texture_id = STRING_ID(gbuffer_c_map);
         desc.texture_handle = gbuffer_c_texture_id;
-        desc.width = 1024;
-        desc.height = 1024;
+        desc.width = DEFAULT_CLIENT_WIDTH;
+        desc.height = DEFAULT_CLIENT_HEIGHT;
         desc.format = DolasTextureFormat::R8G8B8A8_UNORM;
         desc.usage = DolasTextureUsage::RenderTarget;
         desc.generateMips = false;
@@ -82,8 +82,8 @@ namespace Dolas
 
         TextureID depth_stencil_texture_id = STRING_ID(depth_stencil_map);
         desc.texture_handle = depth_stencil_texture_id;
-        desc.width = 1024;
-        desc.height = 1024;
+        desc.width = DEFAULT_CLIENT_WIDTH;
+        desc.height = DEFAULT_CLIENT_HEIGHT;
         desc.format = DolasTextureFormat::R24G8_TYPELESS;
         desc.usage = DolasTextureUsage::DepthStencil;
         desc.generateMips = false;
@@ -95,8 +95,8 @@ namespace Dolas
 
         TextureID scene_result_texture_id = STRING_ID(scene_result_map);
         desc.texture_handle = scene_result_texture_id;
-        desc.width = 1024;
-        desc.height = 1024;
+        desc.width = DEFAULT_CLIENT_WIDTH;
+        desc.height = DEFAULT_CLIENT_HEIGHT;
         desc.format = DolasTextureFormat::R8G8B8A8_UNORM;
         desc.usage = DolasTextureUsage::RenderTarget;
         desc.generateMips = false;

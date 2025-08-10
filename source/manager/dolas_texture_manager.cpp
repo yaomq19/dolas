@@ -118,7 +118,7 @@ namespace Dolas
     {
         D3D11_TEXTURE2D_DESC d3d_texture2d_desc = (D3D11_TEXTURE2D_DESC)0;
 		d3d_texture2d_desc.Width = dolas_texture2d_desc.width;
-		d3d_texture2d_desc.Height = dolas_texture2d_desc.width;
+		d3d_texture2d_desc.Height = dolas_texture2d_desc.height;
 		d3d_texture2d_desc.MipLevels = dolas_texture2d_desc.generateMips ? 0 : 1; // 0表示自动生成所有mip级别
 		d3d_texture2d_desc.ArraySize = dolas_texture2d_desc.arraySize;
 		d3d_texture2d_desc.Format = ConvertToDXGIFormat(dolas_texture2d_desc.format);

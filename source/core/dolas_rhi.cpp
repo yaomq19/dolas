@@ -11,6 +11,7 @@
 
 namespace Dolas
 {
+
     LRESULT CALLBACK
     MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
@@ -222,11 +223,9 @@ namespace Dolas
 		, m_d3d_immediate_context(nullptr)
 		, m_swap_chain(nullptr)
 		, m_back_buffer(nullptr)
-		, m_render_target_view(nullptr)
-		, m_depth_stencil_view(nullptr)
-		, m_window_handle(nullptr)
-		, m_client_width(1920)
-		, m_client_height(1080)
+		, m_back_buffer_render_target_view(nullptr)
+		, m_client_width(DEFAULT_CLIENT_WIDTH)
+		, m_client_height(DEFAULT_CLIENT_HEIGHT)
 	{
 		// 初始化D3D设备和上下文
 	}
@@ -238,8 +237,7 @@ namespace Dolas
 		if (m_d3d_immediate_context) m_d3d_immediate_context->Release();
 		if (m_d3d_device) m_d3d_device->Release();
 		if (m_swap_chain) m_swap_chain->Release();
-		if (m_render_target_view) m_render_target_view->Release();
-		if (m_depth_stencil_view) m_depth_stencil_view->Release();
+		if (m_back_buffer_render_target_view) m_back_buffer_render_target_view->Release();
 	}
 
 	bool DolasRHI::Initialize()
@@ -252,8 +250,7 @@ namespace Dolas
 	void DolasRHI::Clear()
 	{
 		if (m_back_buffer) { m_back_buffer->Release(); m_back_buffer = nullptr; }
-		if (m_render_target_view) { m_render_target_view->Release(); m_render_target_view = nullptr; }
-		if (m_depth_stencil_view) { m_depth_stencil_view->Release(); m_depth_stencil_view = nullptr; }
+		if (m_back_buffer_render_target_view) { m_back_buffer_render_target_view->Release(); m_back_buffer_render_target_view = nullptr; }
 		if (m_d3d_immediate_context) { m_d3d_immediate_context->Release(); m_d3d_immediate_context = nullptr; }
 		if (m_d3d_device) { m_d3d_device->Release(); m_d3d_device = nullptr; }
 		if (m_swap_chain) { m_swap_chain->Release(); m_swap_chain = nullptr; }
@@ -305,6 +302,11 @@ namespace Dolas
 	{
 		m_d3d_immediate_context->RSSetViewports(1, &viewport.m_d3d_viewport);
 	}
+
+    void DolasRHI::SetRasterizerState(const RasterizerState& rasterizer_state)
+    {
+        m_d3d_immediate_context->RSSetState(rasterizer_state.m_d3d_rasterizer_state);
+    }
 
 	void DolasRHI::SetVertexShader()
 	{
@@ -431,7 +433,7 @@ namespace Dolas
             return false;
         }
 
-        hr = m_d3d_device->CreateRenderTargetView(m_back_buffer, nullptr, &m_render_target_view);
+        hr = m_d3d_device->CreateRenderTargetView(m_back_buffer, nullptr, &m_back_buffer_render_target_view);
         if (FAILED(hr)) {
             std::cout << "Failed to create render target view! HRESULT: 0x" 
                       << std::hex << hr << std::dec << std::endl;

@@ -13,6 +13,13 @@
 
 namespace Dolas
 {
+#ifndef DEFAULT_CLIENT_WIDTH
+#define DEFAULT_CLIENT_WIDTH 1920
+#endif
+
+#ifndef DEFAULT_CLIENT_HEIGHT
+#define DEFAULT_CLIENT_HEIGHT 1080
+#endif
 	class RenderTargetView
 	{
 	public:
@@ -58,6 +65,10 @@ namespace Dolas
 		D3D11_VIEWPORT m_d3d_viewport;
 	};
 
+	struct RasterizerState
+	{
+		ID3D11RasterizerState* m_d3d_rasterizer_state;
+	};
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{
@@ -75,6 +86,7 @@ namespace Dolas
 		
 		void SetRenderTargetView(UInt num_views, const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
 		void SetViewPort(const ViewPort& viewport);
+		void SetRasterizerState(const RasterizerState& rasterizer_state);
 		void SetVertexShader();
 		void SetPixelShader();
 
@@ -82,8 +94,9 @@ namespace Dolas
 		ID3D11DeviceContext* m_d3d_immediate_context;
 		IDXGISwapChain* m_swap_chain;
 		ID3D11Texture2D* m_back_buffer;
-		ID3D11RenderTargetView* m_render_target_view;
-		ID3D11DepthStencilView* m_depth_stencil_view;
+		ID3D11RenderTargetView* m_back_buffer_render_target_view;
+		// ID3D11DepthStencilView* m_depth_stencil_view;
+		// ID3D11RasterizerState* m_rasterizer_state;
 
 	private:
 		bool InitializeWindow();

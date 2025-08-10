@@ -32,6 +32,33 @@ namespace Dolas
         DOLAS_RETURN_FALSE_IF_NULL(render_resource_manager);
         Bool ret = render_resource_manager->CreateRenderResource(m_render_resource_id);
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
+
+        m_viewport.m_d3d_viewport.TopLeftX = 0.0f;
+        m_viewport.m_d3d_viewport.TopLeftY = 0.0f;
+        m_viewport.m_d3d_viewport.Width = DEFAULT_CLIENT_WIDTH;
+        m_viewport.m_d3d_viewport.Height = DEFAULT_CLIENT_HEIGHT;
+        m_viewport.m_d3d_viewport.MinDepth = 0.0f;
+        m_viewport.m_d3d_viewport.MaxDepth = 1.0f;
+
+        D3D11_RASTERIZER_DESC rasterizer_desc;
+        rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+        rasterizer_desc.CullMode = D3D11_CULL_BACK;
+        rasterizer_desc.FrontCounterClockwise = FALSE;
+        rasterizer_desc.DepthBias = 0;
+        rasterizer_desc.DepthBiasClamp = 0.0f;
+        rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+        rasterizer_desc.DepthClipEnable = FALSE;
+        rasterizer_desc.ScissorEnable = FALSE;
+        rasterizer_desc.MultisampleEnable = FALSE;
+        rasterizer_desc.AntialiasedLineEnable = FALSE;
+        
+        HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateRasterizerState(&rasterizer_desc, &m_rasterizer_state.m_d3d_rasterizer_state);
+        if (FAILED(hr))
+        {
+            std::cout << "Failed to create rasterizer state!" << std::endl;
+            return false;
+        }
+
         return true;
     }
 
@@ -53,7 +80,7 @@ namespace Dolas
     void RenderPipeline::ClearPass(DolasRHI* rhi)
     {
         const FLOAT clear_color[4] = {0.4f, 0.6f, 0.8f, 1.0f};
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(rhi->m_render_target_view, clear_color);
+        rhi->m_d3d_immediate_context->ClearRenderTargetView(rhi->m_back_buffer_render_target_view, clear_color);
     }
 
     void RenderPipeline::GBufferPass(DolasRHI* rhi)
@@ -78,13 +105,11 @@ namespace Dolas
         rtvs[1] = RenderTargetView(render_resource->m_gbuffer_b_id);
         rtvs[2] = RenderTargetView(render_resource->m_gbuffer_c_id);
         DepthStencilView dsv(render_resource->m_depth_stencil_id);
+        rhi->m_d3d_immediate_context->ClearDepthStencilView(dsv.GetD3DDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-        ViewPort vp;
-		vp.m_d3d_viewport.TopLeftX = 0.0f;
         rhi->SetRenderTargetView(3, rtvs, dsv);
-        rhi->SetViewPort(vp);
-        /*rhi->m_d3d_immediate_context->OMSetRenderTargets(1, &rhi->m_render_target_view, rhi->m_depth_stencil_view);
-        rhi->m_d3d_immediate_context->RSSetViewports(1, &rhi->m_viewport);*/
+        rhi->SetViewPort(m_viewport);
+        rhi->SetRasterizerState(m_rasterizer_state);
         render_entity->Draw(rhi);
     }
 

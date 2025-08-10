@@ -2,7 +2,7 @@
 #define DOLAS_RENDER_PIPELINE_H
 #include <d3d11.h>
 #include "common/dolas_hash.h"
-
+#include "core/dolas_rhi.h"
 namespace Dolas
 {
     class DolasRHI;
@@ -23,7 +23,8 @@ namespace Dolas
         void PostProcessPass(DolasRHI* rhi);
         void PresentPass(DolasRHI* rhi);
 
-		D3D11_VIEWPORT m_viewport;
+        ViewPort m_viewport;
+        RasterizerState m_rasterizer_state;
         RenderResourceID m_render_resource_id;
     };
 }
