@@ -69,6 +69,17 @@ namespace Dolas
 	{
 		ID3D11RasterizerState* m_d3d_rasterizer_state;
 	};
+
+	struct DepthStencilState
+	{
+		ID3D11DepthStencilState* m_d3d_depth_stencil_state;
+	};
+
+	struct BlendState
+	{
+		ID3D11BlendState* m_d3d_blend_state;
+	};
+
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{
@@ -87,6 +98,8 @@ namespace Dolas
 		void SetRenderTargetView(UInt num_views, const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
 		void SetViewPort(const ViewPort& viewport);
 		void SetRasterizerState(const RasterizerState& rasterizer_state);
+		void SetDepthStencilState(const DepthStencilState& depth_stencil_state);
+		void SetBlendState(const BlendState& blend_state);
 		void SetVertexShader();
 		void SetPixelShader();
 
@@ -95,8 +108,6 @@ namespace Dolas
 		IDXGISwapChain* m_swap_chain;
 		ID3D11Texture2D* m_back_buffer;
 		ID3D11RenderTargetView* m_back_buffer_render_target_view;
-		// ID3D11DepthStencilView* m_depth_stencil_view;
-		// ID3D11RasterizerState* m_rasterizer_state;
 
 	private:
 		bool InitializeWindow();

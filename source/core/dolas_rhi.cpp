@@ -308,6 +308,16 @@ namespace Dolas
         m_d3d_immediate_context->RSSetState(rasterizer_state.m_d3d_rasterizer_state);
     }
 
+    void DolasRHI::SetDepthStencilState(const DepthStencilState& depth_stencil_state)
+    {
+        m_d3d_immediate_context->OMSetDepthStencilState(depth_stencil_state.m_d3d_depth_stencil_state, 0);
+    }
+
+    void DolasRHI::SetBlendState(const BlendState& blend_state)
+    {
+        m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
+    }
+
 	void DolasRHI::SetVertexShader()
 	{
 

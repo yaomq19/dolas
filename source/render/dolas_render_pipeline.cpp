@@ -47,7 +47,7 @@ namespace Dolas
         rasterizer_desc.DepthBias = 0;
         rasterizer_desc.DepthBiasClamp = 0.0f;
         rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-        rasterizer_desc.DepthClipEnable = FALSE;
+        rasterizer_desc.DepthClipEnable = TRUE;
         rasterizer_desc.ScissorEnable = FALSE;
         rasterizer_desc.MultisampleEnable = FALSE;
         rasterizer_desc.AntialiasedLineEnable = FALSE;
@@ -59,6 +59,40 @@ namespace Dolas
             return false;
         }
 
+        D3D11_DEPTH_STENCIL_DESC depth_stencil_desc;
+
+        depth_stencil_desc.DepthEnable = TRUE;
+        depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS;
+        depth_stencil_desc.StencilEnable = FALSE;
+        depth_stencil_desc.StencilReadMask = 0xFF;
+        depth_stencil_desc.StencilWriteMask = 0xFF;
+
+        hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilState(&depth_stencil_desc, &m_depth_stencil_state.m_d3d_depth_stencil_state);
+        if (FAILED(hr))
+        {
+            std::cout << "Failed to create depth stencil state!" << std::endl;
+            return false;
+        }
+
+        D3D11_BLEND_DESC blend_desc;
+        blend_desc.AlphaToCoverageEnable = FALSE;
+        blend_desc.IndependentBlendEnable = FALSE;
+        blend_desc.RenderTarget[0].BlendEnable = FALSE;
+        blend_desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        blend_desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+        blend_desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+        blend_desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+        blend_desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+        hr = g_dolas_engine.m_rhi->m_d3d_device->CreateBlendState(&blend_desc, &m_blend_state.m_d3d_blend_state);
+        if (FAILED(hr))
+        {
+            std::cout << "Failed to create blend state!" << std::endl;
+            return false;
+        }
         return true;
     }
 
@@ -110,6 +144,8 @@ namespace Dolas
         rhi->SetRenderTargetView(3, rtvs, dsv);
         rhi->SetViewPort(m_viewport);
         rhi->SetRasterizerState(m_rasterizer_state);
+        rhi->SetDepthStencilState(m_depth_stencil_state);
+        rhi->SetBlendState(m_blend_state);
         render_entity->Draw(rhi);
     }
 

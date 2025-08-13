@@ -25,6 +25,8 @@ namespace Dolas
 
         ViewPort m_viewport;
         RasterizerState m_rasterizer_state;
+        DepthStencilState m_depth_stencil_state;
+        BlendState m_blend_state;
         RenderResourceID m_render_resource_id;
     };
 }
