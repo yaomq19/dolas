@@ -10,8 +10,13 @@
 #include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
 #include "render/dolas_render_entity.h"
-
+#include "render/dolas_render_primitive.h"
+#include "manager/dolas_render_primitive_manager.h"
+#include "manager/dolas_texture_manager.h"
 #include "DirectXTex/DDSTextureLoader11.h"
+#include "manager/dolas_material_manager.h"
+#include "render/dolas_material.h"
+#include "manager/dolas_mesh_manager.h"
 
 namespace Dolas
 {
@@ -103,6 +108,7 @@ namespace Dolas
 
     void RenderPipeline::Render(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"RenderPipeline");
         ClearPass(rhi);
         GBufferPass(rhi);
         DeferredShadingPass(rhi);
@@ -113,12 +119,35 @@ namespace Dolas
 
     void RenderPipeline::ClearPass(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"ClearPass");
+        rhi->BeginEvent(L"ClearBackRenderTarget");
         const FLOAT clear_color[4] = {0.4f, 0.6f, 0.8f, 1.0f};
         rhi->m_d3d_immediate_context->ClearRenderTargetView(rhi->m_back_buffer_render_target_view, clear_color);
+        rhi->EndEvent();
+
+        RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        DOLAS_RETURN_IF_NULL(render_resource);
+
+        rhi->BeginEvent(L"ClearGBufferTextures");
+        const FLOAT black_clear_color[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_a_id).GetD3DRenderTargetView(), black_clear_color);
+        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_b_id).GetD3DRenderTargetView(), black_clear_color);
+        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_c_id).GetD3DRenderTargetView(), black_clear_color);
+        rhi->EndEvent();
+        
+        rhi->BeginEvent(L"ClearSceneDepthTexture");
+        rhi->m_d3d_immediate_context->ClearDepthStencilView(DepthStencilView(render_resource->m_depth_stencil_id).GetD3DDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+        rhi->EndEvent();
+
+        rhi->BeginEvent(L"ClearSceneResultTexture");
+        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_scene_result_id).GetD3DRenderTargetView(), black_clear_color);
+        rhi->EndEvent();
     }
 
     void RenderPipeline::GBufferPass(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"GBufferPass");
+        
         RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
         DOLAS_RETURN_IF_NULL(render_entity_manager);
 
@@ -127,21 +156,22 @@ namespace Dolas
         RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
         if (render_entity == nullptr)
         {
-            RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntity(render_entity_name);
-            render_entity = render_entity_manager->GetRenderEntity(render_entity_id);
+            RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntityFromFile(render_entity_name);
+            render_entity = render_entity_manager->GetRenderEntityByID(render_entity_id);
         }
         DOLAS_RETURN_IF_NULL(render_entity);
 
         // 设置 RT 和 视口
 		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
-        std::vector<RenderTargetView> rtvs(3);
-        rtvs[0] = RenderTargetView(render_resource->m_gbuffer_a_id);
-        rtvs[1] = RenderTargetView(render_resource->m_gbuffer_b_id);
-        rtvs[2] = RenderTargetView(render_resource->m_gbuffer_c_id);
-        DepthStencilView dsv(render_resource->m_depth_stencil_id);
-        rhi->m_d3d_immediate_context->ClearDepthStencilView(dsv.GetD3DDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+        DOLAS_RETURN_IF_NULL(render_resource);
 
-        rhi->SetRenderTargetView(3, rtvs, dsv);
+        std::vector<RenderTargetView> rtvs;
+        rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_a_id));
+        rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_b_id));
+		rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_c_id));
+		DepthStencilView dsv(render_resource->m_depth_stencil_id);
+
+        rhi->SetRenderTargetView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
         rhi->SetRasterizerState(m_rasterizer_state);
         rhi->SetDepthStencilState(m_depth_stencil_state);
@@ -151,21 +181,74 @@ namespace Dolas
 
     void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"DeferredShadingPass");
+        // RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
+        // DOLAS_RETURN_IF_NULL(render_entity_manager);
 
+		// const std::string render_entity_name = "quad.entity";
+
+        // RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
+        // if (render_entity == nullptr)
+        // {
+        //     RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntityFromFile(render_entity_name);
+        //     render_entity = render_entity_manager->GetRenderEntity(render_entity_id);
+        // }
+        // DOLAS_RETURN_IF_NULL(render_entity);
+
+        // // 设置 RT 和 视口
+		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        DOLAS_RETURN_IF_NULL(render_resource);
+
+        std::vector<RenderTargetView> rtvs;
+		rtvs.push_back(RenderTargetView(render_resource->m_scene_result_id));
+        // DepthStencilView dsv(render_resource->m_depth_stencil_id);
+
+        rhi->SetRenderTargetView(rtvs);
+        rhi->SetViewPort(m_viewport);
+        rhi->SetRasterizerState(m_rasterizer_state);
+        rhi->SetDepthStencilState(m_depth_stencil_state);
+        rhi->SetBlendState(m_blend_state);
+
+		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
+        RenderEntityID render_entity_id = entity_manager->CreateRenderEntity(STRING_ID(Quad));
+		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(render_entity_id);
+        
+
+        MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
+        render_entity->SetMeshID(quad_mesh_id);
+
+        MaterialID material_id = g_dolas_engine.m_material_manager->GetDeferredShadingMaterialID();
+        render_entity->SetMaterialID(material_id);
+
+        render_entity->Draw(rhi);
     }
 
 	void RenderPipeline::ForwardShadingPass(DolasRHI* rhi)
 	{
+        UserAnnotationScope scope(rhi, L"ForwardShadingPass");
         
 	}
     
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"PostProcessPass");
 
     }
 
     void RenderPipeline::PresentPass(DolasRHI* rhi)
     {
+        UserAnnotationScope scope(rhi, L"PresentPass");
+		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        if (render_resource)
+        {
+            Texture* scene_result_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_scene_result_id);
+			DOLAS_RETURN_IF_NULL(scene_result_texture);
+			rhi->m_d3d_immediate_context->CopyResource(rhi->m_swap_chain_back_texture, scene_result_texture->GetD3DTexture2D());
+		}
+		else
+		{
+			std::cout << "Render resource not found!" << std::endl;
+        }
         rhi->m_swap_chain->Present(0, 0);
     }
 } // namespace Dolas

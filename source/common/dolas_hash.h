@@ -15,18 +15,22 @@ typedef UInt FileID;
 typedef UInt MaterialID;
 typedef UInt MeshID;
 typedef UInt TextureID;
+typedef UInt BufferID;
 typedef UInt ShaderID;
 typedef UInt RenderEntityID;
 typedef UInt RenderResourceID;
+typedef UInt RenderPrimitiveID;
 
 #define STRING_ID_EMPTY 0
 #define FILE_ID_EMPTY 0
 #define MATERIAL_ID_EMPTY 0
 #define MESH_ID_EMPTY 0
 #define TEXTURE_ID_EMPTY 0
+#define BUFFER_ID_EMPTY 0
 #define SHADER_ID_EMPTY 0
 #define RENDER_ENTITY_ID_EMPTY 0
 #define RENDER_RESOURCE_ID_EMPTY 0
+#define RENDER_PRIMITIVE_ID_EMPTY 0
 
 namespace Dolas
 {

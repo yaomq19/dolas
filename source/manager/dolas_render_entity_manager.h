@@ -16,8 +16,9 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        RenderEntityID CreateRenderEntity(const std::string& render_entity_file_name);
-        RenderEntity* GetRenderEntity(RenderEntityID render_entity_id);
+        RenderEntityID CreateRenderEntity(RenderEntityID id);
+        RenderEntityID CreateRenderEntityFromFile(const std::string& render_entity_file_name);
+        RenderEntity* GetRenderEntityByID(RenderEntityID render_entity_id);
         RenderEntity* GetRenderEntityByFileName(const std::string& render_entity_file_name);
     protected:
         std::unordered_map<RenderEntityID, RenderEntity*> m_render_entities;

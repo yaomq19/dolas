@@ -8,6 +8,17 @@
 
 namespace Dolas
 {
+    enum class DolasRenderPrimitiveType: UInt
+    {
+        _TRIANGLE_LIST
+    };
+
+	enum class DolasInputLayoutType : UInt
+	{
+		POS_3_UV_2,
+        POS_3_UV_2_NORM_3
+	};
+
     class Mesh
     {
         friend class MeshManager;
@@ -16,14 +27,23 @@ namespace Dolas
         ~Mesh();
 
         MeshID m_file_id;
-        std::vector<DirectX::XMFLOAT3> m_vertices;
-        std::vector<DirectX::XMFLOAT2> m_uvs;
-        std::vector<DirectX::XMFLOAT3> m_normals;
-        std::vector<DirectX::XMFLOAT3> m_tangents;
-        std::vector<DirectX::XMFLOAT3> m_bitangents;
+        
+        // RenderPrimitive needs these
+        DolasRenderPrimitiveType m_render_primitive_type;
+        DolasInputLayoutType m_input_layout_type;
         std::vector<unsigned int> m_indices;
-            
-        std::vector<float> m_final_vertices;
+		std::vector<float> m_final_vertices;
+
+        // temp data
+		std::vector<DirectX::XMFLOAT3> m_vertices;
+		std::vector<DirectX::XMFLOAT2> m_uvs;
+		std::vector<DirectX::XMFLOAT3> m_normals;
+		std::vector<DirectX::XMFLOAT3> m_tangents;
+		std::vector<DirectX::XMFLOAT3> m_bitangents;
+
+        RenderPrimitiveID GetRenderPrimitiveID() const { return m_render_primitive_id; }
+    protected:
+        RenderPrimitiveID m_render_primitive_id;
     }; // class Mesh
 } // namespace Dolas
 

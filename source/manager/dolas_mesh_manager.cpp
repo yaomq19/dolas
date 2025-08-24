@@ -8,6 +8,7 @@
 #include "base/dolas_paths.h"
 #include "nlohmann/json.hpp"
 #include "manager/dolas_asset_manager.h"
+#include "manager/dolas_render_primitive_manager.h"
 using json = nlohmann::json;
 
 namespace Dolas
@@ -24,6 +25,7 @@ namespace Dolas
     
     bool MeshManager::Initialize()
     {
+        m_quad_mesh_id = CreateMesh("quad.mesh");
         return true;
     }
 
@@ -57,7 +59,7 @@ namespace Dolas
 
         // 创建网格对象
         Mesh* mesh = DOLAS_NEW(Mesh);
-        mesh->m_file_id = STRING_ID(mesh_file_path);
+        mesh->m_file_id = HashConverter::StringHash(mesh_file_path);
 
         // 验证顶点数量
         if (!json_data.contains("vertex_count") || !json_data.contains("vertex_list"))
@@ -84,26 +86,19 @@ namespace Dolas
             if (vertex.contains("position"))
             {
                 const auto& pos = vertex["position"];
-                if (pos.size() >= 3)
+                if (pos.size() == 3)
                 {
                     mesh->m_vertices.emplace_back(pos[0], pos[1], pos[2]);
                 }
                 else
                 {
                     std::cerr << "MeshManager::CreateMesh: invalid position data in " << mesh_file_path << std::endl;
-                    return MESH_ID_EMPTY;
                 }
             }
-            else
-            {
-                std::cerr << "MeshManager::CreateMesh: position not found for vertex in " << mesh_file_path << std::endl;
-                return MESH_ID_EMPTY;
-            }
-
             if (vertex.contains("uv"))
             {
                 const auto& uv = vertex["uv"];
-                if (uv.size() >= 2)
+                if (uv.size() == 2)
                 {
                     mesh->m_uvs.emplace_back(uv[0], uv[1]);
                 }
@@ -113,16 +108,10 @@ namespace Dolas
                     return MESH_ID_EMPTY;
                 }
             }
-            else
-            {
-                // UV坐标是可选的，如果没有就设置为默认值
-                mesh->m_uvs.emplace_back(0.0f, 0.0f);
-            }
-
 			if (vertex.contains("normal"))
 			{
 				const auto& normal = vertex["normal"];
-				if (normal.size() >= 3)
+				if (normal.size() == 3)
 				{
 					mesh->m_normals.emplace_back(normal[0], normal[1], normal[2]);
 				}
@@ -132,13 +121,8 @@ namespace Dolas
 					return MESH_ID_EMPTY;
 				}
 			}
-			else
-			{
-				std::cerr << "MeshManager::CreateMesh: normal not found for vertex in " << mesh_file_path << std::endl;
-				return MESH_ID_EMPTY;
-			}
+			
         }
-
         // 解析索引数据
         if (json_data.contains("index_count") && json_data.contains("index_list"))
         {
@@ -158,18 +142,111 @@ namespace Dolas
             }
         }
 
-        // 合并到最终的大缓冲区
-        for (int i = 0; i < mesh->m_vertices.size(); i++)
-        {
-            mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
-            mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
-            mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
-            mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
-            mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
-			mesh->m_final_vertices.push_back(mesh->m_normals[i].x);
-			mesh->m_final_vertices.push_back(mesh->m_normals[i].y);
-			mesh->m_final_vertices.push_back(mesh->m_normals[i].z);
-        }
+		// 解析 IA
+		if (!json_data.contains("input_layout"))
+		{
+			std::cerr << "MeshManager::CreateMesh: input_layout is Empty" << mesh_file_path << std::endl;
+			return MESH_ID_EMPTY;
+		}
+		const auto& input_layout = json_data["input_layout"];
+		Bool has_position = false;
+		Bool has_uv = false;
+		Bool has_normal = false;
+		int pos_element_count = 0;
+		int uv_element_count = 0;
+		int normal_element_count = 0;
+
+		if (input_layout.contains("position"))
+		{
+			has_position = true;
+			pos_element_count = input_layout["position"];
+		}
+
+		if (input_layout.contains("uv"))
+		{
+			has_uv = true;
+			uv_element_count = input_layout["uv"];
+		}
+
+		if (input_layout.contains("normal"))
+		{
+			has_normal = true;
+			normal_element_count = input_layout["normal"];
+		}
+
+		mesh->m_final_vertices.clear();
+		if (has_position && has_uv && has_normal)
+		{
+			if (pos_element_count == 3 && uv_element_count == 2 && normal_element_count == 3)
+			{
+				mesh->m_input_layout_type = DolasInputLayoutType::POS_3_UV_2_NORM_3;
+                for (int i = 0; i < mesh->m_vertices.size(); i++)
+                {
+                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
+                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
+                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
+
+                    mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
+                    mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
+                    
+                    mesh->m_final_vertices.push_back(mesh->m_normals[i].x);
+                    mesh->m_final_vertices.push_back(mesh->m_normals[i].y);
+                    mesh->m_final_vertices.push_back(mesh->m_normals[i].z);
+                }
+			}
+			else
+			{
+				return MESH_ID_EMPTY;
+			}
+		}
+		else if (has_position && has_uv)
+		{
+			if (pos_element_count == 3 && uv_element_count == 2)
+			{
+				mesh->m_input_layout_type = DolasInputLayoutType::POS_3_UV_2;
+				for (int i = 0; i < mesh->m_vertices.size(); i++)
+				{
+					mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
+					mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
+					mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
+
+					mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
+					mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
+				}
+			}
+			else
+			{
+				return MESH_ID_EMPTY;
+			}
+		}
+		else
+		{
+			return MESH_ID_EMPTY;
+		}
+
+		// 解析 Primitive
+		if (!json_data.contains("primitive"))
+		{
+			std::cerr << "MeshManager::CreateMesh: primitive is Empty" << mesh_file_path << std::endl;
+			return MESH_ID_EMPTY;
+		}
+		const std::string& primitive_str = json_data["primitive"];
+		if (primitive_str == "TriangleList")
+		{
+			mesh->m_render_primitive_type = DolasRenderPrimitiveType::_TRIANGLE_LIST;
+		}
+		else
+		{
+			return MESH_ID_EMPTY;
+		}
+
+        mesh->m_render_primitive_id = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
+            mesh->m_file_id,
+            mesh->m_render_primitive_type,
+            mesh->m_input_layout_type,
+            mesh->m_final_vertices,
+            mesh->m_indices
+        );
 
         m_meshes[mesh->m_file_id] = mesh;
         return mesh->m_file_id;

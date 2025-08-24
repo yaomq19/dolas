@@ -19,8 +19,12 @@ namespace Dolas
 
         MeshID CreateMesh(const std::string& mesh_file_name);
         Mesh* GetMesh(MeshID mesh_id);
+
+        MeshID GetQuadMeshID() const { return m_quad_mesh_id; }
     private:
         std::unordered_map<MeshID, Mesh*> m_meshes;
+
+        MeshID m_quad_mesh_id = MESH_ID_EMPTY;
     };// class MeshManager
 }// namespace Dolas
 #endif // DOLAS_MESH_MANAGER_H

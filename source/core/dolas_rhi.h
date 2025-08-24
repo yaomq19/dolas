@@ -2,6 +2,7 @@
 #define DOLAS_RHI_H
 
 #include <d3d11.h>
+#include <d3d11_1.h>
 #include <Windows.h>
 #include <vector>
 
@@ -95,7 +96,8 @@ namespace Dolas
 		int m_client_width;
 		int m_client_height;
 		
-		void SetRenderTargetView(UInt num_views, const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
+		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
+		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view);
 		void SetViewPort(const ViewPort& viewport);
 		void SetRasterizerState(const RasterizerState& rasterizer_state);
 		void SetDepthStencilState(const DepthStencilState& depth_stencil_state);
@@ -103,15 +105,40 @@ namespace Dolas
 		void SetVertexShader();
 		void SetPixelShader();
 
+		// User annotation helpers (RenderDoc / PIX markers)
+		void BeginEvent(const wchar_t* name);
+		void EndEvent();
+		void SetMarker(const wchar_t* name);
+
 		ID3D11Device* m_d3d_device;
 		ID3D11DeviceContext* m_d3d_immediate_context;
+		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
 		IDXGISwapChain* m_swap_chain;
-		ID3D11Texture2D* m_back_buffer;
+		ID3D11Texture2D* m_swap_chain_back_texture;
 		ID3D11RenderTargetView* m_back_buffer_render_target_view;
 
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
+	};
+
+	// RAII scope for GPU events
+	class UserAnnotationScope
+	{
+	public:
+		UserAnnotationScope(DolasRHI* rhi, const wchar_t* name)
+			: m_rhi(rhi)
+		{
+			if (m_rhi) m_rhi->BeginEvent(name);
+		}
+
+		~UserAnnotationScope()
+		{
+			if (m_rhi) m_rhi->EndEvent();
+		}
+
+	private:
+		DolasRHI* m_rhi;
 	};
 }
 

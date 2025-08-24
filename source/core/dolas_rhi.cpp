@@ -222,10 +222,11 @@ namespace Dolas
 		: m_d3d_device(nullptr)
 		, m_d3d_immediate_context(nullptr)
 		, m_swap_chain(nullptr)
-		, m_back_buffer(nullptr)
+		, m_swap_chain_back_texture(nullptr)
 		, m_back_buffer_render_target_view(nullptr)
 		, m_client_width(DEFAULT_CLIENT_WIDTH)
 		, m_client_height(DEFAULT_CLIENT_HEIGHT)
+		, m_d3d_user_annotation(nullptr)
 	{
 		// 初始化D3D设备和上下文
 	}
@@ -233,7 +234,8 @@ namespace Dolas
 	DolasRHI::~DolasRHI()
 	{
 		// 释放D3D设备和上下文
-		if (m_back_buffer) m_back_buffer->Release();
+		if (m_swap_chain_back_texture) m_swap_chain_back_texture->Release();
+		if (m_d3d_user_annotation) m_d3d_user_annotation->Release();
 		if (m_d3d_immediate_context) m_d3d_immediate_context->Release();
 		if (m_d3d_device) m_d3d_device->Release();
 		if (m_swap_chain) m_swap_chain->Release();
@@ -249,8 +251,9 @@ namespace Dolas
 
 	void DolasRHI::Clear()
 	{
-		if (m_back_buffer) { m_back_buffer->Release(); m_back_buffer = nullptr; }
+		if (m_swap_chain_back_texture) { m_swap_chain_back_texture->Release(); m_swap_chain_back_texture = nullptr; }
 		if (m_back_buffer_render_target_view) { m_back_buffer_render_target_view->Release(); m_back_buffer_render_target_view = nullptr; }
+		if (m_d3d_user_annotation) { m_d3d_user_annotation->Release(); m_d3d_user_annotation = nullptr; }
 		if (m_d3d_immediate_context) { m_d3d_immediate_context->Release(); m_d3d_immediate_context = nullptr; }
 		if (m_d3d_device) { m_d3d_device->Release(); m_d3d_device = nullptr; }
 		if (m_swap_chain) { m_swap_chain->Release(); m_swap_chain = nullptr; }
@@ -278,25 +281,36 @@ namespace Dolas
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     
-	void DolasRHI::SetRenderTargetView(UInt num_views, const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view)
+	void DolasRHI::SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view)
 	{
-        // 健壮性检查：当 num_views 为 0 时，RTV 数组指针必须为 nullptr
-        if (num_views == 0) {
+		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
+        if (d3d11_render_target_view.size() == 0) {
             m_d3d_immediate_context->OMSetRenderTargets(0, nullptr, d3d11_depth_stencil_view.GetD3DDepthStencilView());
             return;
         }
 
-		ID3D11RenderTargetView* d3d11_render_target_view_array[10];
-		for (int i = 0; i < 10; i++)
+        ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
+		for (UInt i = 0; i < k_max_render_targets; i++)
 		{
-			d3d11_render_target_view_array[i] = nullptr;
+            d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i].GetD3DRenderTargetView() : nullptr;
 		}
-		for (UInt i = 0; i < num_views; i++)
-		{
-			d3d11_render_target_view_array[i] = d3d11_render_target_view[i].GetD3DRenderTargetView();
-		}
-        m_d3d_immediate_context->OMSetRenderTargets(num_views, d3d11_render_target_view_array, d3d11_depth_stencil_view.GetD3DDepthStencilView());
+        m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, d3d11_depth_stencil_view.GetD3DDepthStencilView());
 	}
+
+    void DolasRHI::SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view)
+    {
+		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
+		if (d3d11_render_target_view.size() == 0) {
+			return;
+		}
+
+		ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
+		for (UInt i = 0; i < k_max_render_targets; i++)
+		{
+			d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i].GetD3DRenderTargetView() : nullptr;
+		}
+		m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, nullptr);
+    }
 
     void DolasRHI::SetViewPort(const ViewPort& viewport)
 	{
@@ -436,14 +450,25 @@ namespace Dolas
 			return false;
 		}
 
-        hr = m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_back_buffer));
+		// 查询 GPU 事件注解接口（RenderDoc/PIX 标记）
+		hr = m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation));
+		if (SUCCEEDED(hr) && m_d3d_user_annotation)
+		{
+			std::cout << "ID3DUserDefinedAnnotation acquired." << std::endl;
+		}
+		else
+		{
+			m_d3d_user_annotation = nullptr;
+		}
+
+        hr = m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_swap_chain_back_texture));
         if (FAILED(hr)) {
             std::cout << "Failed to get back buffer! HRESULT: 0x" 
                       << std::hex << hr << std::dec << std::endl;
             return false;
         }
 
-        hr = m_d3d_device->CreateRenderTargetView(m_back_buffer, nullptr, &m_back_buffer_render_target_view);
+        hr = m_d3d_device->CreateRenderTargetView(m_swap_chain_back_texture, nullptr, &m_back_buffer_render_target_view);
         if (FAILED(hr)) {
             std::cout << "Failed to create render target view! HRESULT: 0x" 
                       << std::hex << hr << std::dec << std::endl;
@@ -474,5 +499,29 @@ namespace Dolas
 		std::cout << "Successfully created D3D11 device and swap chain!" << std::endl;
 		std::cout << "Feature Level: " << std::hex << feature_level << std::dec << std::endl;
 		return true;
+	}
+
+	void DolasRHI::BeginEvent(const wchar_t* name)
+	{
+		if (m_d3d_user_annotation)
+		{
+			m_d3d_user_annotation->BeginEvent(name);
+		}
+	}
+
+	void DolasRHI::EndEvent()
+	{
+		if (m_d3d_user_annotation)
+		{
+			m_d3d_user_annotation->EndEvent();
+		}
+	}
+
+	void DolasRHI::SetMarker(const wchar_t* name)
+	{
+		if (m_d3d_user_annotation)
+		{
+			m_d3d_user_annotation->SetMarker(name);
+		}
 	}
 } // namespace Dolas

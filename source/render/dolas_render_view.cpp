@@ -157,6 +157,11 @@ namespace Dolas
             return;
         }
 
+        // RenderDoc/PIX Event: View scope
+        std::wstring view_event_name = L"RenderView: ";
+        view_event_name += std::wstring(m_name.begin(), m_name.end());
+        UserAnnotationScope view_scope(rhi, view_event_name.c_str());
+
         auto start_time = std::chrono::high_resolution_clock::now();
 
         std::cout << "RenderView::Render: Starting render for view: " << m_name << std::endl;

@@ -73,7 +73,7 @@ namespace Dolas
             p_init_data = &init_data;
         }
 
-        HRESULT hr = device->CreateBuffer(&desc, p_init_data, &m_buffer);
+        HRESULT hr = device->CreateBuffer(&desc, p_init_data, &m_d3d_buffer);
         if (FAILED(hr))
         {
             std::cerr << "Buffer::CreateBuffer: Failed to create buffer" << std::endl;
@@ -89,7 +89,7 @@ namespace Dolas
             srv_desc.Buffer.FirstElement = 0;
             srv_desc.Buffer.NumElements = m_element_count;
 
-            hr = device->CreateShaderResourceView(m_buffer, &srv_desc, &m_shader_resource_view);
+            hr = device->CreateShaderResourceView(m_d3d_buffer, &srv_desc, &m_shader_resource_view);
             if (FAILED(hr))
             {
                 std::cerr << "Buffer::CreateBuffer: Failed to create shader resource view" << std::endl;
@@ -111,7 +111,7 @@ namespace Dolas
                 uav_desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
             }
 
-            hr = device->CreateUnorderedAccessView(m_buffer, &uav_desc, &m_unordered_access_view);
+            hr = device->CreateUnorderedAccessView(m_d3d_buffer, &uav_desc, &m_unordered_access_view);
             if (FAILED(hr))
             {
                 std::cerr << "Buffer::CreateBuffer: Failed to create unordered access view" << std::endl;
@@ -147,7 +147,7 @@ namespace Dolas
 
     bool Buffer::UpdateData(const void* data, uint32_t size, uint32_t offset)
     {
-        if (!m_buffer || !data)
+        if (!m_d3d_buffer || !data)
         {
             std::cerr << "Buffer::UpdateData: Invalid buffer or data" << std::endl;
             return false;
@@ -170,7 +170,7 @@ namespace Dolas
         {
             // 对于动态缓冲区，使用Map/Unmap
             D3D11_MAPPED_SUBRESOURCE mapped_resource;
-            HRESULT hr = context->Map(m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource);
+            HRESULT hr = context->Map(m_d3d_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource);
             if (FAILED(hr))
             {
                 std::cerr << "Buffer::UpdateData: Failed to map buffer" << std::endl;
@@ -178,7 +178,7 @@ namespace Dolas
             }
 
             memcpy(static_cast<char*>(mapped_resource.pData) + offset, data, size);
-            context->Unmap(m_buffer, 0);
+            context->Unmap(m_d3d_buffer, 0);
         }
         else if (m_buffer_usage == BufferUsage::DEFAULT)
         {
@@ -191,7 +191,7 @@ namespace Dolas
             dest_box.front = 0;
             dest_box.back = 1;
 
-            context->UpdateSubresource(m_buffer, 0, &dest_box, data, 0, 0);
+            context->UpdateSubresource(m_d3d_buffer, 0, &dest_box, data, 0, 0);
         }
         else
         {
@@ -204,7 +204,7 @@ namespace Dolas
 
     bool Buffer::Map(void** mapped_data, BufferAccess access)
     {
-        if (!m_buffer || m_is_mapped)
+        if (!m_d3d_buffer || m_is_mapped)
         {
             std::cerr << "Buffer::Map: Invalid buffer or buffer already mapped" << std::endl;
             return false;
@@ -226,7 +226,7 @@ namespace Dolas
         D3D11_MAPPED_SUBRESOURCE mapped_resource;
         D3D11_MAP map_type = ConvertToD3DMapType(access);
 
-        HRESULT hr = context->Map(m_buffer, 0, map_type, 0, &mapped_resource);
+        HRESULT hr = context->Map(m_d3d_buffer, 0, map_type, 0, &mapped_resource);
         if (FAILED(hr))
         {
             std::cerr << "Buffer::Map: Failed to map buffer" << std::endl;
@@ -240,7 +240,7 @@ namespace Dolas
 
     void Buffer::Unmap()
     {
-        if (!m_buffer || !m_is_mapped)
+        if (!m_d3d_buffer || !m_is_mapped)
         {
             return;
         }
@@ -248,7 +248,7 @@ namespace Dolas
         ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
         if (context)
         {
-            context->Unmap(m_buffer, 0);
+            context->Unmap(m_d3d_buffer, 0);
         }
 
         m_is_mapped = false;
@@ -256,7 +256,7 @@ namespace Dolas
 
     bool Buffer::ReadData(void* output_data, uint32_t size, uint32_t offset)
     {
-        if (!m_buffer || !output_data)
+        if (!m_d3d_buffer || !output_data)
         {
             std::cerr << "Buffer::ReadData: Invalid buffer or output data" << std::endl;
             return false;
@@ -370,7 +370,7 @@ namespace Dolas
 
         if (m_shader_resource_view)  { m_shader_resource_view->Release();  m_shader_resource_view = nullptr; }
         if (m_unordered_access_view) { m_unordered_access_view->Release(); m_unordered_access_view = nullptr; }
-        if (m_buffer)                { m_buffer->Release();                m_buffer = nullptr; }
+        if (m_d3d_buffer)                { m_d3d_buffer->Release();                m_d3d_buffer = nullptr; }
 
         m_size = 0;
         m_stride = 0;

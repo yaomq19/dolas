@@ -56,7 +56,7 @@ namespace Dolas
         void Release();
 
         // Getters
-        ID3D11Buffer* GetBuffer() const { return m_buffer; }
+        ID3D11Buffer* GetBuffer() const { return m_d3d_buffer; }
         ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shader_resource_view; }
         ID3D11UnorderedAccessView* GetUnorderedAccessView() const { return m_unordered_access_view; }
         
@@ -76,7 +76,7 @@ namespace Dolas
         UINT ConvertToD3DBindFlags(BufferType type, BufferUsage usage);
         D3D11_MAP ConvertToD3DMapType(BufferAccess access);
 
-        ID3D11Buffer* m_buffer = nullptr;
+        ID3D11Buffer* m_d3d_buffer = nullptr;
         ID3D11ShaderResourceView* m_shader_resource_view = nullptr;
         ID3D11UnorderedAccessView* m_unordered_access_view = nullptr;
 

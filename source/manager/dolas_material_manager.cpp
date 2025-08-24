@@ -28,6 +28,7 @@ namespace Dolas
 
     bool MaterialManager::Initialize()
     {
+        InitializeGlobalMaterial();
         return true;
     }
 
@@ -55,6 +56,11 @@ namespace Dolas
         return true;
     }
 
+    void MaterialManager::InitializeGlobalMaterial()
+    {
+        m_global_materials.m_deferred_shading = CreateMaterial("deferred_shading.material");
+    }
+
     MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
     {
         std::string material_file_path = PathUtils::GetMaterialDir() + file_name;
@@ -68,8 +74,7 @@ namespace Dolas
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
-        material->m_file_id = STRING_ID(material_file_path);
-
+        material->m_file_id = HashConverter::StringHash(material_file_path);
         // 顶点着色器
         if (json_data.contains("vertex_shader"))
         {
@@ -129,6 +134,11 @@ namespace Dolas
             return nullptr;
         }
         return m_materials[material_id];
+    }
+
+    MaterialID MaterialManager::GetDeferredShadingMaterialID()
+    {
+        return m_global_materials.m_deferred_shading;
     }
     
 } // namespace Dolas

@@ -46,7 +46,15 @@ namespace Dolas
         return true;
     }
 
-    RenderEntityID RenderEntityManager::CreateRenderEntity(const std::string& render_entity_file_name)
+    RenderEntityID RenderEntityManager::CreateRenderEntity(RenderEntityID id)
+    {
+		RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
+		render_entity->m_file_id = id;
+		m_render_entities[render_entity->m_file_id] = render_entity;
+		return render_entity->m_file_id;
+    }
+
+    RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const std::string& render_entity_file_name)
     {
         std::string render_entity_file_path = PathUtils::GetEntityDir() + render_entity_file_name;
         
@@ -105,7 +113,7 @@ namespace Dolas
         return render_entity->m_file_id;
     }
 
-    RenderEntity* RenderEntityManager::GetRenderEntity(RenderEntityID render_entity_id)
+    RenderEntity* RenderEntityManager::GetRenderEntityByID(RenderEntityID render_entity_id)
     {
         auto it = m_render_entities.find(render_entity_id);
         if (it != m_render_entities.end())
@@ -118,7 +126,7 @@ namespace Dolas
     RenderEntity* RenderEntityManager::GetRenderEntityByFileName(const std::string& render_entity_file_name)
     {
         std::string render_entity_file_path = PathUtils::GetEntityDir() + render_entity_file_name;
-		RenderEntityID render_entity_id = STRING_ID(render_entity_file_path);
-        return GetRenderEntity(render_entity_id);
+        RenderEntityID render_entity_id = HashConverter::StringHash(render_entity_file_path);
+        return GetRenderEntityByID(render_entity_id);
     }
 }
