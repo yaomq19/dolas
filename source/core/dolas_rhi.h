@@ -105,6 +105,8 @@ namespace Dolas
 		void SetVertexShader();
 		void SetPixelShader();
 
+		ID3D11ShaderResourceView* CreateShaderResourceView(ID3D11Resource* resource);
+
 		// User annotation helpers (RenderDoc / PIX markers)
 		void BeginEvent(const wchar_t* name);
 		void EndEvent();

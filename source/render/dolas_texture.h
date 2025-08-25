@@ -47,7 +47,7 @@ namespace Dolas
 
         // Getters
         ID3D11Texture2D* GetD3DTexture2D() const { return m_d3d_texture_2d; }
-        ID3D11ShaderResourceView* GetShaderResourceView() const { return m_d3d_shader_resource_view; }
+        ID3D11ShaderResourceView* GetShaderResourceView();
         
         uint32_t GetWidth() const { return m_width; }
         uint32_t GetHeight() const { return m_height; }

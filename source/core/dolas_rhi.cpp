@@ -342,6 +342,17 @@ namespace Dolas
 
 	}
 
+	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
+	{
+		ID3D11ShaderResourceView* shader_resource_view = nullptr;
+		HRESULT hr = m_d3d_device->CreateShaderResourceView(resource, nullptr, &shader_resource_view);
+		if (FAILED(hr))
+		{
+			std::cout << "Failed to create shader resource view!" << std::endl;
+			return nullptr;
+		}
+		return shader_resource_view;
+	}
 
 	bool DolasRHI::InitializeWindow()
 	{

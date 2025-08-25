@@ -33,86 +33,15 @@ namespace Dolas
 
     void RenderEntity::Draw(DolasRHI* rhi)
     {
-		//Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
-		//DOLAS_RETURN_IF_NULL(mesh);
-		//Material* material = g_dolas_engine.m_material_manager->GetMaterial(m_material_id);
-		//DOLAS_RETURN_IF_NULL(material);
-
-  //      // 根据 mesh 创建顶点缓冲区
-  //      // 设置顶点缓冲区描述
-  //          // hack: 默认的 3+2+3 构造（顶点、uv、法线）
-
-  //      D3D11_BUFFER_DESC vbd;
-  //      ZeroMemory(&vbd, sizeof(vbd));
-  //      vbd.Usage = D3D11_USAGE_IMMUTABLE;
-  //      vbd.ByteWidth = mesh->m_final_vertices.size() * sizeof(float);
-  //      vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-  //      vbd.CPUAccessFlags = 0;
-  //      // 新建顶点缓冲区
-  //      D3D11_SUBRESOURCE_DATA InitData;
-  //      ZeroMemory(&InitData, sizeof(InitData));
-  //      InitData.pSysMem = mesh->m_final_vertices.data();
-
-  //      ID3D11Buffer* vertex_buffer = nullptr;
-  //      HR(rhi->m_d3d_device->CreateBuffer(&vbd, &InitData, &vertex_buffer));
-
-  //      // 根据 mesh 创建索引缓冲区
-  //      D3D11_BUFFER_DESC ibd;
-  //      ZeroMemory(&ibd, sizeof(ibd));
-  //      ibd.Usage = D3D11_USAGE_IMMUTABLE;
-  //          ibd.ByteWidth = mesh->m_indices.size() * sizeof(unsigned int);
-  //      ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;  // 修正绑定标志
-  //      ibd.CPUAccessFlags = 0;
-
-  //          InitData.pSysMem = mesh->m_indices.data();
-
-  //      ID3D11Buffer* index_buffer = nullptr;
-  //      HR(rhi->m_d3d_device->CreateBuffer(&ibd, &InitData, &index_buffer));  // 修正缓冲区描述
-
-  //      // 绑定 VB 和 IB
-  //      UINT stride = (3 + 2 + 3) * sizeof(float);	// 跨越字节数
-  //      UINT offset = 0;						// 起始偏移量
-  //      rhi->m_d3d_immediate_context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
-  //      rhi->m_d3d_immediate_context->IASetIndexBuffer(index_buffer, DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
-
-  //      // 设置 IA
-  //      rhi->m_d3d_immediate_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  //      ID3D11InputLayout* input_layout = nullptr;
-
-  //      D3D11_INPUT_ELEMENT_DESC local_layout[] =
-  //      {
-  //        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-  //        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, 12,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-  //        { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-  //      };
-
-  //      HR(
-  //          rhi->m_d3d_device->CreateInputLayout(
-  //              local_layout,
-  //              3,
-  //              material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
-  //              material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
-  //              &input_layout)
-  //      );
-
-  //      rhi->m_d3d_immediate_context->IASetInputLayout(input_layout);
-  //      // 绑定 Shader
-  //      rhi->m_d3d_immediate_context->VSSetShader(material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
-  //      rhi->m_d3d_immediate_context->PSSetShader(material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
-  //      
-  //      // 设置渲染状态
-  //      // 发起DC
-  //      rhi->m_d3d_immediate_context->DrawIndexed(mesh->m_indices.size(), 0, 0);
-
 		Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
 		DOLAS_RETURN_IF_NULL(mesh);
 		Material* material = g_dolas_engine.m_material_manager->GetMaterial(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
 		// 绑定 Shader
-		rhi->m_d3d_immediate_context->VSSetShader(material->GetVertexShader()->GetD3DVertexShader(), nullptr, 0);
-		rhi->m_d3d_immediate_context->PSSetShader(material->GetPixelShader()->GetD3DPixelShader(), nullptr, 0);
-
+        material->GetVertexShader()->Bind(rhi, nullptr, 0);
+        material->GetPixelShader()->Bind(rhi, nullptr, 0);
+        
         RenderPrimitiveID render_primitive_id = mesh->GetRenderPrimitiveID();
         RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 

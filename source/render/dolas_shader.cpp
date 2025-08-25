@@ -50,6 +50,25 @@ namespace Dolas
 		m_d3d_shader_reflection->GetDesc(&m_shader_desc);
 	}
 
+	void Shader::SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* shader_resource_view)
+	{
+		m_shader_resource_views[slot] = shader_resource_view;
+	}
+
+	ID3D11ShaderResourceView* Shader::GetShaderResourceView(size_t slot)
+	{
+		if (m_shader_resource_views.find(slot) == m_shader_resource_views.end())
+		{
+			return nullptr;
+		}
+		return m_shader_resource_views[slot];
+	}
+    
+	void Shader::ClearShaderResourceViews()
+	{
+		m_shader_resource_views.clear();
+	}
+
 	VertexShader::VertexShader()
 	{
 
@@ -107,6 +126,16 @@ namespace Dolas
 		return m_d3d_vertex_shader;
 	}
 
+	void VertexShader::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances)
+	{
+		rhi->m_d3d_immediate_context->VSSetShader(m_d3d_vertex_shader, class_instances, num_class_instances);
+		std::unordered_map<size_t, ID3D11ShaderResourceView*>::iterator iter = m_shader_resource_views.begin();
+		for ( ;iter != m_shader_resource_views.end(); iter++)
+		{
+			rhi->m_d3d_immediate_context->PSSetShaderResources(iter->first, 1, &iter->second);
+		}
+	}
+
 	PixelShader::PixelShader()
 	{
 
@@ -159,8 +188,21 @@ namespace Dolas
 		}
 	}
 
+	void PixelShader::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances)
+	{
+		rhi->m_d3d_immediate_context->PSSetShader(this->m_d3d_pixel_shader, class_instances, num_class_instances);
+
+		std::unordered_map<size_t, ID3D11ShaderResourceView*>::iterator iter = m_shader_resource_views.begin();
+
+		for (; iter != m_shader_resource_views.end(); iter++)
+		{
+			rhi->m_d3d_immediate_context->PSSetShaderResources(iter->first, 1, &iter->second);
+		}
+	}
+
 	ID3D11PixelShader* PixelShader::GetD3DPixelShader()
 	{
 		return m_d3d_pixel_shader;
 	}
+
 } // namespace Dolas

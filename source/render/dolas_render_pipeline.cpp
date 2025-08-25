@@ -17,6 +17,8 @@
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
 #include "manager/dolas_mesh_manager.h"
+#include "manager/dolas_render_state_manager.h"
+#include "render/dolas_shader.h"
 
 namespace Dolas
 {
@@ -182,43 +184,54 @@ namespace Dolas
     void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"DeferredShadingPass");
-        // RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
-        // DOLAS_RETURN_IF_NULL(render_entity_manager);
 
-		// const std::string render_entity_name = "quad.entity";
-
-        // RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
-        // if (render_entity == nullptr)
-        // {
-        //     RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntityFromFile(render_entity_name);
-        //     render_entity = render_entity_manager->GetRenderEntity(render_entity_id);
-        // }
-        // DOLAS_RETURN_IF_NULL(render_entity);
-
-        // // 设置 RT 和 视口
-		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
         DOLAS_RETURN_IF_NULL(render_resource);
+
+        Texture* gbuffer_a_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_a_id);
+        Texture* gbuffer_b_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_b_id);
+        Texture* gbuffer_c_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_c_id);
+        DOLAS_RETURN_IF_NULL(gbuffer_a_texture);
+        DOLAS_RETURN_IF_NULL(gbuffer_b_texture);
+        DOLAS_RETURN_IF_NULL(gbuffer_c_texture);
 
         std::vector<RenderTargetView> rtvs;
 		rtvs.push_back(RenderTargetView(render_resource->m_scene_result_id));
-        // DepthStencilView dsv(render_resource->m_depth_stencil_id);
 
         rhi->SetRenderTargetView(rtvs);
         rhi->SetViewPort(m_viewport);
-        rhi->SetRasterizerState(m_rasterizer_state);
-        rhi->SetDepthStencilState(m_depth_stencil_state);
+
+        DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
+        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
+
+        rhi->SetRasterizerState(*rasterizer_state);
+        rhi->SetDepthStencilState(*depth_stencil_state);
         rhi->SetBlendState(m_blend_state);
 
 		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
-        RenderEntityID render_entity_id = entity_manager->CreateRenderEntity(STRING_ID(Quad));
-		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(render_entity_id);
+        RenderEntityID quad_render_entity_id = STRING_ID(Quad);
+		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
+        if (render_entity == nullptr)
+        {
+            entity_manager->CreateRenderEntity(quad_render_entity_id);
+            render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
+        }
         
-
         MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
         render_entity->SetMeshID(quad_mesh_id);
 
         MaterialID material_id = g_dolas_engine.m_material_manager->GetDeferredShadingMaterialID();
         render_entity->SetMaterialID(material_id);
+
+        Material* material = g_dolas_engine.m_material_manager->GetMaterial(material_id);
+        PixelShader* pixel_shader = material->GetPixelShader();
+        DOLAS_RETURN_IF_NULL(pixel_shader);
+
+        pixel_shader->ClearShaderResourceViews();
+
+        pixel_shader->SetShaderResourceView(0, gbuffer_a_texture->GetShaderResourceView());
+        pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
+        pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());
 
         render_entity->Draw(rhi);
     }

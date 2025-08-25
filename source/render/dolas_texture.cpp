@@ -32,4 +32,13 @@ namespace Dolas
         }
     }
 
+    ID3D11ShaderResourceView* Texture::GetShaderResourceView()
+    {
+        if (m_d3d_shader_resource_view == nullptr)
+        {
+            m_d3d_shader_resource_view = g_dolas_engine.m_rhi->CreateShaderResourceView(m_d3d_texture_2d);
+        }
+        return m_d3d_shader_resource_view;
+    }
+
 } // namespace Dolas

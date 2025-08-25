@@ -46,8 +46,8 @@ namespace Dolas
             render_primitive->m_vertex_count = vertices.size() / 8;
             render_primitive->m_index_count = indices.size();
 
-			render_primitive->m_vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(render_primitive->m_vertex_count, vertices.data());
-			render_primitive->m_index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(render_primitive->m_index_count, indices.data());
+			render_primitive->m_vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(render_primitive->m_vertex_count * 8 * 4, vertices.data());
+			render_primitive->m_index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(render_primitive->m_index_count * 4, indices.data());
         }
         else if (input_layout_type == DolasInputLayoutType::POS_3_UV_2)
         {

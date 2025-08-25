@@ -27,9 +27,7 @@ namespace Dolas
 		class RenderPrimitiveManager* m_render_primitive_manager;
 		class BufferManager* m_buffer_manager;
 		class TestManager* m_test_manager;
-		class InputLayoutManager* m_input_layout_manager;
-
-		class InputLayoutManager* GetInputLayoutManager() { return m_input_layout_manager; }
+		class RenderStateManager* m_render_state_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

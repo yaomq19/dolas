@@ -17,7 +17,7 @@
 #include "manager/dolas_test_manager.h"
 #include "manager/dolas_buffer_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
-#include "manager/dolas_input_layout_manager.h"
+#include "manager/dolas_render_state_manager.h"
 
 namespace Dolas
 {
@@ -37,7 +37,7 @@ namespace Dolas
 		m_render_resource_manager = DOLAS_NEW(RenderResourceManager);
 		m_render_primitive_manager = DOLAS_NEW(RenderPrimitiveManager);
 		m_buffer_manager = DOLAS_NEW(BufferManager);
-		m_input_layout_manager = DOLAS_NEW(InputLayoutManager);
+		m_render_state_manager = DOLAS_NEW(RenderStateManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -54,7 +54,7 @@ namespace Dolas
 		DOLAS_DELETE(m_render_resource_manager);
 		DOLAS_DELETE(m_render_primitive_manager);
 		DOLAS_DELETE(m_buffer_manager);
-		DOLAS_DELETE(m_input_layout_manager);
+		DOLAS_DELETE(m_render_state_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -71,7 +71,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_resource_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_primitive_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_buffer_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_input_layout_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_state_manager->Initialize());
 		return true;
 	}
 
@@ -89,7 +89,7 @@ namespace Dolas
 		m_render_resource_manager->Clear();
 		m_render_primitive_manager->Clear();
 		m_buffer_manager->Clear();
-		m_input_layout_manager->Clear();
+		m_render_state_manager->Clear();
 	}
 
 	void DolasEngine::Run()
