@@ -18,8 +18,14 @@ typedef UInt TextureID;
 typedef UInt BufferID;
 typedef UInt ShaderID;
 typedef UInt RenderEntityID;
-typedef UInt RenderResourceID;
 typedef UInt RenderPrimitiveID;
+
+typedef UInt RenderViewID;
+typedef UInt RenderPipelineID;
+typedef UInt RenderResourceID;
+typedef UInt RenderCameraID;
+typedef UInt RenderSceneID;
+
 
 #define STRING_ID_EMPTY 0
 #define FILE_ID_EMPTY 0
@@ -31,7 +37,10 @@ typedef UInt RenderPrimitiveID;
 #define RENDER_ENTITY_ID_EMPTY 0
 #define RENDER_RESOURCE_ID_EMPTY 0
 #define RENDER_PRIMITIVE_ID_EMPTY 0
-
+#define RENDER_CAMERA_ID_EMPTY 0
+#define RENDER_SCENE_ID_EMPTY 0
+#define RENDER_VIEW_ID_EMPTY 0
+#define RENDER_PIPELINE_ID_EMPTY 0
 namespace Dolas
 {
     /**

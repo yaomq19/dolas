@@ -2,7 +2,7 @@
 #define DOLAS_RENDER_PIPELINE_MANAGER_H
 #include <unordered_map>
 #include <string>
-
+#include "common/dolas_hash.h"
 namespace Dolas
 {
     class RenderPipeline;
@@ -13,10 +13,10 @@ namespace Dolas
         ~RenderPipelineManager();
         bool Initialize();
         bool Clear();
-        RenderPipeline* GetMainRenderPipeline();
-        RenderPipeline* GetRenderPipeline(const std::string& name);
+        RenderPipeline* GetRenderPipelineByID(RenderPipelineID id);
+		Bool CreateRenderPipelineByID(RenderPipelineID id);
     private:
-        std::unordered_map<std::string, RenderPipeline*> m_render_pipelines;
+        std::unordered_map<RenderPipelineID, RenderPipeline*> m_render_pipelines;
     };// class RenderPipelineManager
 }// namespace Dolas
 

@@ -23,7 +23,7 @@ namespace Dolas
         return true;
     }
     
-    RenderResource* RenderResourceManager::GetRenderResource(RenderResourceID render_resource_id)
+    RenderResource* RenderResourceManager::GetRenderResourceByID(RenderResourceID render_resource_id)
     {
         if (m_render_resources.find(render_resource_id) == m_render_resources.end())
         {
@@ -32,7 +32,7 @@ namespace Dolas
         return m_render_resources[render_resource_id];
     }
 
-    Bool RenderResourceManager::CreateRenderResource(RenderResourceID render_resource_id)
+    Bool RenderResourceManager::CreateRenderResourceByID(RenderResourceID render_resource_id)
     {
         TextureManager* texture_manager = g_dolas_engine.m_texture_manager;
         DOLAS_RETURN_FALSE_IF_NULL(texture_manager);

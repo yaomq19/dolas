@@ -18,7 +18,10 @@
 #include "manager/dolas_buffer_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_render_state_manager.h"
-
+#include "manager/dolas_render_view_manager.h"
+#include "render/dolas_render_view.h"
+#include "manager/dolas_render_camera_manager.h"
+#include "manager/dolas_render_scene_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -38,6 +41,9 @@ namespace Dolas
 		m_render_primitive_manager = DOLAS_NEW(RenderPrimitiveManager);
 		m_buffer_manager = DOLAS_NEW(BufferManager);
 		m_render_state_manager = DOLAS_NEW(RenderStateManager);
+		m_render_view_manager = DOLAS_NEW(RenderViewManager);
+		m_render_camera_manager = DOLAS_NEW(RenderCameraManager);
+		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -55,6 +61,7 @@ namespace Dolas
 		DOLAS_DELETE(m_render_primitive_manager);
 		DOLAS_DELETE(m_buffer_manager);
 		DOLAS_DELETE(m_render_state_manager);
+		DOLAS_DELETE(m_render_view_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -72,6 +79,11 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_primitive_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_buffer_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_state_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_camera_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_scene_manager->Initialize());
+
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
+
 		return true;
 	}
 
@@ -90,6 +102,9 @@ namespace Dolas
 		m_render_primitive_manager->Clear();
 		m_buffer_manager->Clear();
 		m_render_state_manager->Clear();
+		m_render_view_manager->Clear();
+		m_render_camera_manager->Clear();
+		m_render_scene_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -119,9 +134,9 @@ namespace Dolas
 
 	void DolasEngine::Render()
 	{
-		RenderPipeline* main_render_pipeline = m_render_pipeline_manager->GetMainRenderPipeline();
-		DOLAS_RETURN_IF_NULL(main_render_pipeline);
-		main_render_pipeline->Render(m_rhi);
+		RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
+		DOLAS_RETURN_IF_NULL(main_render_view);
+		main_render_view->Render(m_rhi);
 	}
 
 	void DolasEngine::Test()

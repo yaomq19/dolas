@@ -1,7 +1,6 @@
 #include "render/dolas_render_camera.h"
 #include <iostream>
 
-
 namespace Dolas
 {
     using namespace DirectX;
@@ -33,6 +32,11 @@ namespace Dolas
     {
 
     }
+
+	Bool RenderCamera::Initialize()
+	{
+        return true;
+	}
 
     void RenderCamera::SetPosition(const XMFLOAT3& position)
     {

@@ -16,8 +16,6 @@ namespace Dolas
 
     bool RenderPipelineManager::Initialize()
     {
-        m_render_pipelines["main"] = DOLAS_NEW(RenderPipeline);
-        DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipelines["main"]->Initialize());
         return true;
     }
 
@@ -36,13 +34,18 @@ namespace Dolas
         return true;
     }
 
-    RenderPipeline* RenderPipelineManager::GetMainRenderPipeline()
+    RenderPipeline* RenderPipelineManager::GetRenderPipelineByID(RenderPipelineID id)
     {
-        return m_render_pipelines["main"];
+        return m_render_pipelines[id];
     }
 
-    RenderPipeline* RenderPipelineManager::GetRenderPipeline(const std::string& name)
+    Bool RenderPipelineManager::CreateRenderPipelineByID(RenderPipelineID id)
     {
-        return m_render_pipelines[name];
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipelines.find(id) == m_render_pipelines.end());
+		RenderPipeline* render_pipeline = DOLAS_NEW(RenderPipeline);
+
+        DOLAS_RETURN_FALSE_IF_FALSE(render_pipeline->Initialize());
+        m_render_pipelines[id] = render_pipeline;
+		return true;
     }
 } // namespace Dolas

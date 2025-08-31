@@ -15,6 +15,7 @@ namespace Dolas
         bool Initialize();
         bool Clear();
         void Render(DolasRHI* rhi);
+        void SetRenderViewID(RenderViewID id);
     private:
         void ClearPass(DolasRHI* rhi);
         void GBufferPass(DolasRHI* rhi);
@@ -23,12 +24,10 @@ namespace Dolas
         void PostProcessPass(DolasRHI* rhi);
         void PresentPass(DolasRHI* rhi);
 
+        class RenderResource* TryGetRenderResource() const;
         ViewPort m_viewport;
-        RasterizerState m_rasterizer_state;
-        DepthStencilState m_depth_stencil_state;
-        BlendState m_blend_state;
-        RenderResourceID m_render_resource_id;
-    };
+        RenderViewID m_render_view_id;
+    };// class RenderPipeline
 }
 
 #endif // DOLAS_RENDER_PIPELINE_H

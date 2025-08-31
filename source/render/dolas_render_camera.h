@@ -3,6 +3,7 @@
 
 #include <DirectXMath.h>
 #include <string>
+#include "common/dolas_hash.h"
 
 namespace Dolas
 {
@@ -19,6 +20,7 @@ namespace Dolas
         RenderCamera();
         ~RenderCamera();
 
+		Bool Initialize();
         // 相机设置
         void SetPosition(const DirectX::XMFLOAT3& position);
         void SetRotation(const DirectX::XMFLOAT3& rotation); // pitch, yaw, roll (弧度)

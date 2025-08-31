@@ -28,6 +28,9 @@ namespace Dolas
 		class BufferManager* m_buffer_manager;
 		class TestManager* m_test_manager;
 		class RenderStateManager* m_render_state_manager;
+		class RenderViewManager* m_render_view_manager;
+		class RenderCameraManager* m_render_camera_manager;
+		class RenderSceneManager* m_render_scene_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

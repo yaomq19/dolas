@@ -13,8 +13,8 @@ namespace Dolas
         ~RenderResourceManager();
         Bool Initialize();
         Bool Clear();
-        RenderResource* GetRenderResource(RenderResourceID render_resource_id);
-        Bool CreateRenderResource(RenderResourceID render_resource_id);
+        RenderResource* GetRenderResourceByID(RenderResourceID render_resource_id);
+        Bool CreateRenderResourceByID(RenderResourceID render_resource_id);
     protected:
         std::unordered_map<RenderResourceID, RenderResource*> m_render_resources;
     };

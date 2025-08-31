@@ -19,6 +19,8 @@
 #include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_render_state_manager.h"
 #include "render/dolas_shader.h"
+#include "manager/dolas_render_view_manager.h"
+#include "render/dolas_render_view.h"
 
 namespace Dolas
 {
@@ -34,11 +36,7 @@ namespace Dolas
 
     bool RenderPipeline::Initialize()
     {
-        m_render_resource_id = STRING_ID("MainRenderResource");
-        RenderResourceManager* render_resource_manager = g_dolas_engine.m_render_resource_manager;
-        DOLAS_RETURN_FALSE_IF_NULL(render_resource_manager);
-        Bool ret = render_resource_manager->CreateRenderResource(m_render_resource_id);
-        DOLAS_RETURN_FALSE_IF_FALSE(ret);
+
 
         m_viewport.m_d3d_viewport.TopLeftX = 0.0f;
         m_viewport.m_d3d_viewport.TopLeftY = 0.0f;
@@ -47,59 +45,6 @@ namespace Dolas
         m_viewport.m_d3d_viewport.MinDepth = 0.0f;
         m_viewport.m_d3d_viewport.MaxDepth = 1.0f;
 
-        D3D11_RASTERIZER_DESC rasterizer_desc;
-        rasterizer_desc.FillMode = D3D11_FILL_SOLID;
-        rasterizer_desc.CullMode = D3D11_CULL_BACK;
-        rasterizer_desc.FrontCounterClockwise = FALSE;
-        rasterizer_desc.DepthBias = 0;
-        rasterizer_desc.DepthBiasClamp = 0.0f;
-        rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-        rasterizer_desc.DepthClipEnable = TRUE;
-        rasterizer_desc.ScissorEnable = FALSE;
-        rasterizer_desc.MultisampleEnable = FALSE;
-        rasterizer_desc.AntialiasedLineEnable = FALSE;
-        
-        HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateRasterizerState(&rasterizer_desc, &m_rasterizer_state.m_d3d_rasterizer_state);
-        if (FAILED(hr))
-        {
-            std::cout << "Failed to create rasterizer state!" << std::endl;
-            return false;
-        }
-
-        D3D11_DEPTH_STENCIL_DESC depth_stencil_desc;
-
-        depth_stencil_desc.DepthEnable = TRUE;
-        depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-        depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS;
-        depth_stencil_desc.StencilEnable = FALSE;
-        depth_stencil_desc.StencilReadMask = 0xFF;
-        depth_stencil_desc.StencilWriteMask = 0xFF;
-
-        hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilState(&depth_stencil_desc, &m_depth_stencil_state.m_d3d_depth_stencil_state);
-        if (FAILED(hr))
-        {
-            std::cout << "Failed to create depth stencil state!" << std::endl;
-            return false;
-        }
-
-        D3D11_BLEND_DESC blend_desc;
-        blend_desc.AlphaToCoverageEnable = FALSE;
-        blend_desc.IndependentBlendEnable = FALSE;
-        blend_desc.RenderTarget[0].BlendEnable = FALSE;
-        blend_desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-        blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-        blend_desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-        blend_desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-        blend_desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-        blend_desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-        hr = g_dolas_engine.m_rhi->m_d3d_device->CreateBlendState(&blend_desc, &m_blend_state.m_d3d_blend_state);
-        if (FAILED(hr))
-        {
-            std::cout << "Failed to create blend state!" << std::endl;
-            return false;
-        }
         return true;
     }
 
@@ -119,6 +64,11 @@ namespace Dolas
         PresentPass(rhi);
     }
 
+    void RenderPipeline::SetRenderViewID(RenderViewID id)
+    {
+        m_render_view_id = id;
+    }
+
     void RenderPipeline::ClearPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"ClearPass");
@@ -127,7 +77,7 @@ namespace Dolas
         rhi->m_d3d_immediate_context->ClearRenderTargetView(rhi->m_back_buffer_render_target_view, clear_color);
         rhi->EndEvent();
 
-        RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
 
         rhi->BeginEvent(L"ClearGBufferTextures");
@@ -164,7 +114,7 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(render_entity);
 
         // 设置 RT 和 视口
-		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+		RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
 
         std::vector<RenderTargetView> rtvs;
@@ -175,9 +125,14 @@ namespace Dolas
 
         rhi->SetRenderTargetView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
-        rhi->SetRasterizerState(m_rasterizer_state);
-        rhi->SetDepthStencilState(m_depth_stencil_state);
-        rhi->SetBlendState(m_blend_state);
+
+        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
+        DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthEnabled);
+		BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
+
+        rhi->SetRasterizerState(*rasterizer_state);
+        rhi->SetDepthStencilState(*depth_stencil_state);
+        rhi->SetBlendState(*blend_state);
         render_entity->Draw(rhi);
     }
 
@@ -185,7 +140,7 @@ namespace Dolas
     {
         UserAnnotationScope scope(rhi, L"DeferredShadingPass");
 
-        RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+        RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
 
         Texture* gbuffer_a_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_a_id);
@@ -203,10 +158,11 @@ namespace Dolas
 
         DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
         RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
+        BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
 
         rhi->SetRasterizerState(*rasterizer_state);
         rhi->SetDepthStencilState(*depth_stencil_state);
-        rhi->SetBlendState(m_blend_state);
+        rhi->SetBlendState(*blend_state);
 
 		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
         RenderEntityID quad_render_entity_id = STRING_ID(Quad);
@@ -251,7 +207,7 @@ namespace Dolas
     void RenderPipeline::PresentPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"PresentPass");
-		RenderResource* render_resource = g_dolas_engine.m_render_resource_manager->GetRenderResource(m_render_resource_id);
+		RenderResource* render_resource = TryGetRenderResource();
         if (render_resource)
         {
             Texture* scene_result_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_scene_result_id);
@@ -263,5 +219,18 @@ namespace Dolas
 			std::cout << "Render resource not found!" << std::endl;
         }
         rhi->m_swap_chain->Present(0, 0);
+    }
+
+    RenderResource* RenderPipeline::TryGetRenderResource() const
+    {
+        RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
+        DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
+        RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
+        DOLAS_RETURN_NULL_IF_NULL(render_view);
+
+        RenderResourceManager* render_resource_manager = g_dolas_engine.m_render_resource_manager;
+        DOLAS_RETURN_NULL_IF_NULL(render_resource_manager);
+        RenderResourceID render_resource_id = render_view->GetRenderResourceID();
+        return render_resource_manager->GetRenderResourceByID(render_resource_id);
     }
 } // namespace Dolas
