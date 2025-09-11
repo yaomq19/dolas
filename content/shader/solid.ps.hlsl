@@ -1,5 +1,5 @@
 #include "solid_common.hlsli"
-
+#include "global_constants.hlsli"
 // Simple color output
 PS_OUTPUT PS(PS_INPUT input)
 {   

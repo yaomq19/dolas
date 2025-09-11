@@ -25,6 +25,7 @@ namespace Dolas
         void PresentPass(DolasRHI* rhi);
 
         class RenderResource* TryGetRenderResource() const;
+        class RenderCamera* TryGetRenderCamera() const;
         ViewPort m_viewport;
         RenderViewID m_render_view_id;
     };// class RenderPipeline

@@ -1,4 +1,6 @@
 #include "deferred_shading_common.hlsli"
+#include "global_constants.hlsli"
+
 Texture2D g_gbuffer_a : register(t0);
 SamplerState g_sampler_a : register(s0);
 

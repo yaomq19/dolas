@@ -1,31 +1,65 @@
 #include "render/dolas_render_camera.h"
 #include <iostream>
+#include <cmath>
 
 namespace Dolas
 {
     using namespace DirectX;
-
+    /* Render Camera */
+    // 顺序：构造 -> 析构 -> Getters -> Setters -> 受保护更新函数
     RenderCamera::RenderCamera()
+    :   m_camera_perspective_type(CameraPerspectiveType::PERSPECTIVE),
+        m_position(0.0f, 0.0f, 0.0f),
+        m_forward(0.0f, 0.0f, 1.0f),
+        m_up(0.0f, 1.0f, 0.0f),
+        m_near_plane(0.1f),
+        m_far_plane(100.0f)
     {
-        m_position = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        m_rotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-        m_target = XMFLOAT3(0.0f, 0.0f, 1.0f);
-        m_up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+        UpdateViewMatrix();
+    }
 
-        m_camera_type = CameraType::PERSPECTIVE;
-        m_fov_y = XM_PIDIV4; // 45度
-        m_aspect_ratio = 16.0f / 9.0f;
-        m_near_plane = 0.1f;
-        m_far_plane = 1000.0f;
-        m_ortho_width = 10.0f;
-        m_ortho_height = 10.0f;
+    RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type)
+    :   m_camera_perspective_type(camera_perspective_type),
+        m_position(0.0f, 0.0f, 0.0f),
+        m_forward(0.0f, 0.0f, 1.0f),
+        m_up(0.0f, 1.0f, 0.0f),
+        m_near_plane(0.1f),
+        m_far_plane(100.0f)
+    {
+        UpdateViewMatrix();
+    }
 
-        DirectX::XMStoreFloat4x4(&m_view_matrix, XMMatrixIdentity());
-        DirectX::XMStoreFloat4x4(&m_projection_matrix, XMMatrixIdentity());
-        
-        m_view_matrix_dirty = true;
-        m_projection_matrix_dirty = true;
-        m_frustum_dirty = true;
+    RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type, const Vector3& position)
+    :   m_camera_perspective_type(camera_perspective_type),
+        m_position(position),
+        m_forward(0.0f, 0.0f, 1.0f),
+        m_up(0.0f, 1.0f, 0.0f),
+        m_near_plane(0.1f),
+        m_far_plane(100.0f)
+    {
+        UpdateViewMatrix();
+    }
+
+    RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type, const Vector3& position, const Vector3& forward, const Vector3& up)
+    :   m_camera_perspective_type(camera_perspective_type),
+        m_position(position),
+        m_forward(forward),
+        m_up(up),
+        m_near_plane(0.1f),
+        m_far_plane(100.0f) 
+    {
+        UpdateViewMatrix();
+    }
+
+    RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type, const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane)
+    :   m_camera_perspective_type(camera_perspective_type),
+        m_position(position),
+        m_forward(forward),
+        m_up(up),
+        m_near_plane(near_plane),
+        m_far_plane(far_plane)
+    {
+        UpdateViewMatrix();
     }
 
     RenderCamera::~RenderCamera()
@@ -33,288 +67,257 @@ namespace Dolas
 
     }
 
-	Bool RenderCamera::Initialize()
-	{
-        return true;
-	}
+    CameraPerspectiveType RenderCamera::GetCameraPerspectiveType() const
+    {
+        return m_camera_perspective_type;
+    }
 
-    void RenderCamera::SetPosition(const XMFLOAT3& position)
+    Matrix4x4 RenderCamera::GetProjectionMatrix() const
+    {
+        return m_projection_matrix;
+    }
+
+    Matrix4x4 RenderCamera::GetViewMatrix() const
+    {
+        return m_view_matrix;
+    }
+
+    Vector3 RenderCamera::GetPosition() const
+    {
+        return m_position;
+    }
+
+    Vector3 RenderCamera::GetForward() const
+    {
+        return m_forward;
+    }
+
+    Vector3 RenderCamera::GetUp() const
+    {
+        return m_up;
+    }
+
+    Float RenderCamera::GetNearPlane() const
+    {
+        return m_near_plane;
+    }
+
+    Float RenderCamera::GetFarPlane() const
+    {
+        return m_far_plane;
+    }
+
+    void RenderCamera::SetPosition(const Vector3& position)
     {
         m_position = position;
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
+        UpdateViewMatrix();
     }
 
-    void RenderCamera::SetRotation(const XMFLOAT3& rotation)
+    void RenderCamera::SetForwardAndUp(const Vector3& forward, const Vector3& up)
     {
-        m_rotation = rotation;
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
+        m_forward = forward.Normalized();
+        m_up = up.Normalized();
+        CorrectUpVector();
+        UpdateViewMatrix();
     }
 
-    void RenderCamera::SetTarget(const XMFLOAT3& target)
+    void RenderCamera::SetNearPlane(Float near_plane)
     {
-        m_target = target;
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    void RenderCamera::SetUpVector(const XMFLOAT3& up)
-    {
-        m_up = up;
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    void RenderCamera::SetPerspective(float fov_y, float aspect_ratio, float near_plane, float far_plane)
-    {
-        m_camera_type = CameraType::PERSPECTIVE;
-        m_fov_y = fov_y;
-        m_aspect_ratio = aspect_ratio;
         m_near_plane = near_plane;
+        UpdateProjectionMatrix();
+    }
+
+    void RenderCamera::SetFarPlane(Float far_plane)
+    {
         m_far_plane = far_plane;
-        m_projection_matrix_dirty = true;
-        m_frustum_dirty = true;
+        UpdateProjectionMatrix();
     }
 
-    void RenderCamera::SetOrthographic(float width, float height, float near_plane, float far_plane)
+    void RenderCamera::CorrectUpVector()
     {
-        m_camera_type = CameraType::ORTHOGRAPHIC;
-        m_ortho_width = width;
-        m_ortho_height = height;
-        m_near_plane = near_plane;
-        m_far_plane = far_plane;
-        m_projection_matrix_dirty = true;
-        m_frustum_dirty = true;
+        Vector3 right = m_forward.Cross(m_up).Normalized();
+        m_up = right.Cross(m_forward).Normalized();
     }
 
-    void RenderCamera::MoveForward(float distance)
+    void RenderCamera::TestRotate(Float delta_time)
     {
-        XMFLOAT3 forward_vector = GetForwardVector();
-        XMVECTOR forward = DirectX::XMLoadFloat3(&forward_vector);
-        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
-        position = XMVectorAdd(position, XMVectorScale(forward, distance));
-        DirectX::XMStoreFloat3(&m_position, position);
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    void RenderCamera::MoveRight(float distance)
-    {
-        XMFLOAT3 right_vector = GetRightVector();
-        XMVECTOR right = DirectX::XMLoadFloat3(&right_vector);
-        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
-        position = XMVectorAdd(position, XMVectorScale(right, distance));
-        DirectX::XMStoreFloat3(&m_position, position);
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    void RenderCamera::MoveUp(float distance)
-    {
-        XMFLOAT3 up_vector = GetUpVector();
-
-        XMVECTOR up = DirectX::XMLoadFloat3(&up_vector);
-        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
-        position = XMVectorAdd(position, XMVectorScale(up, distance));
-        DirectX::XMStoreFloat3(&m_position, position);
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    void RenderCamera::Rotate(float pitch, float yaw, float roll)
-    {
-        m_rotation.x += pitch;
-        m_rotation.y += yaw;
-        m_rotation.z += roll;
-        
-        // 限制pitch角度防止翻转
-        if (m_rotation.x > XM_PIDIV2 - 0.01f)
-            m_rotation.x = XM_PIDIV2 - 0.01f;
-        if (m_rotation.x < -XM_PIDIV2 + 0.01f)
-            m_rotation.x = -XM_PIDIV2 + 0.01f;
-            
-        m_view_matrix_dirty = true;
-        m_frustum_dirty = true;
-    }
-
-    XMMATRIX RenderCamera::GetViewMatrix()
-    {
-        if (m_view_matrix_dirty)
-        {
-            UpdateViewMatrix();
-        }
-        return DirectX::XMLoadFloat4x4(&m_view_matrix);
-    }
-
-    XMMATRIX RenderCamera::GetProjectionMatrix()
-    {
-        if (m_projection_matrix_dirty)
-        {
-            UpdateProjectionMatrix();
-        }
-        return DirectX::XMLoadFloat4x4(&m_projection_matrix);
-    }
-
-    XMMATRIX RenderCamera::GetViewProjectionMatrix()
-    {
-        return XMMatrixMultiply(GetViewMatrix(), GetProjectionMatrix());
-    }
-
-    XMFLOAT3 RenderCamera::GetForwardVector() const
-    {
-        XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
-        XMVECTOR forward = XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), rotation_matrix);
-        XMFLOAT3 result;
-        DirectX::XMStoreFloat3(&result, forward);
-        return result;
-    }
-
-    XMFLOAT3 RenderCamera::GetRightVector() const
-    {
-        XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
-        XMVECTOR right = XMVector3TransformNormal(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), rotation_matrix);
-        XMFLOAT3 result;
-        DirectX::XMStoreFloat3(&result, right);
-        return result;
-    }
-
-    XMFLOAT3 RenderCamera::GetUpVector() const
-    {
-        XMMATRIX rotation_matrix = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
-        XMVECTOR up = XMVector3TransformNormal(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), rotation_matrix);
-        XMFLOAT3 result;
-        DirectX::XMStoreFloat3(&result, up);
-        return result;
-    }
-
-    bool RenderCamera::IsPointInFrustum(const XMFLOAT3& point)
-    {
-        if (m_frustum_dirty)
-        {
-            UpdateFrustumPlanes();
-        }
-
-        XMVECTOR point_vec = DirectX::XMLoadFloat3(&point);
-        
-        for (int i = 0; i < 6; ++i)
-        {
-            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
-            float distance = XMVectorGetX(XMPlaneDotCoord(plane, point_vec));
-            if (distance < 0.0f)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool RenderCamera::IsSphereInFrustum(const XMFLOAT3& center, float radius)
-    {
-        if (m_frustum_dirty)
-        {
-            UpdateFrustumPlanes();
-        }
-
-        XMVECTOR center_vec = DirectX::XMLoadFloat3(&center);
-        
-        for (int i = 0; i < 6; ++i)
-        {
-            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
-            float distance = XMVectorGetX(XMPlaneDotCoord(plane, center_vec));
-            if (distance < -radius)
-            {
-                return false;
-            }
-        }
-        return true;
+		static Float time = 0.0f;
+        SetPosition(Vector3(m_position.x + std::sin(time + delta_time), m_position.y, m_position.z));
     }
 
     void RenderCamera::UpdateViewMatrix()
     {
-        XMFLOAT3 forward_vector = GetForwardVector();
-        XMFLOAT3 up_vector = GetUpVector();
-        XMVECTOR position = DirectX::XMLoadFloat3(&m_position);
-        XMVECTOR forward = DirectX::XMLoadFloat3(&forward_vector);
-        XMVECTOR up = DirectX::XMLoadFloat3(&up_vector);
-        
-        XMVECTOR target = XMVectorAdd(position, forward);
-        XMMATRIX view = XMMatrixLookAtLH(position, target, up);
-        
-        DirectX::XMStoreFloat4x4(&m_view_matrix, view);
-        m_view_matrix_dirty = false;
+        Matrix4x4 move_to_origin_matrix = Matrix4x4::Identity();
+        move_to_origin_matrix.data[0][3] = -m_position.x;
+        move_to_origin_matrix.data[1][3] = -m_position.y;
+        move_to_origin_matrix.data[2][3] = -m_position.z;
+
+        Vector3 n_axis = m_forward.Cross(Vector3::NegativeZ()).Normalized();
+        Float theta = std::acos(m_forward.Dot(Vector3::NegativeZ()));
+        Matrix3x3 forward_to_negative_z_matrix = MathUtil::Rotate(n_axis, theta);
+
+        Vector3 up_prime = forward_to_negative_z_matrix * m_up;
+        n_axis = up_prime.Cross(Vector3::Y()).Normalized();
+        theta = std::acos(up_prime.Dot(Vector3::Y()));
+        Matrix3x3 up_to_y_matrix = MathUtil::Rotate(n_axis, theta);
+
+        Matrix3x3 rotate_camera_matrix = up_to_y_matrix * forward_to_negative_z_matrix;
+
+        m_view_matrix = rotate_camera_matrix.ExpandToMatrix4x4() * move_to_origin_matrix;
     }
 
-    void RenderCamera::UpdateProjectionMatrix()
+    /* Render Camera Perspective */
+    RenderCameraPerspective::RenderCameraPerspective()
+    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE),
+        m_aspect_ratio(1.0f),
+        m_fov(0.78539816339f)
     {
-        XMMATRIX projection;
-        
-        if (m_camera_type == CameraType::PERSPECTIVE)
-        {
-            projection = XMMatrixPerspectiveFovLH(m_fov_y, m_aspect_ratio, m_near_plane, m_far_plane);
-        }
-        else
-        {
-            projection = XMMatrixOrthographicLH(m_ortho_width, m_ortho_height, m_near_plane, m_far_plane);
-        }
-        
-        DirectX::XMStoreFloat4x4(&m_projection_matrix, projection);
-        m_projection_matrix_dirty = false;
+        UpdateProjectionMatrix();
     }
 
-    void RenderCamera::UpdateFrustumPlanes()
+    RenderCameraPerspective::RenderCameraPerspective(const Vector3& position)
+    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position),
+        m_aspect_ratio(1.0f),
+        m_fov(0.78539816339f)
     {
-        XMMATRIX view_projection = GetViewProjectionMatrix();
-        
-        // 提取视锥体平面
-        XMFLOAT4X4 vp_matrix;
-        DirectX::XMStoreFloat4x4(&vp_matrix, view_projection);
-        
-        // Left plane
-        m_frustum_planes[0].x = vp_matrix._14 + vp_matrix._11;
-        m_frustum_planes[0].y = vp_matrix._24 + vp_matrix._21;
-        m_frustum_planes[0].z = vp_matrix._34 + vp_matrix._31;
-        m_frustum_planes[0].w = vp_matrix._44 + vp_matrix._41;
+        UpdateProjectionMatrix();
+    }
 
-        // Right plane
-        m_frustum_planes[1].x = vp_matrix._14 - vp_matrix._11;
-        m_frustum_planes[1].y = vp_matrix._24 - vp_matrix._21;
-        m_frustum_planes[1].z = vp_matrix._34 - vp_matrix._31;
-        m_frustum_planes[1].w = vp_matrix._44 - vp_matrix._41;
+    RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up)
+    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up),
+        m_aspect_ratio(1.0f),
+        m_fov(0.78539816339f)
+    {
+        UpdateProjectionMatrix();
+    }
 
-        // Top plane
-        m_frustum_planes[2].x = vp_matrix._14 - vp_matrix._12;
-        m_frustum_planes[2].y = vp_matrix._24 - vp_matrix._22;
-        m_frustum_planes[2].z = vp_matrix._34 - vp_matrix._32;
-        m_frustum_planes[2].w = vp_matrix._44 - vp_matrix._42;
+    RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane)
+    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up, near_plane, far_plane),
+        m_aspect_ratio(1.0f),
+        m_fov(0.78539816339f)
+    {
+        UpdateProjectionMatrix();
+    }
 
-        // Bottom plane
-        m_frustum_planes[3].x = vp_matrix._14 + vp_matrix._12;
-        m_frustum_planes[3].y = vp_matrix._24 + vp_matrix._22;
-        m_frustum_planes[3].z = vp_matrix._34 + vp_matrix._32;
-        m_frustum_planes[3].w = vp_matrix._44 + vp_matrix._42;
+    RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane, Float fov, Float aspect_ratio)
+    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up, near_plane, far_plane),
+        m_aspect_ratio(aspect_ratio),
+        m_fov(fov)
+    {
+        UpdateProjectionMatrix();
+    }
 
-        // Near plane
-        m_frustum_planes[4].x = vp_matrix._13;
-        m_frustum_planes[4].y = vp_matrix._23;
-        m_frustum_planes[4].z = vp_matrix._33;
-        m_frustum_planes[4].w = vp_matrix._43;
+    RenderCameraPerspective::~RenderCameraPerspective()
+    {
+    }
 
-        // Far plane
-        m_frustum_planes[5].x = vp_matrix._14 - vp_matrix._13;
-        m_frustum_planes[5].y = vp_matrix._24 - vp_matrix._23;
-        m_frustum_planes[5].z = vp_matrix._34 - vp_matrix._33;
-        m_frustum_planes[5].w = vp_matrix._44 - vp_matrix._43;
+    void RenderCameraPerspective::SetAspectRatio(Float aspect_ratio)
+    {
+        m_aspect_ratio = aspect_ratio;
+        UpdateProjectionMatrix();
+    }
 
-        // 归一化平面
-        for (int i = 0; i < 6; ++i)
-        {
-            XMVECTOR plane = DirectX::XMLoadFloat4(&m_frustum_planes[i]);
-            plane = XMPlaneNormalize(plane);
-            DirectX::XMStoreFloat4(&m_frustum_planes[i], plane);
-        }
+    Float RenderCameraPerspective::GetAspectRatio() const
+    {
+        return m_aspect_ratio;
+    }
 
-        m_frustum_dirty = false;
+    void RenderCameraPerspective::SetFov(Float fov)
+    {
+        m_fov = fov;
+        UpdateProjectionMatrix();
+    }
+
+    Float RenderCameraPerspective::GetFov() const
+    {
+        return m_fov;
+    }
+
+    void RenderCameraPerspective::UpdateProjectionMatrix()
+    {
+        m_projection_matrix = Matrix4x4::Perspective(
+            MathUtil::DegreesToRadians(m_fov),
+            m_aspect_ratio,
+            -m_near_plane,
+            -m_far_plane);
+    }
+
+    /* Render Camera Orthographic */
+    RenderCameraOrthographic::RenderCameraOrthographic()
+    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC),
+        m_window_width(1.0f),
+        m_window_height(1.0f)
+    {
+        UpdateProjectionMatrix();
+    }
+
+    RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position)
+    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position),
+        m_window_width(1.0f),
+        m_window_height(1.0f)
+    {
+        UpdateProjectionMatrix();
+    }
+
+    RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up)
+    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up),
+        m_window_width(1.0f),
+        m_window_height(1.0f)
+    {
+        UpdateProjectionMatrix();
+    }
+
+    RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane)
+    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up, near_plane, far_plane),
+        m_window_width(1.0f),
+        m_window_height(1.0f)
+    {
+        UpdateProjectionMatrix();
+    }
+
+    RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane, Float window_width, Float window_height)
+    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up, near_plane, far_plane),
+        m_window_width(window_width),
+        m_window_height(window_height)
+    {
+        UpdateProjectionMatrix();
+    }
+
+    RenderCameraOrthographic::~RenderCameraOrthographic()
+    {
+    }
+
+    void RenderCameraOrthographic::SetWindowWidth(Float window_width)
+    {
+        m_window_width = window_width;
+        UpdateProjectionMatrix();
+    }
+
+    Float RenderCameraOrthographic::GetWindowWidth() const
+    {
+        return m_window_width;
+    }
+
+    void RenderCameraOrthographic::SetWindowHeight(Float window_height)
+    {
+        m_window_height = window_height;
+        UpdateProjectionMatrix();
+    }
+
+    Float RenderCameraOrthographic::GetWindowHeight() const
+    {
+        return m_window_height;
+    }
+
+    void RenderCameraOrthographic::UpdateProjectionMatrix()
+    {
+        m_projection_matrix = Matrix4x4::Orthographic(
+            -m_window_width / 2.0f,
+            m_window_width / 2.0f,
+            m_window_height / 2.0f,
+            -m_window_height / 2.0f,
+            -m_far_plane,
+            -m_near_plane);
     }
 
 } // namespace Dolas 

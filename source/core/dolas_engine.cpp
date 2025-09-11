@@ -121,15 +121,16 @@ namespace Dolas
 			}
 			else
 			{
-				Update();
+				Update(1.0f);
 				// render frame
 				Render();
 			}
 		}
 	}
 
-	void DolasEngine::Update()
+	void DolasEngine::Update(Float delta_time)
 	{
+		m_render_camera_manager->Tick(delta_time);
 	}
 
 	void DolasEngine::Render()

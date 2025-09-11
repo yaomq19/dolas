@@ -27,7 +27,7 @@ namespace Dolas
     #define Float float
     #define Double double
     #define Bool bool
-    #define UInt uint32_t
+    #define UInt unsigned int
     #define ULong uint64_t
     #define Int8 int8_t
     #define Int16 int16_t

@@ -8,7 +8,7 @@
 #endif
 
 #include <iostream>
-
+#include "render/dolas_render_camera.h"
 namespace Dolas
 {
 
@@ -246,6 +246,21 @@ namespace Dolas
 	{
 		if (!InitializeWindow()) return false;
 		if (!InitializeD3D()) return false;
+
+		D3D11_BUFFER_DESC cbd;
+		ZeroMemory(&cbd, sizeof(cbd));
+		cbd.Usage = D3D11_USAGE_DYNAMIC;
+		cbd.ByteWidth = sizeof(PerViewConstantBuffer);
+		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		// 新建常量缓冲区，不使用初始数据
+		HRESULT hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer);
+		if (FAILED(hr))
+		{
+			std::cout << "Failed to create per view constant buffer!" << std::endl;
+			return false;
+		}
+
 		return true;
 	}
 
@@ -342,6 +357,16 @@ namespace Dolas
 
 	}
 
+	void DolasRHI::VSSetConstantBuffers()
+	{
+		m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+	}
+
+	void DolasRHI::PSSetConstantBuffers()
+	{
+		m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+	}
+
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
 	{
 		ID3D11ShaderResourceView* shader_resource_view = nullptr;
@@ -352,6 +377,23 @@ namespace Dolas
 			return nullptr;
 		}
 		return shader_resource_view;
+	}
+
+	void DolasRHI::UpdatePerViewParameters(RenderCamera* render_camera)
+	{
+		PerViewConstantBuffer per_view_constant_buffer;
+		per_view_constant_buffer.view = render_camera->GetViewMatrix();
+		per_view_constant_buffer.proj = render_camera->GetProjectionMatrix();
+
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+		if (FAILED(hr))
+		{
+			std::cout << "Failed to map per view constant buffer!" << std::endl;
+			return;
+		}
+		memcpy_s(mappedData.pData, sizeof(per_view_constant_buffer), &per_view_constant_buffer, sizeof(per_view_constant_buffer));
+		m_d3d_immediate_context->Unmap(m_d3d_per_view_parameters_buffer, 0);
 	}
 
 	bool DolasRHI::InitializeWindow()

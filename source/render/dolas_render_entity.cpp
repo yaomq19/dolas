@@ -42,6 +42,9 @@ namespace Dolas
         material->GetVertexShader()->Bind(rhi, nullptr, 0);
         material->GetPixelShader()->Bind(rhi, nullptr, 0);
         
+        rhi->VSSetConstantBuffers();
+        rhi->PSSetConstantBuffers();
+
         RenderPrimitiveID render_primitive_id = mesh->GetRenderPrimitiveID();
         RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 

@@ -17,12 +17,11 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-
-        RenderCamera* GetRenderCamera(RenderCameraID id);
+        void Tick(Float delta_time);
+        RenderCamera* GetRenderCameraByID(RenderCameraID id);
         Bool CreateRenderCameraByID(RenderCameraID render_camera_id);
     private:
         std::unordered_map<RenderCameraID, RenderCamera*> m_render_cameras;
-        const static RenderCameraID RENDER_CAMERA_ID_MAIN;
     };// class RenderCameraManager
 }// namespace Dolas
 

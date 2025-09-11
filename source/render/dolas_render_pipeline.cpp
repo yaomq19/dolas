@@ -21,7 +21,7 @@
 #include "render/dolas_shader.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
-
+#include "manager/dolas_render_camera_manager.h"
 namespace Dolas
 {
     RenderPipeline::RenderPipeline()
@@ -133,6 +133,11 @@ namespace Dolas
         rhi->SetRasterizerState(*rasterizer_state);
         rhi->SetDepthStencilState(*depth_stencil_state);
         rhi->SetBlendState(*blend_state);
+
+        RenderCamera* render_camera = TryGetRenderCamera();
+        DOLAS_RETURN_IF_NULL(render_camera);
+        rhi->UpdatePerViewParameters(render_camera);
+        
         render_entity->Draw(rhi);
     }
 
@@ -232,5 +237,18 @@ namespace Dolas
         DOLAS_RETURN_NULL_IF_NULL(render_resource_manager);
         RenderResourceID render_resource_id = render_view->GetRenderResourceID();
         return render_resource_manager->GetRenderResourceByID(render_resource_id);
+    }
+
+    class RenderCamera* RenderPipeline::TryGetRenderCamera() const
+    {
+        RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
+        DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
+        RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
+        DOLAS_RETURN_NULL_IF_NULL(render_view);
+
+        RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
+        DOLAS_RETURN_NULL_IF_NULL(render_camera_manager);
+        RenderCameraID render_camera_id = render_view->GetRenderCameraID();
+        return render_camera_manager->GetRenderCameraByID(render_camera_id);
     }
 } // namespace Dolas

@@ -1,5 +1,6 @@
 #ifndef DOLAS_ENGINE_H
 #define DOLAS_ENGINE_H
+#include "base/dolas_base.h"
 namespace Dolas
 {
 	class DolasEngine
@@ -11,7 +12,7 @@ namespace Dolas
 		bool Initialize();
 		void Clear();
 		void Run();
-		void Update();
+		void Update(Float delta_time);
 		void Render();
 		void Test();
 		

@@ -171,14 +171,6 @@ namespace Dolas
             
             XMFLOAT3 world_pos_float3;
             XMStoreFloat3(&world_pos_float3, world_pos);
-
-            // 使用简单的球体剔除（假设半径为1.0f）
-            if (camera.IsSphereInFrustum(world_pos_float3, 1.0f))
-            {
-                // 计算到相机的距离
-                item.distance_to_camera = CalculateDistanceToCamera(item.world_matrix, camera);
-                m_visible_render_items.push_back(&item);
-            }
         }
 
         // 排序渲染项
@@ -293,11 +285,7 @@ namespace Dolas
 
     float RenderScene::CalculateDistanceToCamera(const XMFLOAT4X4& world_matrix, RenderCamera& camera)
     {
-        XMFLOAT3 pos = camera.GetPosition();
-        XMVECTOR world_pos = XMVectorSet(world_matrix._41, world_matrix._42, world_matrix._43, 1.0f);
-        XMVECTOR camera_pos = XMLoadFloat3(&pos);
-        XMVECTOR distance_vec = XMVectorSubtract(world_pos, camera_pos);
-        return XMVectorGetX(XMVector3Length(distance_vec));
+        return 0.0f;
     }
 
 } // namespace Dolas 

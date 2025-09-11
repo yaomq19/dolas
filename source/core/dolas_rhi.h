@@ -11,7 +11,7 @@
 #endif
 
 #include "common/dolas_hash.h"
-
+#include "core/dolas_math.h"
 namespace Dolas
 {
 #ifndef DEFAULT_CLIENT_WIDTH
@@ -81,6 +81,12 @@ namespace Dolas
 		ID3D11BlendState* m_d3d_blend_state;
 	};
 
+	struct PerViewConstantBuffer
+	{
+		Matrix4x4 view;
+		Matrix4x4 proj;
+	};
+
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{
@@ -105,8 +111,11 @@ namespace Dolas
 		void SetVertexShader();
 		void SetPixelShader();
 
+		void VSSetConstantBuffers();
+		void PSSetConstantBuffers();
+		
 		ID3D11ShaderResourceView* CreateShaderResourceView(ID3D11Resource* resource);
-
+		void UpdatePerViewParameters(class RenderCamera* render_camera);
 		// User annotation helpers (RenderDoc / PIX markers)
 		void BeginEvent(const wchar_t* name);
 		void EndEvent();
@@ -122,6 +131,8 @@ namespace Dolas
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
+
+		ID3D11Buffer* m_d3d_per_view_parameters_buffer;
 	};
 
 	// RAII scope for GPU events
