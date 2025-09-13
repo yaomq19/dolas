@@ -103,7 +103,7 @@ namespace Dolas
         RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
         DOLAS_RETURN_IF_NULL(render_entity_manager);
 
-		const std::string render_entity_name = "cube.entity";
+		const std::string render_entity_name = "triangle.entity";
 
         RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
         if (render_entity == nullptr)

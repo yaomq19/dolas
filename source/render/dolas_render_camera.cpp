@@ -238,8 +238,8 @@ namespace Dolas
         m_projection_matrix = Matrix4x4::Perspective(
             MathUtil::DegreesToRadians(m_fov),
             m_aspect_ratio,
-            -m_near_plane,
-            -m_far_plane);
+            -m_far_plane,
+            -m_near_plane);
     }
 
     /* Render Camera Orthographic */

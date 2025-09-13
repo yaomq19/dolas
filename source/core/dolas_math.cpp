@@ -556,9 +556,9 @@ namespace Dolas
     Matrix4x4 Matrix3x3::ExpandToMatrix4x4() const
     {
         return Matrix4x4(
-            data[0][0], data[1][0], data[2][0], 0.0f,
-            data[0][1], data[1][1], data[2][1], 0.0f,
-            data[0][2], data[1][2], data[2][2], 0.0f,
+            data[0][0], data[0][1], data[0][2], 0.0f,
+            data[1][0], data[1][1], data[1][2], 0.0f,
+            data[2][0], data[2][1], data[2][2], 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f);
     }
     /* Matrix4x4 */
@@ -880,7 +880,32 @@ namespace Dolas
             0.0f, 0.0f, 0.0f, 1.0f
         );
 
-        return scale_matrix * translation_matrix;
+		Matrix4x4 standard_orthographic_matrix = scale_matrix * translation_matrix;
+
+        Matrix4x4 scale_again_matrix(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.5f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        );
+
+        Matrix4x4 translation_again_matrix(
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, -0.5f,
+			0.0f, 0.0f, 0.0f, 1.0f
+        );
+
+        Matrix4x4 filp_z_matrix(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, -1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        );
+
+		Matrix4x4 standard_to_directx_matrix = filp_z_matrix *  translation_again_matrix * scale_again_matrix;
+
+        return standard_to_directx_matrix * standard_orthographic_matrix;
     }
     
     // fov in radian
@@ -902,7 +927,13 @@ namespace Dolas
         Float b = -half_height;
         Matrix4x4 ortho_matrix = Matrix4x4::Orthographic(l, r, t, b, f, n);
 
-        return ortho_matrix * persp_to_ortho_matrix;
+        Matrix4x4 adjust_w_matrix(
+            -1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, -1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, -1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, -1.0f
+        );
+        return adjust_w_matrix * ortho_matrix * persp_to_ortho_matrix;
     }
     
     /* MathUtil */
