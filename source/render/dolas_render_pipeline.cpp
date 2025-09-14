@@ -169,6 +169,8 @@ namespace Dolas
         rhi->SetDepthStencilState(*depth_stencil_state);
         rhi->SetBlendState(*blend_state);
 
+		rhi->UpdatePerFrameParameters();
+
 		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
         RenderEntityID quad_render_entity_id = STRING_ID(Quad);
 		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);

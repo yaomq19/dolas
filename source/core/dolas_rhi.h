@@ -85,6 +85,13 @@ namespace Dolas
 	{
 		Matrix4x4 view;
 		Matrix4x4 proj;
+		Vector4 camera_position; // w is unused
+	};
+
+	struct PerFrameConstantBuffer
+	{
+		Vector4 light_direction_intensity;
+		Vector4 light_color; // w is unused
 	};
 
 	// 渲染硬件接口(RHI)相关定义将在这里
@@ -115,6 +122,7 @@ namespace Dolas
 		void PSSetConstantBuffers();
 		
 		ID3D11ShaderResourceView* CreateShaderResourceView(ID3D11Resource* resource);
+		void UpdatePerFrameParameters();
 		void UpdatePerViewParameters(class RenderCamera* render_camera);
 		// User annotation helpers (RenderDoc / PIX markers)
 		void BeginEvent(const wchar_t* name);
@@ -132,6 +140,7 @@ namespace Dolas
 		bool InitializeWindow();
 		bool InitializeD3D();
 
+		ID3D11Buffer* m_d3d_per_frame_parameters_buffer;
 		ID3D11Buffer* m_d3d_per_view_parameters_buffer;
 	};
 

@@ -1,0 +1,7 @@
+#ifndef SHADE_MODE_HLSLI
+#define SHADE_MODE_HLSLI
+
+#define SHADE_MODE_STANDARD 0
+
+
+#endif

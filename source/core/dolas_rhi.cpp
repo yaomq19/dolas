@@ -262,6 +262,18 @@ namespace Dolas
 			return false;
 		}
 
+		ZeroMemory(&cbd, sizeof(cbd));
+		cbd.Usage = D3D11_USAGE_DYNAMIC;
+		cbd.ByteWidth = sizeof(PerFrameConstantBuffer);
+		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		// 新建常量缓冲区，不使用初始数据
+		HRESULT hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer);
+		if (FAILED(hr))
+		{
+			std::cout << "Failed to create per frame constant buffer!" << std::endl;
+			return false;
+		}
 		return true;
 	}
 
@@ -377,11 +389,13 @@ namespace Dolas
 	void DolasRHI::VSSetConstantBuffers()
 	{
 		m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+		m_d3d_immediate_context->VSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
 	}
 
 	void DolasRHI::PSSetConstantBuffers()
 	{
 		m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+		m_d3d_immediate_context->PSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
 	}
 
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
@@ -395,12 +409,30 @@ namespace Dolas
 		}
 		return shader_resource_view;
 	}
+	
+	void DolasRHI::UpdatePerFrameParameters()
+	{
+		PerFrameConstantBuffer per_frame_constant_buffer;
+		per_frame_constant_buffer.light_direction_intensity = Vector4(-1.0f, 1.0f, -1.0f, 1.0f);
+		per_frame_constant_buffer.light_color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+		if (FAILED(hr))
+		{
+			std::cout << "Failed to map per view constant buffer!" << std::endl;
+			return;
+		}
+		memcpy_s(mappedData.pData, sizeof(per_frame_constant_buffer), &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
+		m_d3d_immediate_context->Unmap(m_d3d_per_frame_parameters_buffer, 0);
+	}
 
 	void DolasRHI::UpdatePerViewParameters(RenderCamera* render_camera)
 	{
 		PerViewConstantBuffer per_view_constant_buffer;
 		per_view_constant_buffer.view = render_camera->GetViewMatrix();
 		per_view_constant_buffer.proj = render_camera->GetProjectionMatrix();
+		per_view_constant_buffer.camera_position = Vector4(render_camera->GetPosition(), 1.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
 		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);

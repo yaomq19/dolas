@@ -318,6 +318,12 @@ namespace Dolas
     {
     }
 
+    Vector4::Vector4(const Vector3& other, Float w): x(other.x), y(other.y), z(other.z), w(w)
+    {
+
+    }
+
+
     Vector4::Vector4(const Vector4& other) : x(other.x), y(other.y), z(other.z), w(other.w)
     {
     }

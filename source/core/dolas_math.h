@@ -93,6 +93,7 @@ namespace Dolas
     public:
         Vector4();
         Vector4(Float x, Float y, Float z, Float w);
+        Vector4(const Vector3& other, Float w);
         Vector4(const Vector4& other);
         ~Vector4();
 
