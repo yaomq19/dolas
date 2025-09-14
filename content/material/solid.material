@@ -1,10 +1,11 @@
 {
-    "vertex_shader" : "solid.vs.hlsl",
-    "pixel_shader" : "solid.ps.hlsl",
+    "vertex_shader" : "solid_vs.hlsl",
+    "pixel_shader" : "solid_ps.hlsl",
 
-    "texture" : {
+    "pixel_shader_texture" : {
         "albedo_map" : "albedo.dds"
     },
+
     "parameter" : {
         "intensity" : 1
     }

@@ -10,6 +10,6 @@ struct SurfaceData
     float3 world_position;
     float3 world_normal;
     int shade_mode;
-}
+};
 
 #endif

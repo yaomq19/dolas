@@ -1,10 +1,7 @@
 {
-    "vertex_shader" : "deferred_shading.vs.hlsl",
-    "pixel_shader" : "deferred_shading.ps.hlsl",
+    "vertex_shader" : "deferred_shading_vs.hlsl",
+    "pixel_shader" : "deferred_shading_ps.hlsl",
 
-    "texture" : {
-        "albedo_map" : "albedo.dds"
-    },
     "parameter" : {
         "intensity" : 1
     }

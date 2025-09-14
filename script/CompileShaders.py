@@ -134,7 +134,7 @@ class ShaderCompiler:
             # 执行编译
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             
-            print(f"✓ {description}: {hlsl_file.name} -> {entry_point} -> {output_filename}")
+            print(f"yes {description}: {hlsl_file.name} -> {entry_point} -> {output_filename}")
             
             if result.stdout and self.verbose:
                 self.log(f"  Output: {result.stdout.strip()}")
@@ -142,7 +142,7 @@ class ShaderCompiler:
             return True
             
         except subprocess.CalledProcessError as e:
-            print(f"✗ FAILED to compile {entry_point} in {hlsl_file.name}")
+            print(f"x FAILED to compile {entry_point} in {hlsl_file.name}")
             print(f"  Error Code: {e.returncode}")
             if e.stdout:
                 print(f"  Stdout: {e.stdout}")

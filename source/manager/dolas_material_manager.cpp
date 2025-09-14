@@ -88,9 +88,35 @@ namespace Dolas
         }
 
         // 解析纹理信息
-        if (json_data.contains("texture"))
+		if (json_data.contains("vertex_shader_texture"))
+		{
+			const auto& textures = json_data["vertex_shader_texture"];
+			for (auto it = textures.begin(); it != textures.end(); ++it)
+			{
+				std::string texture_name = it.key();
+				std::string texture_file_name = it.value();
+
+				TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromFile(texture_file_name);
+				if (texture_id == TEXTURE_ID_EMPTY)
+				{
+					return MATERIAL_ID_EMPTY;
+				}
+
+				// 根据纹理名称分配插槽
+				int slot = 0;
+				if (texture_name == "albedo_map") slot = 0;
+				else if (texture_name == "normal_map") slot = 1;
+				else if (texture_name == "roughness_map") slot = 2;
+				else if (texture_name == "metallic_map") slot = 3;
+				// 可以扩展更多纹理类型
+
+				material->m_vertex_shader_textures[slot] = texture_id;
+			}
+		}
+
+        if (json_data.contains("pixel_shader_texture"))
         {
-            const auto& textures = json_data["texture"];
+            const auto& textures = json_data["pixel_shader_texture"];
             for (auto it = textures.begin(); it != textures.end(); ++it)
             {
                 std::string texture_name = it.key();
@@ -110,7 +136,7 @@ namespace Dolas
                 else if (texture_name == "metallic_map") slot = 3;
                 // 可以扩展更多纹理类型
                 
-                material->m_textures[slot] = texture_id;
+                material->m_pixel_shader_textures[slot] = texture_id;
             }
         }
 

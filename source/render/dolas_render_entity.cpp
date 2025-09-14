@@ -38,6 +38,9 @@ namespace Dolas
 		Material* material = g_dolas_engine.m_material_manager->GetMaterial(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
+        // 处理纹理
+		material->BindVertexShaderTextures();
+		material->BindPixelShaderTextures();
 		// 绑定 Shader
         material->GetVertexShader()->Bind(rhi, nullptr, 0);
         material->GetPixelShader()->Bind(rhi, nullptr, 0);

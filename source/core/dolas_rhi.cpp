@@ -268,7 +268,7 @@ namespace Dolas
 		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		// 新建常量缓冲区，不使用初始数据
-		HRESULT hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer);
+		hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer);
 		if (FAILED(hr))
 		{
 			std::cout << "Failed to create per frame constant buffer!" << std::endl;

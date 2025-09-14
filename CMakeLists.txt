@@ -38,3 +38,6 @@ add_subdirectory(third_party)
 
 # 添加源代码子目录
 add_subdirectory(source)
+
+# 添加 Shader Compiler 子目录
+add_subdirectory(shader_compiler)

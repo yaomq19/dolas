@@ -138,6 +138,8 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(render_camera);
         rhi->UpdatePerViewParameters(render_camera);
         
+
+
         render_entity->Draw(rhi);
     }
 

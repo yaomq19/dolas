@@ -215,7 +215,7 @@ DDS生成器使用Microsoft的 `texconv.exe` 工具进行纹理转换。
 DDS Texture Generator - Dolas Engine
 ========================================
 Running DDSGenerate.py...
-✓ Found texconv.exe: C:\Program Files (x86)\Windows Kits\10\bin\x64\texconv.exe
+yes Found texconv.exe: C:\Program Files (x86)\Windows Kits\10\bin\x64\texconv.exe
 🔍 Scanning directory: C:\repos\dolas\content\textures
 📁 Found 3 image files
 

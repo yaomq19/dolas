@@ -49,7 +49,7 @@ class DDSGenerator:
                                   capture_output=True, text=True, shell=True)
             if result.returncode == 0:
                 self.texconv_exe = result.stdout.strip().split('\n')[0]
-                print(f"✓ Found texconv.exe in PATH: {self.texconv_exe}")
+                print(f"yes Found texconv.exe in PATH: {self.texconv_exe}")
                 return
         except:
             pass
@@ -60,7 +60,7 @@ class DDSGenerator:
                 path = Path(path)
             if path.exists():
                 self.texconv_exe = str(path)
-                print(f"✓ Found texconv.exe: {self.texconv_exe}")
+                print(f"yes Found texconv.exe: {self.texconv_exe}")
                 return
         
         print("❌ Error: texconv.exe tool not found")
