@@ -7,6 +7,41 @@ namespace Dolas
     #define DOLAS_PI (3.14159265358979323846)
     class Matrix4x4;
 
+    class Vector2
+    {
+    public:
+        Float x, y;
+        
+        Vector2();
+        Vector2(Float x, Float y);
+        Vector2(const Vector2& other);
+        ~Vector2();
+        
+        Float Length() const;
+        Float Dot(const Vector2& other) const;
+        Vector2 Normalized() const;
+        
+        // 运算符重载
+        Vector2 operator+(const Vector2& other) const;
+        Vector2 operator-(const Vector2& other) const;
+        Vector2 operator*(const Vector2& other) const;
+        Vector2 operator/(const Vector2& other) const;
+        Vector2 operator*(const Float& number) const;
+        Vector2 operator/(const Float& number) const;
+        
+        Vector2& operator+=(const Vector2& other);
+        Vector2& operator-=(const Vector2& other);
+        Vector2& operator*=(const Vector2& other);
+        Vector2& operator/=(const Vector2& other);
+        Vector2& operator*=(const Float& number);
+        Vector2& operator/=(const Float& number);
+        
+        static const Vector2& X();
+        static const Vector2& Y();
+        static const Vector2& Zero();
+        static const Vector2& One();
+    };
+
     class Vector3
     {
     public:
@@ -38,6 +73,8 @@ namespace Dolas
         Vector3& operator/=(const Vector3& other);
         Vector3& operator*=(const Float& number);
         Vector3& operator/=(const Float& number);
+
+		Vector3 operator-() const;
 
         static const Vector3& X();
         static const Vector3& Y();

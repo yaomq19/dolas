@@ -39,11 +39,19 @@ namespace Dolas
         void SetFarPlane(Float far_plane);
 
         void TestRotate(Float delta_time);
+        
+        // 相机控制函数
+        void ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y, Float sensitivity = 0.1f);
+        void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
+                                bool move_up, bool move_down, Float delta_time, Float move_speed = 5.0f);
 
         protected:
         void CorrectUpVector();
         void UpdateViewMatrix();
         virtual void UpdateProjectionMatrix() = 0;
+        
+        // 相机控制辅助函数
+        Vector3 GetRightVector() const;
 
         CameraPerspectiveType m_camera_perspective_type;
         Vector3 m_position;

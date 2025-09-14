@@ -110,7 +110,7 @@ namespace Dolas
         
         m_textures[texture->m_file_id] = texture;
         
-        std::cout << "Successfully loaded texture: " << texture_file_path << std::endl;
+        // std::cout << "Successfully loaded texture: " << texture_file_path << std::endl;
         return texture->m_file_id;
     }
 

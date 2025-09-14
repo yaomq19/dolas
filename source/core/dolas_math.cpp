@@ -3,6 +3,132 @@
 
 namespace Dolas
 {
+    // Vector2 implementation
+    Vector2::Vector2() : x(0.0f), y(0.0f) {}
+    
+    Vector2::Vector2(Float x, Float y) : x(x), y(y) {}
+    
+    Vector2::Vector2(const Vector2& other) : x(other.x), y(other.y) {}
+    
+    Vector2::~Vector2() {}
+    
+    Float Vector2::Length() const
+    {
+        return std::sqrt(x * x + y * y);
+    }
+    
+    Float Vector2::Dot(const Vector2& other) const
+    {
+        return x * other.x + y * other.y;
+    }
+    
+    Vector2 Vector2::Normalized() const
+    {
+        Float length = Length();
+        if (length > 0.0f)
+        {
+            return Vector2(x / length, y / length);
+        }
+        return Vector2(0.0f, 0.0f);
+    }
+    
+    Vector2 Vector2::operator+(const Vector2& other) const
+    {
+        return Vector2(x + other.x, y + other.y);
+    }
+    
+    Vector2 Vector2::operator-(const Vector2& other) const
+    {
+        return Vector2(x - other.x, y - other.y);
+    }
+    
+    Vector2 Vector2::operator*(const Vector2& other) const
+    {
+        return Vector2(x * other.x, y * other.y);
+    }
+    
+    Vector2 Vector2::operator/(const Vector2& other) const
+    {
+        return Vector2(x / other.x, y / other.y);
+    }
+    
+    Vector2 Vector2::operator*(const Float& number) const
+    {
+        return Vector2(x * number, y * number);
+    }
+    
+    Vector2 Vector2::operator/(const Float& number) const
+    {
+        return Vector2(x / number, y / number);
+    }
+    
+    Vector2& Vector2::operator+=(const Vector2& other)
+    {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+    
+    Vector2& Vector2::operator-=(const Vector2& other)
+    {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+    
+    Vector2& Vector2::operator*=(const Vector2& other)
+    {
+        x *= other.x;
+        y *= other.y;
+        return *this;
+    }
+    
+    Vector2& Vector2::operator/=(const Vector2& other)
+    {
+        x /= other.x;
+        y /= other.y;
+        return *this;
+    }
+    
+    Vector2& Vector2::operator*=(const Float& number)
+    {
+        x *= number;
+        y *= number;
+        return *this;
+    }
+    
+    Vector2& Vector2::operator/=(const Float& number)
+    {
+        x /= number;
+        y /= number;
+        return *this;
+    }
+    
+    const Vector2& Vector2::X()
+    {
+        static Vector2 x_vector(1.0f, 0.0f);
+        return x_vector;
+    }
+    
+    const Vector2& Vector2::Y()
+    {
+        static Vector2 y_vector(0.0f, 1.0f);
+        return y_vector;
+    }
+    
+    const Vector2& Vector2::Zero()
+    {
+        static Vector2 zero_vector(0.0f, 0.0f);
+        return zero_vector;
+    }
+    
+    const Vector2& Vector2::One()
+    {
+        static Vector2 one_vector(1.0f, 1.0f);
+        return one_vector;
+    }
+    
+    // Vector3 implementation
     /* Vector3 */
     static const Vector3 s_x(1.0f, 0.0f, 0.0f);
     static const Vector3 s_y(0.0f, 1.0f, 0.0f);
@@ -149,6 +275,11 @@ namespace Dolas
         return *this;
     }
     
+    Vector3 Vector3::operator-() const
+    {
+		return Vector3(-x, -y, -z);
+    }
+
     const Vector3& Vector3::X()
     {
         return s_x;

@@ -145,6 +145,85 @@ namespace Dolas
         SetPosition(Vector3(m_position.x + std::sin(time + delta_time), m_position.y, m_position.z));
     }
 
+    void RenderCamera::ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y, Float sensitivity)
+    {
+        // 将鼠标移动转换为角度变化（弧度）
+        Float yaw_delta = -mouse_delta_x * sensitivity * 0.01f;   // 水平旋转（偏航角）
+        Float pitch_delta = -mouse_delta_y * sensitivity * 0.01f; // 垂直旋转（俯仰角），注意Y轴反转
+        
+        // 获取右向量
+        
+        // 绕世界Y轴旋转（偏航）
+        Matrix3x3 yaw_rotation = MathUtil::Rotate(Vector3::Z(), yaw_delta);
+        m_forward = yaw_rotation * m_forward;
+        m_up = yaw_rotation * m_up;
+        m_forward.Normalize();
+        m_up.Normalize();
+
+        // 绕右向量旋转（俯仰）
+        Matrix3x3 pitch_rotation = MathUtil::Rotate(GetRightVector(), pitch_delta);
+        m_forward = pitch_rotation * m_forward;
+        m_up = pitch_rotation * m_up;
+        
+        // 标准化向量
+        m_forward = m_forward.Normalized();
+        m_up = m_up.Normalized();
+        
+        // 确保向量正交
+        CorrectUpVector();
+        
+        // 更新视图矩阵
+        UpdateViewMatrix();
+    }
+
+    void RenderCamera::ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
+                                          bool move_up, bool move_down, Float delta_time, Float move_speed)
+    {
+        Vector3 movement(0.0f, 0.0f, 0.0f);
+        Vector3 right = GetRightVector();
+        
+        // 前后移动
+        if (move_forward)
+        {
+            movement += m_forward * move_speed * delta_time;
+        }
+        if (move_backward)
+        {
+            movement -= m_forward * move_speed * delta_time;
+        }
+        
+        // 左右移动
+        if (move_left)
+        {
+            movement -= right * move_speed * delta_time;
+        }
+        if (move_right)
+        {
+            movement += right * move_speed * delta_time;
+        }
+        
+        // 上下移动
+        if (move_up)
+        {
+            movement += Vector3::Y() * move_speed * delta_time;
+        }
+        if (move_down)
+        {
+            movement -= Vector3::Y() * move_speed * delta_time;
+        }
+        
+        // 应用移动
+        if (movement.Length() > 0.0f)
+        {
+            SetPosition(m_position + movement);
+        }
+    }
+
+    Vector3 RenderCamera::GetRightVector() const
+    {
+        return m_forward.Cross(m_up).Normalized();
+    }
+
     void RenderCamera::UpdateViewMatrix()
     {
         Matrix4x4 move_to_origin_matrix = Matrix4x4::Identity();

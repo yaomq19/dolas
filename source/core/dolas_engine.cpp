@@ -22,6 +22,7 @@
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
+#include "manager/dolas_input_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -67,6 +68,10 @@ namespace Dolas
 	bool DolasEngine::Initialize()
 	{
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
+		
+		// 初始化输入管理器（需要在RHI初始化之后，因为需要窗口句柄）
+		DOLAS_RETURN_FALSE_IF_FALSE(g_input_manager.Initialize(m_rhi->m_window_handle));
+		
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
@@ -89,6 +94,7 @@ namespace Dolas
 
 	void DolasEngine::Clear()
 	{
+		g_input_manager.Clear();
 		m_rhi->Clear();
 		m_render_pipeline_manager->Clear();
 		m_mesh_manager->Clear();
@@ -109,6 +115,7 @@ namespace Dolas
 
 	void DolasEngine::Run()
 	{
+		
 		MSG msg = { 0 };
 		
 		while (msg.message != WM_QUIT)
@@ -130,6 +137,10 @@ namespace Dolas
 
 	void DolasEngine::Update(Float delta_time)
 	{
+		// 更新输入系统
+		g_input_manager.Update();
+		
+		// 更新相机管理器（包含输入处理）
 		m_render_camera_manager->Tick(delta_time);
 	}
 

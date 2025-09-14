@@ -118,7 +118,7 @@ namespace Dolas
             }
         }
 
-        std::cout << "Buffer::CreateBuffer: Successfully created buffer of size " << size << " bytes" << std::endl;
+        // std::cout << "Buffer::CreateBuffer: Successfully created buffer of size " << size << " bytes" << std::endl;
         return true;
     }
 

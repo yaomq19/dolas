@@ -2,6 +2,7 @@
 #include "dolas_engine.h"
 #include "dxgi_helper.h"
 #include "manager/dolas_texture_manager.h"
+#include "manager/dolas_input_manager.h"
 
 #if defined(DEBUG) || defined(_DEBUG)
 #include <d3d11sdklayers.h>  // For D3D11 debug interfaces
@@ -281,16 +282,31 @@ namespace Dolas
 
     LRESULT DolasRHI::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
+        // 将输入消息传递给输入管理器
+        switch (msg)
+        {
+            case WM_KEYDOWN:
+            case WM_KEYUP:
+            case WM_SYSKEYDOWN:
+            case WM_SYSKEYUP:
+                g_input_manager.ProcessKeyboardMessage(msg, wParam, lParam);
+                break;
+                
+            case WM_LBUTTONDOWN:
+            case WM_LBUTTONUP:
+            case WM_RBUTTONDOWN:
+            case WM_RBUTTONUP:
+            case WM_MBUTTONDOWN:
+            case WM_MBUTTONUP:
+            case WM_MOUSEMOVE:
+                g_input_manager.ProcessMouseMessage(msg, wParam, lParam);
+                break;
+        }
+        
         switch (msg)
         {
             case WM_DESTROY:
                 PostQuitMessage(0);
-                return 0;
-            case WM_KEYDOWN:
-                if (wParam == VK_ESCAPE)
-                {
-                    PostQuitMessage(0);
-                }
                 return 0;
         }
         return DefWindowProc(hwnd, msg, wParam, lParam);
