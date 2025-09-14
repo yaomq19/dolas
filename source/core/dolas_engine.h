@@ -32,6 +32,7 @@ namespace Dolas
 		class RenderViewManager* m_render_view_manager;
 		class RenderCameraManager* m_render_camera_manager;
 		class RenderSceneManager* m_render_scene_manager;
+		class InputManager* m_input_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

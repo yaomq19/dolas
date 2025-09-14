@@ -45,6 +45,7 @@ namespace Dolas
 		m_render_view_manager = DOLAS_NEW(RenderViewManager);
 		m_render_camera_manager = DOLAS_NEW(RenderCameraManager);
 		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
+		m_input_manager = DOLAS_NEW(InputManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -63,15 +64,13 @@ namespace Dolas
 		DOLAS_DELETE(m_buffer_manager);
 		DOLAS_DELETE(m_render_state_manager);
 		DOLAS_DELETE(m_render_view_manager);
+		DOLAS_DELETE(m_render_camera_manager);
+		DOLAS_DELETE(m_input_manager);
 	}
 
 	bool DolasEngine::Initialize()
 	{
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
-		
-		// 初始化输入管理器（需要在RHI初始化之后，因为需要窗口句柄）
-		DOLAS_RETURN_FALSE_IF_FALSE(g_input_manager.Initialize(m_rhi->m_window_handle));
-		
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
@@ -86,15 +85,14 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_state_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_camera_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_scene_manager->Initialize());
-
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
-
+		// 初始化输入管理器（需要在RHI初始化之后，因为需要窗口句柄）
+		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize(m_rhi->m_window_handle));
 		return true;
 	}
 
 	void DolasEngine::Clear()
 	{
-		g_input_manager.Clear();
 		m_rhi->Clear();
 		m_render_pipeline_manager->Clear();
 		m_mesh_manager->Clear();
@@ -111,13 +109,12 @@ namespace Dolas
 		m_render_view_manager->Clear();
 		m_render_camera_manager->Clear();
 		m_render_scene_manager->Clear();
+		m_input_manager->Clear();
 	}
 
 	void DolasEngine::Run()
 	{
-		
 		MSG msg = { 0 };
-		
 		while (msg.message != WM_QUIT)
 		{
 			// handle windows message
@@ -138,10 +135,10 @@ namespace Dolas
 	void DolasEngine::Update(Float delta_time)
 	{
 		// 更新输入系统
-		g_input_manager.Update();
+		m_input_manager->Update();
 		
 		// 更新相机管理器（包含输入处理）
-		m_render_camera_manager->Tick(delta_time);
+		m_render_camera_manager->Update(delta_time);
 	}
 
 	void DolasEngine::Render()

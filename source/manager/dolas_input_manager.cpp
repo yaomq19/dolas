@@ -4,8 +4,6 @@
 namespace Dolas
 {
     // 全局输入管理器实例
-    InputManager g_input_manager;
-
     InputManager::InputManager()
         : m_window_handle(nullptr)
         , m_mouse_captured(false)
@@ -13,6 +11,7 @@ namespace Dolas
         , m_previous_mouse_position(0.0f, 0.0f)
         , m_mouse_delta(0.0f, 0.0f)
         , m_screen_center(0.0f, 0.0f)
+        , m_mouse_wheel_delta(0.0f)
     {
     }
 
@@ -57,35 +56,8 @@ namespace Dolas
 
     void InputManager::Update()
     {
-        // 保存上一帧的状态
-        m_previous_key_states = m_key_states;
-        m_previous_mouse_button_states = m_mouse_button_states;
-        
-        // 更新键盘状态 - 将PRESSED和RELEASED状态转换为DOWN和UP
-        for (auto& pair : m_key_states)
-        {
-            if (pair.second == KeyState::PRESSED)
-            {
-                pair.second = KeyState::DOWN;
-            }
-            else if (pair.second == KeyState::RELEASED)
-            {
-                pair.second = KeyState::UP;
-            }
-        }
-        
-        // 更新鼠标按钮状态
-        for (auto& pair : m_mouse_button_states)
-        {
-            if (pair.second == KeyState::PRESSED)
-            {
-                pair.second = KeyState::DOWN;
-            }
-            else if (pair.second == KeyState::RELEASED)
-            {
-                pair.second = KeyState::UP;
-            }
-        }
+        // 重置滚轮增量（每帧重置）
+        // m_mouse_wheel_delta = 0.0f;
         
         // 更新鼠标位置和增量
         UpdateMousePosition();
@@ -94,37 +66,13 @@ namespace Dolas
     bool InputManager::IsKeyDown(int key_code) const
     {
         auto it = m_key_states.find(key_code);
-        return it != m_key_states.end() && (it->second == KeyState::DOWN || it->second == KeyState::PRESSED);
-    }
-
-    bool InputManager::IsKeyPressed(int key_code) const
-    {
-        auto it = m_key_states.find(key_code);
-        return it != m_key_states.end() && it->second == KeyState::PRESSED;
-    }
-
-    bool InputManager::IsKeyReleased(int key_code) const
-    {
-        auto it = m_key_states.find(key_code);
-        return it != m_key_states.end() && it->second == KeyState::RELEASED;
+        return it != m_key_states.end() && it->second == KeyState::DOWN;
     }
 
     bool InputManager::IsMouseButtonDown(int button) const
     {
         auto it = m_mouse_button_states.find(button);
-        return it != m_mouse_button_states.end() && (it->second == KeyState::DOWN || it->second == KeyState::PRESSED);
-    }
-
-    bool InputManager::IsMouseButtonPressed(int button) const
-    {
-        auto it = m_mouse_button_states.find(button);
-        return it != m_mouse_button_states.end() && it->second == KeyState::PRESSED;
-    }
-
-    bool InputManager::IsMouseButtonReleased(int button) const
-    {
-        auto it = m_mouse_button_states.find(button);
-        return it != m_mouse_button_states.end() && it->second == KeyState::RELEASED;
+        return it != m_mouse_button_states.end() && it->second == KeyState::DOWN;
     }
 
     Vector2 InputManager::GetMousePosition() const
@@ -135,6 +83,15 @@ namespace Dolas
     Vector2 InputManager::GetMouseDelta() const
     {
         return m_mouse_delta;
+    }
+
+    float InputManager::GetMouseWheelDelta() const
+    {
+        if (m_mouse_wheel_delta != 0.0f)
+        {
+            std::cerr << "GetMouseWheelDelta() returning: " << m_mouse_wheel_delta << std::endl;
+        }
+        return m_mouse_wheel_delta;
     }
 
     void InputManager::CaptureMouse(bool capture)
@@ -175,80 +132,103 @@ namespace Dolas
 
     void InputManager::ProcessKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        int key_code = static_cast<int>(wParam);
-        
-        switch (msg)
-        {
-        case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
-            UpdateKeyState(key_code, true);
-            break;
-            
-        case WM_KEYUP:
-        case WM_SYSKEYUP:
-            UpdateKeyState(key_code, false);
-            break;
-        }
+        int virtual_key = static_cast<int>(wParam);
+        bool is_key_down = false;
+
+		switch (msg)
+		{
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+			is_key_down = true;
+			std::cerr << "Key Down: " << virtual_key << " ('" << static_cast<char>(virtual_key) << "')" << std::endl;
+			break;
+
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+			is_key_down = false;
+			std::cerr << "Key Up: " << virtual_key << " ('" << static_cast<char>(virtual_key) << "')" << std::endl;
+			break;
+
+		default:
+			return; // 不处理其他消息
+		}
+
+        UpdateKeyState(virtual_key, is_key_down);
     }
 
     void InputManager::ProcessMouseMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     {
+        int virtual_key = -1;
+        bool is_key_down = false;
+
         switch (msg)
         {
         case WM_LBUTTONDOWN:
-			std::cerr << "Left Mouse Button Down" << std::endl;
-            UpdateMouseButtonState(VK_LBUTTON, true);
+            virtual_key = VK_LBUTTON;
+            is_key_down = true;
             break;
             
         case WM_LBUTTONUP:
-			std::cerr << "Left Mouse Button Up" << std::endl;
-            UpdateMouseButtonState(VK_LBUTTON, false);
+            virtual_key = VK_LBUTTON;
+            is_key_down = false;
             break;
             
         case WM_RBUTTONDOWN:
-			std::cerr << "Right Mouse Button Down" << std::endl;
-            UpdateMouseButtonState(VK_RBUTTON, true);
+            virtual_key = VK_RBUTTON;
+            is_key_down = true;
+            CaptureMouse(true);
             break;
             
         case WM_RBUTTONUP:
-			std::cerr << "Right Mouse Button Up" << std::endl;
-            UpdateMouseButtonState(VK_RBUTTON, false);
+            virtual_key = VK_RBUTTON;
+            is_key_down = false;
+			CaptureMouse(false);
+
             break;
             
         case WM_MBUTTONDOWN:
-			std::cerr << "Middle Mouse Button Down" << std::endl;
-            UpdateMouseButtonState(VK_MBUTTON, true);
+            virtual_key = VK_MBUTTON;
+            is_key_down = true;
             break;
             
         case WM_MBUTTONUP:
-			std::cerr << "Middle Mouse Button Up" << std::endl;
-            UpdateMouseButtonState(VK_MBUTTON, false);
+            virtual_key = VK_MBUTTON;
+            is_key_down = false;
             break;
             
         case WM_MOUSEMOVE:
-			std::cerr << "Mouse Move" << std::endl;
+            virtual_key = -1;
+            is_key_down = false;
             // 鼠标移动在UpdateMousePosition中处理
             break;
+            
+        case WM_MOUSEWHEEL:
+            {
+                // 处理滚轮事件
+                // wParam的高16位包含滚轮增量值
+                short wheel_delta = GET_WHEEL_DELTA_WPARAM(wParam);
+                std::cerr << "WM_MOUSEWHEEL received! Raw delta: " << wheel_delta << std::endl;
+                
+                // 将Windows的滚轮增量转换为标准化的值
+                // WHEEL_DELTA通常是120，我们将其标准化为1.0或-1.0
+                float normalized_delta = static_cast<float>(wheel_delta) / WHEEL_DELTA;
+                m_mouse_wheel_delta += normalized_delta;
+                
+                std::cerr << "Normalized delta: " << normalized_delta << ", Total delta: " << m_mouse_wheel_delta << std::endl;
+                virtual_key = -1; // 滚轮不是按钮事件
+            }
+            break;
+        }
+
+        if (virtual_key != -1)
+        {
+            UpdateMouseButtonState(virtual_key, is_key_down);
         }
     }
 
     void InputManager::UpdateKeyState(int key_code, bool is_down)
     {
-        auto current_it = m_key_states.find(key_code);
-        auto previous_it = m_previous_key_states.find(key_code);
-        
-        bool was_down = (previous_it != m_previous_key_states.end()) && 
-                       (previous_it->second == KeyState::DOWN || previous_it->second == KeyState::PRESSED);
-        
-        if (is_down && !was_down)
-        {
-            m_key_states[key_code] = KeyState::PRESSED;
-        }
-        else if (!is_down && was_down)
-        {
-            m_key_states[key_code] = KeyState::RELEASED;
-        }
-        else if (is_down)
+        if (is_down)
         {
             m_key_states[key_code] = KeyState::DOWN;
         }
@@ -260,21 +240,7 @@ namespace Dolas
 
     void InputManager::UpdateMouseButtonState(int button, bool is_down)
     {
-        auto previous_it = m_previous_mouse_button_states.find(button);
-        
-        bool was_down = (previous_it != m_previous_mouse_button_states.end()) && 
-                       (previous_it->second == KeyState::DOWN || previous_it->second == KeyState::PRESSED);
-        
-		// 如果当前帧收到按下事件，且上一帧的状态不是 PRESSED 并且不是 DOWN，则设置为 PRESSED 
-        if (is_down && !was_down)
-        {
-            m_mouse_button_states[button] = KeyState::PRESSED;
-        }
-        else if (!is_down && was_down)
-        {
-            m_mouse_button_states[button] = KeyState::RELEASED;
-        }
-        else if (is_down)
+        if (is_down)
         {
             m_mouse_button_states[button] = KeyState::DOWN;
         }
@@ -282,6 +248,7 @@ namespace Dolas
         {
             m_mouse_button_states[button] = KeyState::UP;
         }
+
     }
 
     void InputManager::UpdateMousePosition()

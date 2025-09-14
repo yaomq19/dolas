@@ -10,10 +10,14 @@ namespace Dolas
     enum class KeyState
     {
         UP,
-        DOWN,
-        PRESSED,  // 刚按下
-        RELEASED  // 刚释放
+        DOWN
     };
+
+	enum class EventOccurState
+	{
+		YES,
+        NO
+	};
 
     class InputManager
     {
@@ -27,16 +31,16 @@ namespace Dolas
 
         // 键盘输入
         bool IsKeyDown(int key_code) const;
-        bool IsKeyPressed(int key_code) const;
-        bool IsKeyReleased(int key_code) const;
 
         // 鼠标输入
         bool IsMouseButtonDown(int button) const;
-        bool IsMouseButtonPressed(int button) const;
-        bool IsMouseButtonReleased(int button) const;
         
         Vector2 GetMousePosition() const;
         Vector2 GetMouseDelta() const;
+        
+        // 鼠标滚轮
+        float GetMouseWheelDelta() const;
+        void SetMouseWheelDelta(float value) { m_mouse_wheel_delta = value; }
         
         // 鼠标捕获控制
         void CaptureMouse(bool capture);
@@ -49,7 +53,7 @@ namespace Dolas
     private:
         HWND m_window_handle;
         bool m_mouse_captured;
-        
+
         // 键盘状态
         std::unordered_map<int, KeyState> m_key_states;
         std::unordered_map<int, KeyState> m_previous_key_states;
@@ -64,14 +68,23 @@ namespace Dolas
         
         Vector2 m_screen_center;
         
+        // 鼠标滚轮
+        float m_mouse_wheel_delta;
+        
         void UpdateKeyState(int key_code, bool is_down);
         void UpdateMouseButtonState(int button, bool is_down);
         void UpdateMousePosition();
+
+        // 持续状态（按住）
+        std::unordered_map<int, bool> m_key_down;
+        std::unordered_map<int, bool> m_mouse_down;
+        
+        // 瞬时事件（这一帧发生的事件）
+        std::unordered_map<int, bool> m_key_pressed_this_frame;
+        std::unordered_map<int, bool> m_key_released_this_frame;
+        std::unordered_map<int, bool> m_mouse_pressed_this_frame;
+        std::unordered_map<int, bool> m_mouse_released_this_frame;
     };
-
-    // 全局输入管理器实例
-    extern InputManager g_input_manager;
-
 } // namespace Dolas
 
 #endif // DOLAS_INPUT_MANAGER_H

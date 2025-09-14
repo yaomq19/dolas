@@ -289,7 +289,7 @@ namespace Dolas
             case WM_KEYUP:
             case WM_SYSKEYDOWN:
             case WM_SYSKEYUP:
-                g_input_manager.ProcessKeyboardMessage(msg, wParam, lParam);
+                g_dolas_engine.m_input_manager->ProcessKeyboardMessage(msg, wParam, lParam);
                 break;
                 
             case WM_LBUTTONDOWN:
@@ -299,7 +299,8 @@ namespace Dolas
             case WM_MBUTTONDOWN:
             case WM_MBUTTONUP:
             case WM_MOUSEMOVE:
-                g_input_manager.ProcessMouseMessage(msg, wParam, lParam);
+            case WM_MOUSEWHEEL:
+				g_dolas_engine.m_input_manager->ProcessMouseMessage(msg, wParam, lParam);
                 break;
         }
         

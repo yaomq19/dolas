@@ -205,11 +205,11 @@ namespace Dolas
         // 上下移动
         if (move_up)
         {
-            movement += Vector3::Y() * move_speed * delta_time;
+            movement += Vector3::Z() * move_speed * delta_time;
         }
         if (move_down)
         {
-            movement -= Vector3::Y() * move_speed * delta_time;
+            movement -= Vector3::Z() * move_speed * delta_time;
         }
         
         // 应用移动

@@ -17,7 +17,7 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        void Tick(Float delta_time);
+        void Update(Float delta_time);
         RenderCamera* GetRenderCameraByID(RenderCameraID id);
         Bool CreateRenderCameraByID(RenderCameraID render_camera_id);
         
