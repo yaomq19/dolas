@@ -24,6 +24,7 @@ namespace Dolas
         void PostProcessPass(DolasRHI* rhi);
         void PresentPass(DolasRHI* rhi);
 
+        class RenderScene* TryGetRenderScene() const;
         class RenderResource* TryGetRenderResource() const;
         class RenderCamera* TryGetRenderCamera() const;
         ViewPort m_viewport;

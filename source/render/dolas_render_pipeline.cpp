@@ -22,6 +22,8 @@
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
+#include "manager/dolas_render_scene_manager.h"
+
 namespace Dolas
 {
     RenderPipeline::RenderPipeline()
@@ -100,18 +102,19 @@ namespace Dolas
     {
         UserAnnotationScope scope(rhi, L"GBufferPass");
         
-        RenderEntityManager* render_entity_manager = g_dolas_engine.m_render_entity_manager;
-        DOLAS_RETURN_IF_NULL(render_entity_manager);
+        RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
+		DOLAS_RETURN_IF_NULL(render_scene_manager);
 
-		const std::string render_entity_name = "cube.entity";
+        RenderScene* render_scene = TryGetRenderScene();
 
+		/*const std::string render_entity_name = "quad.entity";
         RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
         if (render_entity == nullptr)
         {
             RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntityFromFile(render_entity_name);
             render_entity = render_entity_manager->GetRenderEntityByID(render_entity_id);
         }
-        DOLAS_RETURN_IF_NULL(render_entity);
+        DOLAS_RETURN_IF_NULL(render_entity);*/
 
         // 设置 RT 和 视口
 		RenderResource* render_resource = TryGetRenderResource();
@@ -126,7 +129,7 @@ namespace Dolas
         rhi->SetRenderTargetView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
 
-        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
+        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidBackCull);
         DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthEnabled);
 		BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
 
@@ -138,9 +141,7 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(render_camera);
         rhi->UpdatePerViewParameters(render_camera);
         
-
-
-        render_entity->Draw(rhi);
+        // render_entity->Draw(rhi);
     }
 
     void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)
@@ -204,7 +205,6 @@ namespace Dolas
 	void RenderPipeline::ForwardShadingPass(DolasRHI* rhi)
 	{
         UserAnnotationScope scope(rhi, L"ForwardShadingPass");
-        
 	}
     
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)
@@ -228,6 +228,20 @@ namespace Dolas
 			std::cout << "Render resource not found!" << std::endl;
         }
         rhi->m_swap_chain->Present(0, 0);
+    }
+
+    RenderScene* RenderPipeline::TryGetRenderScene() const
+    {
+		RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
+		DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
+		RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
+		DOLAS_RETURN_NULL_IF_NULL(render_view);
+		RenderSceneID render_scene_id = render_view->GetRenderSceneID();
+
+		RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
+		DOLAS_RETURN_NULL_IF_NULL(render_scene_manager);
+
+        return render_scene_manager->GetRenderSceneByID(render_scene_id);
     }
 
     RenderResource* RenderPipeline::TryGetRenderResource() const

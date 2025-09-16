@@ -1,0 +1,4 @@
+{
+    "mesh" : "plane.mesh",
+    "material" : "solid.material"
+}
