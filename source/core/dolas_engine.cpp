@@ -25,6 +25,7 @@
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_input_manager.h"
+#include "optick/optick.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -125,11 +126,17 @@ namespace Dolas
 		m_input_manager->Clear();
 	}
 
+	void TickLogic()
+	{
+
+	}
+
 	void DolasEngine::Run()
 	{
 		MSG msg = { 0 };
 		while (msg.message != WM_QUIT)
 		{
+			OPTICK_FRAME("MainThread");
 			// handle windows message
 			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
@@ -138,15 +145,18 @@ namespace Dolas
 			}
 			else
 			{
+				std::future<void> logic_future = m_thread_pool->enqueue(&DolasEngine::Test, this);
 				Update(1.0f);
 				// render frame
 				Render();
+				logic_future.wait();
 			}
 		}
 	}
 
 	void DolasEngine::Update(Float delta_time)
 	{
+		OPTICK_EVENT();
 		// 更新输入系统
 		m_input_manager->Update();
 		
@@ -163,19 +173,7 @@ namespace Dolas
 
 	void DolasEngine::Test()
 	{
-		std::string str = "LUT_TExuter";
-		StringID string_id = STRING_ID(str);
-		std::cout << "String: " << str << ", ID: " << string_id << std::endl;
-
-		std::string new_str = ID_TO_STRING(string_id);
-		if (new_str == str)
-		{
-			std::cout << "String ID to String conversion successful: " << new_str << std::endl;
-		}
-		else
-		{
-			std::cout << "String ID to String conversion failed!" << new_str << std::endl;
-		}
+		std::cout << "String ID to String conversion failed!" << std::endl;
 	}
 }// namespace Dolas
 

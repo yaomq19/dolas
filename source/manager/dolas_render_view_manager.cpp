@@ -91,9 +91,9 @@ namespace Dolas
         RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera_manager);
         ret = render_camera_manager->CreateRenderCameraByID(render_view->m_render_camera_id, "default.camera");
-        DOLAS_RETURN_FALSE_IF_FALSE(ret);
+        /*DOLAS_RETURN_FALSE_IF_FALSE(ret);
         RenderCamera* render_camera = render_camera_manager->GetRenderCameraByID(render_view->m_render_camera_id);
-        DOLAS_RETURN_FALSE_IF_NULL(render_camera);
+        DOLAS_RETURN_FALSE_IF_NULL(render_camera);*/
 
         RenderPipelineManager* render_pipeline_manager = g_dolas_engine.m_render_pipeline_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_pipeline_manager);

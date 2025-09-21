@@ -11,6 +11,8 @@
 #include <functional>
 #include <stdexcept>
 #include <type_traits>
+#include <string>
+#include "optick/optick.h"
 
 class ThreadPool {
 public:
@@ -37,8 +39,12 @@ inline ThreadPool::ThreadPool(size_t threads)
 {
     for(size_t i = 0;i<threads;++i)
         workers.emplace_back(
-            [this]
+            [this, i]
             {
+                // 为每个工作线程设置唯一名称并注册到 Optick
+                std::string thread_name = "Worker_" + std::to_string(i);
+                OPTICK_THREAD(thread_name.c_str());
+                
                 for(;;)
                 {
                     std::function<void()> task;
@@ -53,6 +59,8 @@ inline ThreadPool::ThreadPool(size_t threads)
                         this->tasks.pop();
                     }
 
+                    // 使用 Optick 跟踪任务执行
+                    OPTICK_EVENT("ThreadPool::ExecuteTask");
                     task();
                 }
             }

@@ -48,6 +48,24 @@ else()
     message(WARNING "ThreadPool library not found")
 endif()
 
+# ============ optick 库 ============
+message(STATUS "Adding optick library")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/optick")
+    # 添加 DirectXTex 的源文件
+    file(GLOB OPTICK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/optick/*.cpp")
+    file(GLOB OPTICK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/optick/*.h")
+    
+    list(APPEND THIRD_PARTY_SOURCES ${OPTICK_SOURCES})
+    list(APPEND THIRD_PARTY_HEADERS ${OPTICK_HEADERS})
+    
+    message(STATUS "Optick library found and added")
+    foreach(source ${OPTICK_SOURCES})
+        message(STATUS "  Optick source: ${source}")
+    endforeach()
+else()
+    message(WARNING "Optick library not found")
+endif()
+
 # ============ 其他源文件库 ============
 # 在这里添加其他需要编译的第三方库源文件
 # 例如：

@@ -20,6 +20,15 @@ if(WIN32)
     # 添加Windows SDK的库目录，针对x64架构
     link_directories("$ENV{WindowsSdkDir}Lib/$ENV{WindowsSDKVersion}/um/x64")
 
+    # 查找 Vulkan SDK
+    find_package(Vulkan REQUIRED)
+    if(Vulkan_FOUND)
+        message(STATUS "Found Vulkan: ${Vulkan_LIBRARIES}")
+        include_directories(${Vulkan_INCLUDE_DIRS})
+    else()
+        message(FATAL_ERROR "Could not find Vulkan SDK")
+    endif()
+
     # 设置为 UTF-8 编码
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
