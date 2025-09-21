@@ -45,7 +45,8 @@ namespace Dolas
         void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
                                 bool move_up, bool move_down, Float delta_time, Float move_speed = 5.0f);
 
-        Bool BuildFromFile(const std::string& file_name);
+        virtual void BuildFromAsset(class CameraAsset* camera_asset) = 0;
+
         protected:
         void CorrectUpVector();
         void UpdateViewMatrix();
@@ -82,6 +83,8 @@ namespace Dolas
         Float GetFov() const;
 
         virtual void UpdateProjectionMatrix() override;
+        virtual void BuildFromAsset(class CameraAsset* camera_asset) override;
+
         protected:
         Float m_aspect_ratio;
         Float m_fov; // in degree
@@ -104,6 +107,8 @@ namespace Dolas
         Float GetWindowHeight() const;
 
         virtual void UpdateProjectionMatrix() override;
+		virtual void BuildFromAsset(class CameraAsset* camera_asset) override;
+
         protected:
         Float m_window_width;
         Float m_window_height;

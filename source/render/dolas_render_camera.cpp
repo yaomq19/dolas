@@ -1,7 +1,7 @@
 #include "render/dolas_render_camera.h"
 #include <iostream>
 #include <cmath>
-
+#include "manager/dolas_asset_manager.h"
 namespace Dolas
 {
     using namespace DirectX;
@@ -219,12 +219,6 @@ namespace Dolas
         }
     }
 
-    Bool RenderCamera::BuildFromFile(const std::string& file_name)
-    {
-
-        return true;
-    }
-
     Vector3 RenderCamera::GetRightVector() const
     {
         return m_forward.Cross(m_up).Normalized();
@@ -327,6 +321,16 @@ namespace Dolas
             -m_near_plane);
     }
 
+    void RenderCameraPerspective::BuildFromAsset(CameraAsset* camera_asset)
+    {
+		SetPosition(camera_asset->position);
+		SetForwardAndUp(camera_asset->forward, camera_asset->up);
+		SetNearPlane(camera_asset->near_plane);
+		SetFarPlane(camera_asset->far_plane);
+		SetFov(camera_asset->fov);
+		SetAspectRatio(camera_asset->aspect_ratio);
+    }
+
     /* Render Camera Orthographic */
     RenderCameraOrthographic::RenderCameraOrthographic()
     :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC),
@@ -405,4 +409,13 @@ namespace Dolas
             -m_near_plane);
     }
 
+    void RenderCameraOrthographic::BuildFromAsset(class CameraAsset* camera_asset)
+    {
+		SetPosition(camera_asset->position);
+		SetForwardAndUp(camera_asset->forward, camera_asset->up);
+		SetNearPlane(camera_asset->near_plane);
+		SetFarPlane(camera_asset->far_plane);
+		SetWindowWidth(camera_asset->window_width);
+		SetWindowHeight(camera_asset->window_height);
+    }
 } // namespace Dolas 

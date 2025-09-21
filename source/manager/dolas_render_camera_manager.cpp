@@ -112,44 +112,30 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-		json json_data;
-		Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(file_name, json_data);
-		if (!ret)
-		{
-			return false;
-		}
-
+        CameraAsset* camera_asset = g_dolas_engine.m_asset_manager->GetCameraAsset(file_name);
+        DOLAS_RETURN_FALSE_IF_NULL(camera_asset);
 		RenderCamera* render_camera = nullptr;
-		if (json_data["camera_perspective_type"] == "perspective")
+
+		if (camera_asset->perspective_type == "perspective")
 		{
-			render_camera = new RenderCameraPerspective(
-				Vector3(json_data["position"][0], json_data["position"][1], json_data["position"][2]),
-				Vector3(json_data["forward"][0], json_data["forward"][1], json_data["forward"][2]),
-				Vector3(json_data["up"][0], json_data["up"][1], json_data["up"][2]),
-				json_data["near_plane"],
-				json_data["far_plane"],
-				json_data["fov"],
-				json_data["aspect_ratio"]
-			);
+            RenderCameraPerspective* perspective_render_camera = DOLAS_NEW(RenderCameraPerspective);
+            perspective_render_camera->BuildFromAsset(camera_asset);
+            render_camera = perspective_render_camera;
 		}
-		else if (json_data["camera_perspective_type"] == "orthographic")
+		else if (camera_asset->perspective_type == "orthographic")
 		{
-			render_camera = new RenderCameraOrthographic(
-				Vector3(json_data["position"][0], json_data["position"][1], json_data["position"][2]),
-				Vector3(json_data["forward"][0], json_data["forward"][1], json_data["forward"][2]),
-				Vector3(json_data["up"][0], json_data["up"][1], json_data["up"][2]),
-				json_data["near_plane"],
-				json_data["far_plane"],
-				json_data["window_width"],
-				json_data["window_height"]
-			);
+			RenderCameraOrthographic* ortho_render_camera = DOLAS_NEW(RenderCameraOrthographic);
+			ortho_render_camera->BuildFromAsset(camera_asset);
+            render_camera = ortho_render_camera;
 		}
 		else
 		{
+			std::cerr << "Unknown camera perspective type: " << camera_asset->perspective_type << std::endl;
 			return false;
 		}
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);
 		m_render_cameras[render_camera_id] = render_camera;
+
 		return true;
     }
 } // namespace Dolas
