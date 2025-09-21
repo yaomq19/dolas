@@ -1,6 +1,8 @@
 #ifndef DOLAS_ENGINE_H
 #define DOLAS_ENGINE_H
 #include "base/dolas_base.h"
+#include "ThreadPool/ThreadPool.h"
+
 namespace Dolas
 {
 	class DolasEngine
@@ -21,6 +23,8 @@ namespace Dolas
 		class MeshManager* m_mesh_manager;
 		class MaterialManager* m_material_manager;
 		class RenderEntityManager* m_render_entity_manager;
+		class RenderObjectManager* m_render_object_manager;
+		class RenderModelManager* m_render_model_manager;
 		class ShaderManager* m_shader_manager;
 		class AssetManager* m_asset_manager;
 		class TextureManager* m_texture_manager;
@@ -33,6 +37,7 @@ namespace Dolas
 		class RenderCameraManager* m_render_camera_manager;
 		class RenderSceneManager* m_render_scene_manager;
 		class InputManager* m_input_manager;
+		class ThreadPool* m_thread_pool;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

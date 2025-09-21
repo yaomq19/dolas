@@ -45,6 +45,7 @@ namespace Dolas
         void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
                                 bool move_up, bool move_down, Float delta_time, Float move_speed = 5.0f);
 
+        Bool BuildFromFile(const std::string& file_name);
         protected:
         void CorrectUpVector();
         void UpdateViewMatrix();

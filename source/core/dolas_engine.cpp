@@ -6,6 +6,8 @@
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
 #include "manager/dolas_render_pipeline_manager.h"
+#include "manager/dolas_render_object_manager.h"
+#include "manager/dolas_render_model_manager.h"
 #include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
@@ -34,6 +36,8 @@ namespace Dolas
 		m_mesh_manager = DOLAS_NEW(MeshManager);
 		m_material_manager = DOLAS_NEW(MaterialManager);
 		m_render_entity_manager = DOLAS_NEW(RenderEntityManager);
+		m_render_object_manager = DOLAS_NEW(RenderObjectManager);
+		m_render_model_manager = DOLAS_NEW(RenderModelManager);
 		m_shader_manager = DOLAS_NEW(ShaderManager);
 		m_asset_manager = DOLAS_NEW(AssetManager);
 		m_texture_manager = DOLAS_NEW(TextureManager);
@@ -46,6 +50,7 @@ namespace Dolas
 		m_render_camera_manager = DOLAS_NEW(RenderCameraManager);
 		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
 		m_input_manager = DOLAS_NEW(InputManager);
+		m_thread_pool = DOLAS_NEW(ThreadPool, 4);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -55,6 +60,8 @@ namespace Dolas
 		DOLAS_DELETE(m_mesh_manager);
 		DOLAS_DELETE(m_material_manager);
 		DOLAS_DELETE(m_render_entity_manager);
+		DOLAS_DELETE(m_render_object_manager);
+		DOLAS_DELETE(m_render_model_manager);
 		DOLAS_DELETE(m_shader_manager);
 		DOLAS_DELETE(m_asset_manager);
 		DOLAS_DELETE(m_texture_manager);
@@ -65,7 +72,9 @@ namespace Dolas
 		DOLAS_DELETE(m_render_state_manager);
 		DOLAS_DELETE(m_render_view_manager);
 		DOLAS_DELETE(m_render_camera_manager);
+		DOLAS_DELETE(m_render_scene_manager);
 		DOLAS_DELETE(m_input_manager);
+		DOLAS_DELETE(m_thread_pool);
 	}
 
 	bool DolasEngine::Initialize()
@@ -75,6 +84,8 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_object_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_model_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
@@ -98,6 +109,8 @@ namespace Dolas
 		m_mesh_manager->Clear();
 		m_material_manager->Clear();
 		m_render_entity_manager->Clear();
+		m_render_object_manager->Clear();
+		m_render_model_manager->Clear();
 		m_shader_manager->Clear();
 		m_asset_manager->Clear();
 		m_texture_manager->Clear();

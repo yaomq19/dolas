@@ -18,6 +18,8 @@ typedef UInt TextureID;
 typedef UInt BufferID;
 typedef UInt ShaderID;
 typedef UInt RenderEntityID;
+typedef UInt RenderObjectID;
+typedef UInt RenderModelID;
 typedef UInt RenderPrimitiveID;
 
 typedef UInt RenderViewID;
@@ -35,6 +37,8 @@ typedef UInt RenderSceneID;
 #define BUFFER_ID_EMPTY 0
 #define SHADER_ID_EMPTY 0
 #define RENDER_ENTITY_ID_EMPTY 0
+#define RENDER_OBJECT_ID_EMPTY 0
+#define RENDER_MODEL_ID_EMPTY 0
 #define RENDER_RESOURCE_ID_EMPTY 0
 #define RENDER_PRIMITIVE_ID_EMPTY 0
 #define RENDER_CAMERA_ID_EMPTY 0

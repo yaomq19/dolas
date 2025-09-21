@@ -7,6 +7,9 @@
 #include "manager/dolas_input_manager.h"
 #include <iostream>
 #include <algorithm>
+#include "manager/dolas_asset_manager.h"
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
 namespace Dolas
 {
     RenderCameraManager::RenderCameraManager()
@@ -105,29 +108,47 @@ namespace Dolas
         return m_render_cameras[id];
     }
 
-    Bool RenderCameraManager::CreateRenderCameraByID(RenderCameraID render_camera_id)
+    Bool RenderCameraManager::CreateRenderCameraByID(RenderCameraID render_camera_id, const std::string& file_name)
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
-		/*RenderCamera* render_camera = new RenderCameraOrthographic(
-			Vector3(0.0, -5.0, 0),
-			Vector3(0.0, 1.0, 0.0),
-			Vector3(0.0, 0.0, 1.0),
-            0.0f,
-            8.0f,
-			2.0f,
-            2.0f
-		);*/
 
-		RenderCamera* render_camera = new RenderCameraPerspective(
-			Vector3(0.0, -5.0, 0),  // position
-			Vector3(0.0, 1.0, 0.0),  // forward
-			Vector3(0.0, 0.0, 1.0),  // up
-			0.1f,   // near_plane
-			2000.0f,   // far_plane
-			90.0f,   // fov(in degree)
-            (Float)g_dolas_engine.m_rhi->m_client_width / (Float)g_dolas_engine.m_rhi->m_client_height    // aspect_ratio
-		);
-		
+        json json_data;
+        Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(file_name, json_data);
+        if (!ret)
+        {
+            return false;
+        }
+
+        RenderCamera* render_camera = nullptr;
+        if (json_data["camera_perspective_type"] == "perspective")
+        {
+            render_camera = new RenderCameraPerspective(
+                Vector3(json_data["position"][0], json_data["position"][1], json_data["position"][2]),
+                Vector3(json_data["forward"][0], json_data["forward"][1], json_data["forward"][2]),
+                Vector3(json_data["up"][0], json_data["up"][1], json_data["up"][2]),
+                json_data["near_plane"],
+                json_data["far_plane"],
+                json_data["fov"],
+                json_data["aspect_ratio"]
+            );
+        }
+        else if (json_data["camera_perspective_type"] == "orthographic")
+        {
+            render_camera = new RenderCameraOrthographic(
+                Vector3(json_data["position"][0], json_data["position"][1], json_data["position"][2]),
+                Vector3(json_data["forward"][0], json_data["forward"][1], json_data["forward"][2]),
+                Vector3(json_data["up"][0], json_data["up"][1], json_data["up"][2]),
+                json_data["near_plane"],
+                json_data["far_plane"],
+                json_data["window_width"],
+                json_data["window_height"]
+            );
+        }
+        else
+        {
+            return false;
+        }
+        DOLAS_RETURN_FALSE_IF_NULL(render_camera);
         m_render_cameras[render_camera_id] = render_camera;
 		return true;
     }

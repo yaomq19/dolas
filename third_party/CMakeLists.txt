@@ -36,6 +36,18 @@ else()
     message(WARNING "nlohmann/json library not found")
 endif()
 
+# ============ ThreadPool 库 ============
+# ThreadPool 是 header-only 库，不需要编译源文件
+message(STATUS "Adding ThreadPool library (header-only)")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ThreadPool")
+    # 只添加头文件，用于包含目录
+    file(GLOB THREADPOOL_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/ThreadPool/*.h")
+    list(APPEND THIRD_PARTY_HEADERS ${THREADPOOL_HEADERS})
+    message(STATUS "ThreadPool library found and added")
+else()
+    message(WARNING "ThreadPool library not found")
+endif()
+
 # ============ 其他源文件库 ============
 # 在这里添加其他需要编译的第三方库源文件
 # 例如：

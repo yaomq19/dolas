@@ -7,6 +7,8 @@
 #include "render/dolas_render_pipeline.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_render_camera_manager.h"
+#include "render/dolas_render_scene.h"
+#include "render/dolas_render_camera.h"
 namespace Dolas
 {
     const static RenderViewID RENDER_VIEW_ID_MAIN = STRING_ID(main_render_view);
@@ -82,17 +84,23 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_NULL(render_scene_manager);
         ret = render_scene_manager->CreateRenderSceneByID(render_view->m_render_scene_id);
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
+        RenderScene* render_scene = render_scene_manager->GetRenderSceneByID(render_view->m_render_scene_id);
+        DOLAS_RETURN_FALSE_IF_NULL(render_scene);
+        render_scene->BuildFromFile("default.scene");
 
         RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera_manager);
-        ret = render_camera_manager->CreateRenderCameraByID(render_view->m_render_camera_id);
+        ret = render_camera_manager->CreateRenderCameraByID(render_view->m_render_camera_id, "default.camera");
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
+        RenderCamera* render_camera = render_camera_manager->GetRenderCameraByID(render_view->m_render_camera_id);
+        DOLAS_RETURN_FALSE_IF_NULL(render_camera);
 
         RenderPipelineManager* render_pipeline_manager = g_dolas_engine.m_render_pipeline_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_pipeline_manager);
         ret = render_pipeline_manager->CreateRenderPipelineByID(render_view->m_render_pipeline_id);
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
-        RenderPipeline* render_pipeline = render_pipeline_manager->GetRenderPipelineByID(render_pipeline_id);
+        RenderPipeline* render_pipeline = render_pipeline_manager->GetRenderPipelineByID(render_view->m_render_pipeline_id);
+        DOLAS_RETURN_FALSE_IF_NULL(render_pipeline);
         render_pipeline->SetRenderViewID(render_view_id);
         return true;
     }

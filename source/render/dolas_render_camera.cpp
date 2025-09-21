@@ -219,6 +219,12 @@ namespace Dolas
         }
     }
 
+    Bool RenderCamera::BuildFromFile(const std::string& file_name)
+    {
+
+        return true;
+    }
+
     Vector3 RenderCamera::GetRightVector() const
     {
         return m_forward.Cross(m_up).Normalized();

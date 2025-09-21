@@ -8,6 +8,7 @@
 #include <memory>
 #include "common/dolas_hash.h"
 #include "core/dolas_rhi.h"
+#include "render/dolas_transform.h"
 
 namespace Dolas
 {
@@ -20,7 +21,7 @@ namespace Dolas
         RenderEntity();
         ~RenderEntity();
         bool Clear();
-        void Draw(DolasRHI* rhi);
+        void Draw(DolasRHI* rhi, Transform transform);
 
         void SetMeshID(MeshID mesh_id);
         void SetMaterialID(MaterialID material_id);

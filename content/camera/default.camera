@@ -1,0 +1,11 @@
+{
+    "camera_perspective_type": "perspective",
+    "position": [],
+    "forward": [],
+    "up": [],
+    "near_plane" = 0.1,
+    "far_plane"= 2000.0,
+    "fov"= 90.0,
+    // may be overwrite by client real width / height
+    "aspect_ratio"= 1.77 
+}

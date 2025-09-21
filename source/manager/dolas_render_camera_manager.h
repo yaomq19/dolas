@@ -19,7 +19,7 @@ namespace Dolas
         bool Clear();
         void Update(Float delta_time);
         RenderCamera* GetRenderCameraByID(RenderCameraID id);
-        Bool CreateRenderCameraByID(RenderCameraID render_camera_id);
+        Bool CreateRenderCameraByID(RenderCameraID render_camera_id, const std::string& file_name);
         
         // 输入处理
         void ProcessInput(Float delta_time);

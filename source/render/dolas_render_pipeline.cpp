@@ -199,7 +199,7 @@ namespace Dolas
         pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
         pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());
 
-        render_entity->Draw(rhi);
+        // render_entity->Draw(rhi);
     }
 
 	void RenderPipeline::ForwardShadingPass(DolasRHI* rhi)
