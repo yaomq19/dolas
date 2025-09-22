@@ -279,6 +279,10 @@ namespace Dolas
 
 	void DolasRHI::Clear()
 	{
+		// 释放常量缓冲区
+		if (m_d3d_per_frame_parameters_buffer) { m_d3d_per_frame_parameters_buffer->Release(); m_d3d_per_frame_parameters_buffer = nullptr; }
+		if (m_d3d_per_view_parameters_buffer) { m_d3d_per_view_parameters_buffer->Release(); m_d3d_per_view_parameters_buffer = nullptr; }
+		
 		if (m_swap_chain_back_texture) { m_swap_chain_back_texture->Release(); m_swap_chain_back_texture = nullptr; }
 		if (m_back_buffer_render_target_view) { m_back_buffer_render_target_view->Release(); m_back_buffer_render_target_view = nullptr; }
 		if (m_d3d_user_annotation) { m_d3d_user_annotation->Release(); m_d3d_user_annotation = nullptr; }

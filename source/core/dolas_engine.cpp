@@ -7,7 +7,6 @@
 #include "core/dolas_rhi.h"
 #include "manager/dolas_render_pipeline_manager.h"
 #include "manager/dolas_render_object_manager.h"
-#include "manager/dolas_render_model_manager.h"
 #include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
@@ -38,7 +37,6 @@ namespace Dolas
 		m_material_manager = DOLAS_NEW(MaterialManager);
 		m_render_entity_manager = DOLAS_NEW(RenderEntityManager);
 		m_render_object_manager = DOLAS_NEW(RenderObjectManager);
-		m_render_model_manager = DOLAS_NEW(RenderModelManager);
 		m_shader_manager = DOLAS_NEW(ShaderManager);
 		m_asset_manager = DOLAS_NEW(AssetManager);
 		m_texture_manager = DOLAS_NEW(TextureManager);
@@ -62,7 +60,6 @@ namespace Dolas
 		DOLAS_DELETE(m_material_manager);
 		DOLAS_DELETE(m_render_entity_manager);
 		DOLAS_DELETE(m_render_object_manager);
-		DOLAS_DELETE(m_render_model_manager);
 		DOLAS_DELETE(m_shader_manager);
 		DOLAS_DELETE(m_asset_manager);
 		DOLAS_DELETE(m_texture_manager);
@@ -86,7 +83,6 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_object_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_render_model_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
@@ -111,7 +107,6 @@ namespace Dolas
 		m_material_manager->Clear();
 		m_render_entity_manager->Clear();
 		m_render_object_manager->Clear();
-		m_render_model_manager->Clear();
 		m_shader_manager->Clear();
 		m_asset_manager->Clear();
 		m_texture_manager->Clear();
@@ -145,30 +140,29 @@ namespace Dolas
 			}
 			else
 			{
-				std::future<void> logic_future = m_thread_pool->enqueue(&DolasEngine::Test, this);
-				Update(1.0f);
+				std::future<void> logic_future = m_thread_pool->enqueue(&DolasEngine::TickLogic, this, 1.0f);
 				// render frame
-				Render();
+				TickRender(1.0f);
 				logic_future.wait();
 			}
 		}
 	}
 
-	void DolasEngine::Update(Float delta_time)
-	{
-		OPTICK_EVENT();
-		// 更新输入系统
-		m_input_manager->Update();
-		
-		// 更新相机管理器（包含输入处理）
-		m_render_camera_manager->Update(delta_time);
-	}
-
-	void DolasEngine::Render()
+	void DolasEngine::TickRender(Float delta_time)
 	{
 		RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
 		DOLAS_RETURN_IF_NULL(main_render_view);
 		main_render_view->Render(m_rhi);
+	}
+
+	void DolasEngine::TickLogic(Float delta_time)
+	{
+		OPTICK_EVENT();
+		// 更新输入系统
+		m_input_manager->Update();
+
+		// 更新相机管理器（包含输入处理）
+		m_render_camera_manager->Update(delta_time);
 	}
 
 	void DolasEngine::Test()

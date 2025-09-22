@@ -14,8 +14,9 @@ namespace Dolas
 		bool Initialize();
 		void Clear();
 		void Run();
-		void Update(Float delta_time);
-		void Render();
+		void TickRender(Float delta_time);
+		void TickLogic(Float delta_time);
+
 		void Test();
 		
 		class DolasRHI* m_rhi;
@@ -24,7 +25,6 @@ namespace Dolas
 		class MaterialManager* m_material_manager;
 		class RenderEntityManager* m_render_entity_manager;
 		class RenderObjectManager* m_render_object_manager;
-		class RenderModelManager* m_render_model_manager;
 		class ShaderManager* m_shader_manager;
 		class AssetManager* m_asset_manager;
 		class TextureManager* m_texture_manager;

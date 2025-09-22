@@ -23,6 +23,7 @@ namespace Dolas
 
     RenderViewManager::~RenderViewManager()
     {
+        Clear();
     }
 
     Bool RenderViewManager::Initialize()

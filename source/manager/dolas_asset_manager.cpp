@@ -11,6 +11,7 @@ namespace Dolas
 
     AssetManager::~AssetManager()
     {
+        Clear();
     }
 
     Bool AssetManager::Initialize()
@@ -20,6 +21,28 @@ namespace Dolas
 
     Bool AssetManager::Clear()
     {
+        // 清理相机资产
+        for (auto& pair : m_camera_asset_map)
+        {
+            CameraAsset* camera_asset = pair.second;
+            if (camera_asset)
+            {
+                DOLAS_DELETE(camera_asset);
+            }
+        }
+        m_camera_asset_map.clear();
+
+        // 清理场景资产
+        for (auto& pair : m_scene_asset_map)
+        {
+            SceneAsset* scene_asset = pair.second;
+            if (scene_asset)
+            {
+                DOLAS_DELETE(scene_asset);
+            }
+        }
+        m_scene_asset_map.clear();
+
         return true;
     }
 
@@ -122,7 +145,36 @@ namespace Dolas
 
 	SceneAsset* AssetManager::parseJsonToSceneAsset(const json& json_data)
 	{
-
-		return nullptr;
+		SceneAsset* scene_asset = nullptr;
+		if (json_data.contains("entities") && json_data["entities"].is_array())
+		{
+			scene_asset = DOLAS_NEW(SceneAsset);
+			for (const auto& entity_json : json_data["entities"])
+			{
+				if (entity_json.contains("name") && entity_json["name"].is_string() &&
+					entity_json.contains("entity_file") && entity_json["entity_file"].is_string() &&
+					entity_json.contains("position") && entity_json["position"].is_array() &&
+					entity_json.contains("rotation") && entity_json["rotation"].is_array()&&
+					entity_json.contains("scale") && entity_json["scale"].is_array())
+				{
+					SceneEntity scene_entity;
+					scene_entity.name = entity_json["name"];
+					scene_entity.entity_file = entity_json["entity_file"];
+					scene_entity.position = Vector3(entity_json["position"][0], entity_json["position"][1], entity_json["position"][2]);
+					scene_entity.rotation = Vector3(entity_json["rotation"][0], entity_json["rotation"][1], entity_json["rotation"][2]);
+					scene_entity.scale = Vector3(entity_json["scale"][0], entity_json["scale"][1], entity_json["scale"][2]);
+					scene_asset->entities.push_back(scene_entity);
+				}
+				else
+				{
+					std::cout << "Invalid scene entity format in JSON!" << std::endl;
+				}
+			}
+		}
+		else
+		{
+			std::cout << "Scene JSON does not contain valid entities array!" << std::endl;
+		}
+		return scene_asset;
 	}
 }

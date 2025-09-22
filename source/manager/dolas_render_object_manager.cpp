@@ -15,6 +15,7 @@ namespace Dolas
 
     RenderObjectManager::~RenderObjectManager()
     {
+        Clear();
     }
 
     bool RenderObjectManager::Initialize()
@@ -29,6 +30,7 @@ namespace Dolas
             RenderObject* render_object = pair.second;
             if (render_object)
             {
+                DOLAS_DELETE(render_object);
             }
         }
         m_render_objects.clear();

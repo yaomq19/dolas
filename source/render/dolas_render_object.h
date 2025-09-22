@@ -29,11 +29,11 @@ namespace Dolas
         ~RenderObject();
 
         void Draw(class DolasRHI* rhi);
-        void SetRenderModelID(RenderModelID model_id);
-        RenderModelID GetRenderModelID() const;
+        void SetRenderEntityID(RenderEntityID entity_id);
+        RenderEntityID GetRenderEntityID() const;
     protected:
         RenderObjectID m_object_id = RENDER_OBJECT_ID_EMPTY;
-        RenderModelID m_render_model_id = RENDER_MODEL_ID_EMPTY;
+        RenderEntityID m_render_entity_id = RENDER_ENTITY_ID_EMPTY;
         
         // Transform data
         Transform m_transform;

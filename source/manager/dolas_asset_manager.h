@@ -25,9 +25,18 @@ namespace Dolas
         Float window_height;
     };
 
+	struct SceneEntity
+	{
+		std::string name;
+		std::string entity_file;
+		Vector3 position;
+		Vector3 rotation; // in degree
+		Vector3 scale;
+	};
+
     struct SceneAsset
     {
-
+		std::vector<SceneEntity> entities;
     };
 
     class AssetManager

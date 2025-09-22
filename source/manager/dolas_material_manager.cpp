@@ -23,7 +23,7 @@ namespace Dolas
 
     MaterialManager::~MaterialManager()
     {
-
+        Clear();
     }
 
     bool MaterialManager::Initialize()
@@ -50,6 +50,8 @@ namespace Dolas
                     material->m_pixel_shader->Release();
                     material->m_pixel_shader = nullptr;
                 }
+                // 释放Material对象本身
+                DOLAS_DELETE(material);
             }
         }
         m_materials.clear();

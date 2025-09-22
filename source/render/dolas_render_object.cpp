@@ -16,8 +16,21 @@ namespace Dolas
 
     void RenderObject::Draw(DolasRHI* rhi)
     {
-
+        RenderEntity* render_entity = g_dolas_engine.m_render_entity_manager->GetRenderEntityByID(m_render_entity_id);
+        if (render_entity)
+        {
+            render_entity->Draw(rhi, m_transform);
+        }
     }
 
+    void RenderObject::SetRenderEntityID(RenderEntityID entity_id)
+    {
+        m_render_entity_id = entity_id;
+    }
+
+    RenderEntityID RenderObject::GetRenderEntityID() const
+    {
+        return m_render_entity_id;
+    }
 
 } // namespace Dolas

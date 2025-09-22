@@ -13,6 +13,7 @@ namespace Dolas
 
     RenderSceneManager::~RenderSceneManager()
     {
+        Clear();
     }
 
     bool RenderSceneManager::Initialize()
