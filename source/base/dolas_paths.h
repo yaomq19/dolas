@@ -24,6 +24,7 @@ namespace Dolas {
         static std::string GetMaterialDir();
         static std::string GetTextureDir();
         static std::string GetCameraDir();
+        static std::string GetSceneDir();
     private:
         static std::string GetProjectRoot();
         static std::string GetBinDir();

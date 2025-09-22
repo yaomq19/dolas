@@ -66,6 +66,24 @@ namespace Dolas
         return m_camera_asset_map[file_path];
     }
 
+	SceneAsset* AssetManager::GetSceneAsset(const std::string& file_name)
+	{
+		std::string scene_dir_path = PathUtils::GetSceneDir();
+		std::string file_path = scene_dir_path + file_name;
+
+		auto iter = m_scene_asset_map.find(file_path);
+		if (iter != m_scene_asset_map.end() && iter->second != nullptr)
+		{
+			return m_scene_asset_map[file_path];
+		}
+
+		json json_data = LoadJsonFile(file_path);
+
+		SceneAsset* scene_asset = parseJsonToSceneAsset(json_data);
+		m_scene_asset_map[file_path] = scene_asset;
+		return m_scene_asset_map[file_path];
+	}
+
     CameraAsset* AssetManager::parseJsonToCameraAsset(const json& json_data)
     {
 		CameraAsset* camera_asset = DOLAS_NEW(CameraAsset);
@@ -102,4 +120,9 @@ namespace Dolas
 		return camera_asset;
     }
 
+	SceneAsset* AssetManager::parseJsonToSceneAsset(const json& json_data)
+	{
+
+		return nullptr;
+	}
 }

@@ -19,7 +19,7 @@ namespace Dolas
         bool Clear();
 
         RenderScene* GetRenderSceneByID(RenderSceneID id);
-		Bool CreateRenderSceneByID(RenderSceneID id);
+		Bool CreateRenderSceneByID(RenderSceneID id, const std::string& file_name);
     private:
         std::unordered_map<RenderSceneID, RenderScene*> m_render_scenes;
         const static RenderSceneID RENDER_SCENE_ID_MAIN;

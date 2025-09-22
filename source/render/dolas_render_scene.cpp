@@ -6,7 +6,7 @@
 #include <cfloat>
 #include <DirectXMath.h>
 using namespace DirectX;
-
+#include "manager/dolas_asset_manager.h"
 namespace Dolas
 {
     RenderScene::RenderScene()
@@ -29,9 +29,8 @@ namespace Dolas
         return true;
     }
 
-    Bool RenderScene::BuildFromFile(const std::string& file_name)
+    void RenderScene::BuildFromAsset(SceneAsset* scene_asset)
     {
-        return true;
 
     }
 

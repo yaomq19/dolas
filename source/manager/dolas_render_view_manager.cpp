@@ -82,11 +82,10 @@ namespace Dolas
 
         RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_scene_manager);
-        ret = render_scene_manager->CreateRenderSceneByID(render_view->m_render_scene_id);
+        ret = render_scene_manager->CreateRenderSceneByID(render_view->m_render_scene_id, "default.scene");
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
         RenderScene* render_scene = render_scene_manager->GetRenderSceneByID(render_view->m_render_scene_id);
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);
-        render_scene->BuildFromFile("default.scene");
 
         RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera_manager);

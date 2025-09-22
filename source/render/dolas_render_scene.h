@@ -20,7 +20,7 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        Bool BuildFromFile(const std::string& file_name);
+        void BuildFromAsset(class SceneAsset* scene_asset);
     private:
         std::vector<RenderObjectID> m_render_objects;
     }; // class RenderScene
