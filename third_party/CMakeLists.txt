@@ -103,7 +103,60 @@ else()
     target_include_directories(dolas_third_party INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
+    
     message(STATUS "dolas_third_party interface library created (header-only)")
+endif()
+
+# ============ Assimp 库 (使用 DLL) ============
+message(STATUS "Adding Assimp library (DLL mode)")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assimp")
+    # 设置assimp库路径
+    set(ASSIMP_LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assimp/lib")
+    set(ASSIMP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assimp/include")
+    
+    # DLL 和导入库文件路径
+    set(ASSIMP_DLL_DEBUG "${ASSIMP_LIBRARY_DIR}/assimp-vc143-mtd.dll")
+    set(ASSIMP_LIBRARY_DEBUG "${ASSIMP_LIBRARY_DIR}/assimp-vc143-mtd.lib")
+    
+    # 添加包含目录
+    target_include_directories(dolas_third_party PUBLIC ${ASSIMP_INCLUDE_DIR})
+    
+    # 定义 ASSIMP_DLL 宏，告诉 assimp 头文件我们使用的是 DLL
+    target_compile_definitions(dolas_third_party PUBLIC ASSIMP_DLL)
+    
+    # 链接导入库
+    if(EXISTS ${ASSIMP_LIBRARY_DEBUG})
+        target_link_libraries(dolas_third_party PUBLIC ${ASSIMP_LIBRARY_DEBUG})
+        message(STATUS "Linked assimp import library: ${ASSIMP_LIBRARY_DEBUG}")
+    else()
+        message(WARNING "Assimp import library not found. Run generate_import_lib.bat first!")
+    endif()
+    
+    # 复制 DLL 到输出目录
+    if(EXISTS ${ASSIMP_DLL_DEBUG})
+        # 复制到可执行文件目录 (这是最重要的)
+        # Debug 版本：复制并重命名为 assimp.dll
+        add_custom_command(TARGET dolas_third_party POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ASSIMP_DLL_DEBUG}
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/assimp.dll
+            COMMENT "Copying assimp DLL to Debug runtime directory as assimp.dll"
+        )
+        
+        # Release 版本：复制并重命名为 assimp.dll
+        add_custom_command(TARGET dolas_third_party POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ASSIMP_DLL_DEBUG}
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/assimp.dll
+            COMMENT "Copying assimp DLL to Release runtime directory as assimp.dll"
+        )
+        
+        message(STATUS "Assimp DLL will be copied to runtime directories as assimp.dll")
+    endif()
+    
+    message(STATUS "Assimp library found and configured for DLL usage")
+else()
+    message(WARNING "Assimp library not found")
 endif()
 
 # ============ IDE文件组织 ============
