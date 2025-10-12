@@ -37,6 +37,8 @@ namespace Dolas
 		class RenderSceneManager* m_render_scene_manager;
 		class InputManager* m_input_manager;
 		class TaskManager* m_task_manager;
+
+		long long m_frame_count = 0;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

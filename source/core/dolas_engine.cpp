@@ -138,19 +138,20 @@ namespace Dolas
 		while (msg.message != WM_QUIT)
 		{
 			OPTICK_FRAME("MainThread");
-			// handle windows message
-			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+			// 处理所有当前的窗口消息（非阻塞）
+			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
+				if (msg.message == WM_QUIT)
+					break;
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-			else
-			{
-				TaskGUID logic_task_guid = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
-				// render frame
-				TickRender(1.0f);
-				m_task_manager->WaitForTask(logic_task_guid);
-			}
+
+			TaskGUID logic_task_guid = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
+			// render frame
+			TickRender(1.0f);
+			m_task_manager->WaitForTask(logic_task_guid);
+			m_frame_count++;
 		}
 	}
 
@@ -165,7 +166,7 @@ namespace Dolas
 	{
 		OPTICK_EVENT();
 		// 更新输入系统
-		m_input_manager->Update();
+		m_input_manager->Tick();
 
 		// 更新相机管理器（包含输入处理）
 		m_render_camera_manager->Update(delta_time);

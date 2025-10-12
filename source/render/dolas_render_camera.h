@@ -24,6 +24,7 @@ namespace Dolas
         RenderCamera(CameraPerspectiveType camera_perspective_type, const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane);
         ~RenderCamera();
         
+		void ProcessWheelDelta(Float wheel_delta);
         CameraPerspectiveType GetCameraPerspectiveType() const;
         Matrix4x4 GetProjectionMatrix() const;
         Matrix4x4 GetViewMatrix() const;
@@ -41,12 +42,13 @@ namespace Dolas
         void TestRotate(Float delta_time);
         
         // 相机控制函数
-        void ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y, Float sensitivity = 0.1f);
+        void ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y);
         void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
-                                bool move_up, bool move_down, Float delta_time, Float move_speed = 5.0f);
+                                bool move_up, bool move_down, Float delta_time);
 
         virtual void BuildFromAsset(class CameraAsset* camera_asset) = 0;
 
+        void printDebugInfo();
         protected:
         void CorrectUpVector();
         void UpdateViewMatrix();
@@ -64,6 +66,8 @@ namespace Dolas
 
         Matrix4x4 m_projection_matrix;
         Matrix4x4 m_view_matrix;
+
+        Float m_move_speed{ 0.03f };
     }; // class RenderCamera
 
     class RenderCameraPerspective : public RenderCamera

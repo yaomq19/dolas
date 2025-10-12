@@ -48,47 +48,25 @@ namespace Dolas
 			// iter.second->TestRotate(delta_time);
         }
     }
-    static const Float default_move_speed = 0.03f;
-    static const Float min_move_speed = 0.001f;
-    static const Float max_move_speed = 0.1f;
-    static const Float wheel_affect_scale = 0.01f;
 
     void RenderCameraManager::ProcessInput(Float delta_time)
     {
         // 获取主相机（假设使用第一个相机作为主相机）
         DOLAS_RETURN_IF_FALSE(!m_render_cameras.empty());
-        
         RenderCamera* main_camera = m_render_cameras.begin()->second;
 		DOLAS_RETURN_IF_NULL(main_camera);
-
-        // 移动速度（静态变量，保持在函数调用之间）
-        static Float move_speed = default_move_speed;
-
-        // 处理鼠标滚轮（不需要鼠标捕获就可以使用）
-        float wheel_delta = g_dolas_engine.m_input_manager->GetMouseWheelDelta();
-        if (wheel_delta != 0.0f)
-        {
-            // 示例：输出滚轮值
-            std::cerr << "Mouse Wheel Delta: " << wheel_delta << std::endl;
-            
-            move_speed += wheel_delta * wheel_affect_scale;
-            // 限制移动速度范围
-            if (move_speed < min_move_speed) move_speed = min_move_speed;
-            if (move_speed > max_move_speed) move_speed = max_move_speed;
-            std::cerr << "New move speed: " << move_speed << std::endl;
-        }
-        g_dolas_engine.m_input_manager->SetMouseWheelDelta(0.0f);
 
         // 只有在鼠标被捕获时才处理相机控制
 		DOLAS_RETURN_IF_FALSE(g_dolas_engine.m_input_manager->IsMouseCaptured());
 
+		// 处理鼠标滚轮输入（相机速度）
+		float wheel_delta = g_dolas_engine.m_input_manager->GetMouseWheelDelta();
+		main_camera->ProcessWheelDelta(wheel_delta);
+        g_dolas_engine.m_input_manager->ResetMouseWheelDelta();
+
         // 处理鼠标输入（相机旋转）
         Vector2 mouse_delta = g_dolas_engine.m_input_manager->GetMouseDelta();
-		static Float sensitivity = 0.1f; // 可以根据需要调整灵敏度
-        if (mouse_delta.x != 0.0f || mouse_delta.y != 0.0f)
-        {
-            main_camera->ProcessMouseInput(mouse_delta.x, mouse_delta.y, sensitivity);
-        }
+        main_camera->ProcessMouseInput(mouse_delta.x, mouse_delta.y);
             
         // 处理键盘输入（相机移动）
         bool move_forward = g_dolas_engine.m_input_manager->IsKeyDown('W');
@@ -99,7 +77,12 @@ namespace Dolas
         bool move_down = g_dolas_engine.m_input_manager->IsKeyDown(VK_SHIFT);
 
         main_camera->ProcessKeyboardInput(move_forward, move_backward, move_left, move_right,
-                                        move_up, move_down, delta_time, move_speed);
+                                        move_up, move_down, delta_time);
+        
+        if (g_dolas_engine.m_frame_count % 60 == 0)  // 每60帧打印一次调试信息
+        {
+			main_camera->printDebugInfo();
+        }
     }
 
     RenderCamera* RenderCameraManager::GetRenderCameraByID(RenderCameraID id)

@@ -102,8 +102,7 @@ namespace Dolas
 		~DolasRHI();
 		bool Initialize();
 		void Clear();
-		void Present();
-		LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);	
+		void Present();	
 
 		HWND m_window_handle;
 		int m_client_width;

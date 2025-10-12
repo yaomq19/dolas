@@ -18,7 +18,7 @@ namespace Dolas
     {
         // Forward hwnd on because we can get messages (e.g., WM_CREATE)
         // before CreateWindow returns, and thus before m_hMainWnd is valid.
-        return g_dolas_engine.m_rhi->MsgProc(hwnd, msg, wParam, lParam);
+        return g_dolas_engine.m_input_manager->MsgProc(hwnd, msg, wParam, lParam);
     }
 
 	RenderTargetView::RenderTargetView()
@@ -295,39 +295,6 @@ namespace Dolas
 	{
 		m_swap_chain->Present(0, 0);
 	}
-
-    LRESULT DolasRHI::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-    {
-        // 将输入消息传递给输入管理器
-        switch (msg)
-        {
-            case WM_KEYDOWN:
-            case WM_KEYUP:
-            case WM_SYSKEYDOWN:
-            case WM_SYSKEYUP:
-                g_dolas_engine.m_input_manager->ProcessKeyboardMessage(msg, wParam, lParam);
-                break;
-                
-            case WM_LBUTTONDOWN:
-            case WM_LBUTTONUP:
-            case WM_RBUTTONDOWN:
-            case WM_RBUTTONUP:
-            case WM_MBUTTONDOWN:
-            case WM_MBUTTONUP:
-            case WM_MOUSEMOVE:
-            case WM_MOUSEWHEEL:
-				g_dolas_engine.m_input_manager->ProcessMouseMessage(msg, wParam, lParam);
-                break;
-        }
-        
-        switch (msg)
-        {
-            case WM_DESTROY:
-                PostQuitMessage(0);
-                return 0;
-        }
-        return DefWindowProc(hwnd, msg, wParam, lParam);
-    }
     
 	void DolasRHI::SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view)
 	{

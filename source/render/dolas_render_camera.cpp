@@ -67,6 +67,20 @@ namespace Dolas
 
     }
 
+	static const Float wheel_affect_scale = 0.01f;
+	static const Float min_move_speed = 0.001f;
+	static const Float max_move_speed = 0.1f;
+
+    void RenderCamera::ProcessWheelDelta(Float wheel_delta)
+    {
+		if (wheel_delta != 0.0f)
+		{
+			m_move_speed += wheel_delta * wheel_affect_scale;
+			if (m_move_speed < min_move_speed) m_move_speed = min_move_speed;
+			if (m_move_speed > max_move_speed) m_move_speed = max_move_speed;
+		}
+    }
+
     CameraPerspectiveType RenderCamera::GetCameraPerspectiveType() const
     {
         return m_camera_perspective_type;
@@ -133,6 +147,14 @@ namespace Dolas
         UpdateProjectionMatrix();
     }
 
+    void RenderCamera::printDebugInfo()
+    {
+		std::cout << "Camera Position: (" << m_position.x << ", " << m_position.y << ", " << m_position.z << ")\n";
+		std::cout << "Camera Forward: (" << m_forward.x << ", " << m_forward.y << ", " << m_forward.z << ")\n";
+		std::cout << "Camera Up: (" << m_up.x << ", " << m_up.y << ", " << m_up.z << ")\n";
+		std::cout << "Move Speed: " << m_move_speed << std::endl;
+    }
+
     void RenderCamera::CorrectUpVector()
     {
         Vector3 right = m_forward.Cross(m_up).Normalized();
@@ -145,8 +167,12 @@ namespace Dolas
         SetPosition(Vector3(m_position.x + std::sin(time + delta_time), m_position.y, m_position.z));
     }
 
-    void RenderCamera::ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y, Float sensitivity)
+	static Float sensitivity = 0.1f; // 可以根据需要调整灵敏度
+
+    void RenderCamera::ProcessMouseInput(Float mouse_delta_x, Float mouse_delta_y)
     {
+        DOLAS_RETURN_IF_FALSE(mouse_delta_x != 0.0f || mouse_delta_y != 0.0f);
+
         // 将鼠标移动转换为角度变化（弧度）
         Float yaw_delta = -mouse_delta_x * sensitivity * 0.01f;   // 水平旋转（偏航角）
         Float pitch_delta = -mouse_delta_y * sensitivity * 0.01f; // 垂直旋转（俯仰角），注意Y轴反转
@@ -177,7 +203,7 @@ namespace Dolas
     }
 
     void RenderCamera::ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
-                                          bool move_up, bool move_down, Float delta_time, Float move_speed)
+                                          bool move_up, bool move_down, Float delta_time)
     {
         Vector3 movement(0.0f, 0.0f, 0.0f);
         Vector3 right = GetRightVector();
@@ -185,31 +211,31 @@ namespace Dolas
         // 前后移动
         if (move_forward)
         {
-            movement += m_forward * move_speed * delta_time;
+            movement += m_forward * m_move_speed * delta_time;
         }
         if (move_backward)
         {
-            movement -= m_forward * move_speed * delta_time;
+            movement -= m_forward * m_move_speed * delta_time;
         }
         
         // 左右移动
         if (move_left)
         {
-            movement -= right * move_speed * delta_time;
+            movement -= right * m_move_speed * delta_time;
         }
         if (move_right)
         {
-            movement += right * move_speed * delta_time;
+            movement += right * m_move_speed * delta_time;
         }
         
         // 上下移动
         if (move_up)
         {
-            movement += Vector3::Z() * move_speed * delta_time;
+            movement += Vector3::Z() * m_move_speed * delta_time;
         }
         if (move_down)
         {
-            movement -= Vector3::Z() * move_speed * delta_time;
+            movement -= Vector3::Z() * m_move_speed * delta_time;
         }
         
         // 应用移动
