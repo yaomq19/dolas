@@ -26,6 +26,8 @@
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_task_manager.h"
 #include "optick/optick.h"
+
+using Dolas::TaskGUID;
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -144,10 +146,10 @@ namespace Dolas
 			}
 			else
 			{
-				std::future<void> logic_future = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
+				TaskGUID logic_task_guid = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
 				// render frame
 				TickRender(1.0f);
-				logic_future.wait();
+				m_task_manager->WaitForTask(logic_task_guid);
 			}
 		}
 	}
