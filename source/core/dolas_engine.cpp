@@ -24,6 +24,7 @@
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_input_manager.h"
+#include "manager/dolas_task_manager.h"
 #include "optick/optick.h"
 namespace Dolas
 {
@@ -49,7 +50,7 @@ namespace Dolas
 		m_render_camera_manager = DOLAS_NEW(RenderCameraManager);
 		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
 		m_input_manager = DOLAS_NEW(InputManager);
-		m_thread_pool = DOLAS_NEW(ThreadPool, 4);
+		m_task_manager = DOLAS_NEW(TaskManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -72,7 +73,7 @@ namespace Dolas
 		DOLAS_DELETE(m_render_camera_manager);
 		DOLAS_DELETE(m_render_scene_manager);
 		DOLAS_DELETE(m_input_manager);
-		DOLAS_DELETE(m_thread_pool);
+		DOLAS_DELETE(m_task_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -96,6 +97,8 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
 		// 初始化输入管理器（需要在RHI初始化之后，因为需要窗口句柄）
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize(m_rhi->m_window_handle));
+		// 初始化任务管理器
+		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		return true;
 	}
 
@@ -119,6 +122,7 @@ namespace Dolas
 		m_render_camera_manager->Clear();
 		m_render_scene_manager->Clear();
 		m_input_manager->Clear();
+		m_task_manager->Clear();
 	}
 
 	void TickLogic()
@@ -140,7 +144,7 @@ namespace Dolas
 			}
 			else
 			{
-				std::future<void> logic_future = m_thread_pool->enqueue(&DolasEngine::TickLogic, this, 1.0f);
+				std::future<void> logic_future = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
 				// render frame
 				TickRender(1.0f);
 				logic_future.wait();

@@ -1,7 +1,6 @@
 #ifndef DOLAS_ENGINE_H
 #define DOLAS_ENGINE_H
 #include "base/dolas_base.h"
-#include "ThreadPool/ThreadPool.h"
 
 namespace Dolas
 {
@@ -37,7 +36,7 @@ namespace Dolas
 		class RenderCameraManager* m_render_camera_manager;
 		class RenderSceneManager* m_render_scene_manager;
 		class InputManager* m_input_manager;
-		class ThreadPool* m_thread_pool;
+		class TaskManager* m_task_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas
