@@ -27,7 +27,7 @@ namespace Dolas
     #define DOLAS_CONTINUE_IF_FALSE(condition) if (!(condition)) { continue; }
     #define DOLAS_CONTINUE_IF_TRUE(condition) if ((condition)) { continue; }
 
-    #define Int int
+    #define DolasInt int
     #define Float float
     #define Double double
     #define Bool bool

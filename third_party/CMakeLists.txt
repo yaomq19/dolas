@@ -48,6 +48,18 @@ else()
     message(WARNING "ThreadPool library not found")
 endif()
 
+# ============ spdlog 库 ============
+# spdlog 是 header-only 库，不需要编译源文件
+message(STATUS "Adding spdlog library (header-only)")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/spdlog")
+    # 只添加头文件，用于包含目录
+    file(GLOB SPDLOG_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/*.h")
+    list(APPEND THIRD_PARTY_HEADERS ${SPDLOG_HEADERS})
+    message(STATUS "spdlog library found and added")
+else()
+    message(WARNING "spdlog library not found")
+endif()
+
 # ============ optick 库 ============
 message(STATUS "Adding optick library")
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/optick")
@@ -105,6 +117,16 @@ else()
     )
     
     message(STATUS "dolas_third_party interface library created (header-only)")
+endif()
+
+# ============ spdlog 特殊配置 ============
+# spdlog 使用 header-only 模式，需要定义宏
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/spdlog")
+    target_compile_definitions(dolas_third_party PUBLIC 
+        SPDLOG_HEADER_ONLY
+        SPDLOG_USE_STD_FORMAT  # 使用 C++20 std::format 代替 fmt 库
+    )
+    message(STATUS "spdlog configured with SPDLOG_HEADER_ONLY and SPDLOG_USE_STD_FORMAT macros")
 endif()
 
 # ============ Assimp 库 (使用 DLL) ============

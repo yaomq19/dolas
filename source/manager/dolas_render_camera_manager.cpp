@@ -81,7 +81,7 @@ namespace Dolas
         
         if (g_dolas_engine.m_frame_count % 60 == 0)  // 每60帧打印一次调试信息
         {
-			main_camera->printDebugInfo();
+			// main_camera->printDebugInfo();
         }
     }
 
