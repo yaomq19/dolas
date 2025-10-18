@@ -1,6 +1,6 @@
 # Dolas 引擎
 
-Dolas 是一个基于 DirectX 11 的轻量级渲染引擎。
+Dolas 是一个基于 DirectX 11 的轻量级游戏引擎。
 
 ## 项目结构
 
@@ -49,4 +49,16 @@ bin\Release\Dolas.exe
 
 ## 许可证
 
-[添加适当的许可证信息] 
+本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
+
+## 第三方库
+
+本项目使用了以下第三方库：
+- **Assimp** - 3D模型加载库
+- **DirectXTex** - DirectX纹理处理库
+- **nlohmann/json** - JSON解析库
+- **spdlog** - 日志库
+- **Optick** - 性能分析工具
+- **ThreadPool** - 线程池实现
+
+各第三方库遵循其各自的许可证。 
