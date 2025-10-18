@@ -18,6 +18,7 @@ namespace Dolas
 
 		void Test();
 		
+		class LogSystemManager* m_log_system_manager;
 		class DolasRHI* m_rhi;
 		class RenderPipelineManager* m_render_pipeline_manager;
 		class MeshManager* m_mesh_manager;

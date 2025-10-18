@@ -123,7 +123,6 @@ endif()
 # spdlog 使用 header-only 模式，需要定义宏
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/spdlog")
     target_compile_definitions(dolas_third_party PUBLIC 
-        SPDLOG_HEADER_ONLY
         SPDLOG_USE_STD_FORMAT  # 使用 C++20 std::format 代替 fmt 库
     )
     message(STATUS "spdlog configured with SPDLOG_HEADER_ONLY and SPDLOG_USE_STD_FORMAT macros")

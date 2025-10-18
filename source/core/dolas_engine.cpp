@@ -5,6 +5,7 @@
 #include "base/dolas_base.h"
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
+#include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_render_pipeline_manager.h"
 #include "manager/dolas_render_object_manager.h"
 #include "manager/dolas_mesh_manager.h"
@@ -34,6 +35,7 @@ namespace Dolas
     
 	DolasEngine::DolasEngine()
 	{
+		m_log_system_manager = DOLAS_NEW(LogSystemManager);
 		m_rhi = DOLAS_NEW(DolasRHI);
 		m_render_pipeline_manager = DOLAS_NEW(RenderPipelineManager);
 		m_mesh_manager = DOLAS_NEW(MeshManager);
@@ -76,10 +78,14 @@ namespace Dolas
 		DOLAS_DELETE(m_render_scene_manager);
 		DOLAS_DELETE(m_input_manager);
 		DOLAS_DELETE(m_task_manager);
+		DOLAS_DELETE(m_log_system_manager);
 	}
 
 	bool DolasEngine::Initialize()
 	{
+		// 首先初始化日志系统
+		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
+		
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
@@ -125,6 +131,9 @@ namespace Dolas
 		m_render_scene_manager->Clear();
 		m_input_manager->Clear();
 		m_task_manager->Clear();
+		
+		// 最后清理日志系统
+		m_log_system_manager->Clear();
 	}
 
 	void TickLogic()
