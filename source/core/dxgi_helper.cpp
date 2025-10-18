@@ -1,5 +1,6 @@
 #include "dxgi_helper.h"
-
+#include "manager/dolas_log_system_manager.h"
+#include "base/dolas_string_util.h"
 namespace Dolas
 {
     // Select the best performing adapter
@@ -18,16 +19,15 @@ namespace Dolas
         int bestIndex = -1;
         
         // Loop through all adapters
+        LOG_INFO("Auto choose a graphics processor adapter:");
         for (int i = 0; pFactory->EnumAdapters(i, &currentAdapter) != DXGI_ERROR_NOT_FOUND; i++) {
             DXGI_ADAPTER_DESC desc;
             hr = currentAdapter->GetDesc(&desc);
             
             if (SUCCEEDED(hr)) {
                 int score = GetAdapterPerformanceScore(desc);
-                
-                std::cout << "Adapter " << i << " score: " << score << " - ";
-                std::wcout << desc.Description << std::endl;
-                
+				std::wstring descs(desc.Description);
+                LOG_INFO("Graphics Processor Adapter index: {0} score : {1}, description : {2}", i, score, StringUtil::WStringToString(descs));
                 if (score > bestScore) {
                     bestScore = score;
                     bestIndex = i;
