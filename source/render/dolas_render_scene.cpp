@@ -53,6 +53,8 @@ namespace Dolas
 				LOG_ERROR("{0}", importer.GetErrorString());
 				return;
 			}
+
+			// 这里需要具体实现将aiScene转换为RenderEntity的逻辑
         }
     }
 

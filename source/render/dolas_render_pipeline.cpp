@@ -62,6 +62,7 @@ namespace Dolas
         GBufferPass(rhi);
         DeferredShadingPass(rhi);
         ForwardShadingPass(rhi);
+        SkyboxPass(rhi);
         PostProcessPass(rhi);
         PresentPass(rhi);
     }
@@ -207,10 +208,15 @@ namespace Dolas
         UserAnnotationScope scope(rhi, L"ForwardShadingPass");
 	}
     
+    void RenderPipeline::SkyboxPass(DolasRHI* rhi)
+    {
+        UserAnnotationScope scope(rhi, L"SkyboxPass");
+        // TODO: Implement SkyboxPass
+    }
+
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"PostProcessPass");
-
     }
 
     void RenderPipeline::PresentPass(DolasRHI* rhi)

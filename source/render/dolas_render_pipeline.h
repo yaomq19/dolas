@@ -21,6 +21,7 @@ namespace Dolas
         void GBufferPass(DolasRHI* rhi);
         void DeferredShadingPass(DolasRHI* rhi);
         void ForwardShadingPass(DolasRHI* rhi);
+        void SkyboxPass(DolasRHI* rhi);
         void PostProcessPass(DolasRHI* rhi);
         void PresentPass(DolasRHI* rhi);
 
