@@ -9,7 +9,7 @@ namespace Dolas
 #define TEXTURE_DIR_NAME "texture/"
 #define CAMERA_DIR_NAME "camera/"
 #define SCENE_DIR_NAME "scene/"
-
+#define MODEL_DIR_NAME "model/"
 //--------public begin
 	std::string PathUtils::GetContentDir()
 	{
@@ -53,6 +53,11 @@ namespace Dolas
 	std::string PathUtils::GetSceneDir()
 	{
 		return GetContentDir() + SCENE_DIR_NAME;
+	}
+
+	std::string PathUtils::GetModelSourceDir()
+	{
+		return GetContentDir() + MODEL_DIR_NAME;
 	}
 //--------public end
 

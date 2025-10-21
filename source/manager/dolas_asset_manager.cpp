@@ -170,6 +170,10 @@ namespace Dolas
 					std::cout << "Invalid scene entity format in JSON!" << std::endl;
 				}
 			}
+			for (const auto& object_name : json_data["models"])
+			{
+				scene_asset->model_names.push_back(object_name["name"]);
+			}
 		}
 		else
 		{

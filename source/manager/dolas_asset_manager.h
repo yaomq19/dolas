@@ -37,6 +37,7 @@ namespace Dolas
     struct SceneAsset
     {
 		std::vector<SceneEntity> entities;
+        std::vector<std::string> model_names;
     };
 
     class AssetManager

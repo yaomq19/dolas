@@ -11,8 +11,7 @@ using namespace DirectX;
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
-// ����Assimp������
+#include "base/dolas_paths.h"
 Assimp::Importer importer;
 
 namespace Dolas
@@ -39,19 +38,22 @@ namespace Dolas
 
     void RenderScene::BuildFromAsset(SceneAsset* scene_asset)
     {
-		// ����3Dģ���ļ�
-		const aiScene* scene = importer.ReadFile("path/to/your/model.obj",
-			aiProcess_Triangulate |           // ȷ�������涼��������
-			aiProcess_FlipUVs |              // ��תUV���꣨OpenGL��Ҫ��
-			aiProcess_CalcTangentSpace |     // �������߿ռ�
-			aiProcess_GenNormals             // ���ɷ��ߣ����û�еĻ���
-		);
+        for (const std::string model_name : scene_asset->model_names)
+        {
+			std::string model_path = PathUtils::GetModelSourceDir() + model_name;
+			const aiScene* scene = importer.ReadFile(
+				model_path,
+				aiProcess_Triangulate |
+				aiProcess_FlipUVs |
+				aiProcess_CalcTangentSpace |
+				aiProcess_GenNormals
+			);
 
-		// �������Ƿ�ɹ�
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            LOG_ERROR("{0}", importer.GetErrorString());
-			return;
-		}
+			if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+				LOG_ERROR("{0}", importer.GetErrorString());
+				return;
+			}
+        }
     }
 
 } // namespace Dolas 
