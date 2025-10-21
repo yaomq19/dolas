@@ -61,6 +61,7 @@ namespace Dolas
     void MaterialManager::InitializeGlobalMaterial()
     {
         m_global_materials.m_deferred_shading = CreateMaterial("deferred_shading.material");
+        m_global_materials.m_sky_box_material_id = CreateMaterial("sky_box.material");
     }
 
     MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
@@ -169,4 +170,8 @@ namespace Dolas
         return m_global_materials.m_deferred_shading;
     }
     
+    MaterialID MaterialManager::GetSkyBoxMaterialID()
+    {
+        return m_global_materials.m_sky_box_material_id;
+    }
 } // namespace Dolas

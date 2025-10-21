@@ -1,0 +1,8 @@
+{
+    "vertex_shader" : "sky_box_vs.hlsl",
+    "pixel_shader" : "sky_box_ps.hlsl",
+
+    "parameter" : {
+        "intensity" : 1
+    }
+}

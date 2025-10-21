@@ -19,7 +19,7 @@ namespace Dolas
         RenderEntity* render_entity = g_dolas_engine.m_render_entity_manager->GetRenderEntityByID(m_render_entity_id);
         if (render_entity)
         {
-            render_entity->Draw(rhi, m_transform);
+            render_entity->Draw(rhi);
         }
     }
 

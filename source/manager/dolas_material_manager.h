@@ -12,6 +12,7 @@ namespace Dolas
     struct GlobalMaterials
     {
         MaterialID m_deferred_shading = MATERIAL_ID_EMPTY;
+        MaterialID m_sky_box_material_id = MATERIAL_ID_EMPTY;
     };
     class MaterialManager
     {
@@ -24,6 +25,7 @@ namespace Dolas
         MaterialID CreateMaterial(const std::string& file_name);
         Material* GetMaterial(MaterialID material_id);
         MaterialID GetDeferredShadingMaterialID();
+        MaterialID GetSkyBoxMaterialID();
     private:
         std::unordered_map<MaterialID, Material*> m_materials;
 

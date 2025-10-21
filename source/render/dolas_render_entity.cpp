@@ -31,7 +31,7 @@ namespace Dolas
         return true;
     }
 
-    void RenderEntity::Draw(DolasRHI* rhi, Transform transform)
+    void RenderEntity::Draw(DolasRHI* rhi)
     {
 		Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
 		DOLAS_RETURN_IF_NULL(mesh);

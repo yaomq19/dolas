@@ -200,7 +200,7 @@ namespace Dolas
         pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
         pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());
 
-        // render_entity->Draw(rhi);
+        render_entity->Draw(rhi);
     }
 
 	void RenderPipeline::ForwardShadingPass(DolasRHI* rhi)
@@ -212,6 +212,49 @@ namespace Dolas
     {
         UserAnnotationScope scope(rhi, L"SkyboxPass");
         // TODO: Implement SkyboxPass
+		RenderResource* render_resource = TryGetRenderResource();
+		DOLAS_RETURN_IF_NULL(render_resource);
+
+		std::vector<RenderTargetView> rtvs;
+		rtvs.push_back(RenderTargetView(render_resource->m_scene_result_id));
+
+		rhi->SetRenderTargetView(rtvs);
+		rhi->SetViewPort(m_viewport);
+
+		DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
+		RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
+		BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
+
+		rhi->SetRasterizerState(*rasterizer_state);
+		rhi->SetDepthStencilState(*depth_stencil_state);
+		rhi->SetBlendState(*blend_state);
+
+		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
+		RenderEntityID quad_render_entity_id = STRING_ID(Quad);
+		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
+		if (render_entity == nullptr)
+		{
+			entity_manager->CreateRenderEntity(quad_render_entity_id);
+			render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
+		}
+
+		MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
+		render_entity->SetMeshID(quad_mesh_id);
+
+		MaterialID material_id = g_dolas_engine.m_material_manager->GetDeferredShadingMaterialID();
+		render_entity->SetMaterialID(material_id);
+
+		Material* material = g_dolas_engine.m_material_manager->GetMaterial(material_id);
+		PixelShader* pixel_shader = material->GetPixelShader();
+		DOLAS_RETURN_IF_NULL(pixel_shader);
+
+		pixel_shader->ClearShaderResourceViews();
+
+		/*pixel_shader->SetShaderResourceView(0, gbuffer_a_texture->GetShaderResourceView());
+		pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
+		pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());*/
+
+		render_entity->Draw(rhi);
     }
 
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)

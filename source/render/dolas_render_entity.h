@@ -21,7 +21,7 @@ namespace Dolas
         RenderEntity();
         ~RenderEntity();
         bool Clear();
-        void Draw(DolasRHI* rhi, Transform transform);
+        void Draw(DolasRHI* rhi);
 
         void SetMeshID(MeshID mesh_id);
         void SetMaterialID(MaterialID material_id);
