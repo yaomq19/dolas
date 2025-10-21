@@ -7,12 +7,12 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 #include "manager/dolas_asset_manager.h"
-
+#include "manager/dolas_log_system_manager.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-// ´´½¨Assimpµ¼ÈëÆ÷
+// ï¿½ï¿½ï¿½ï¿½Assimpï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 Assimp::Importer importer;
 
 namespace Dolas
@@ -39,17 +39,17 @@ namespace Dolas
 
     void RenderScene::BuildFromAsset(SceneAsset* scene_asset)
     {
-		// ¼ÓÔØ3DÄ£ÐÍÎÄ¼þ
+		// ï¿½ï¿½ï¿½ï¿½3DÄ£ï¿½ï¿½ï¿½Ä¼ï¿½
 		const aiScene* scene = importer.ReadFile("path/to/your/model.obj",
-			aiProcess_Triangulate |           // È·±£ËùÓÐÃæ¶¼ÊÇÈý½ÇÐÎ
-			aiProcess_FlipUVs |              // ·­×ªUV×ø±ê£¨OpenGLÐèÒª£©
-			aiProcess_CalcTangentSpace |     // ¼ÆËãÇÐÏß¿Õ¼ä
-			aiProcess_GenNormals             // Éú³É·¨Ïß£¨Èç¹ûÃ»ÓÐµÄ»°£©
+			aiProcess_Triangulate |           // È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¶¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			aiProcess_FlipUVs |              // ï¿½ï¿½×ªUVï¿½ï¿½ï¿½ê£¨OpenGLï¿½ï¿½Òªï¿½ï¿½
+			aiProcess_CalcTangentSpace |     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß¿Õ¼ï¿½
+			aiProcess_GenNormals             // ï¿½ï¿½ï¿½É·ï¿½ï¿½ß£ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ÐµÄ»ï¿½ï¿½ï¿½
 		);
 
-		// ¼ì²é¼ÓÔØÊÇ·ñ³É¹¦
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½É¹ï¿½
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-			std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+            LOG_ERROR("{0}", importer.GetErrorString());
 			return;
 		}
     }

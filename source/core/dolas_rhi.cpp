@@ -3,13 +3,14 @@
 #include "dxgi_helper.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_input_manager.h"
-
 #if defined(DEBUG) || defined(_DEBUG)
 #include <d3d11sdklayers.h>  // For D3D11 debug interfaces
 #endif
 
 #include <iostream>
 #include "render/dolas_render_camera.h"
+#include "manager/dolas_log_system_manager.h"
+
 namespace Dolas
 {
 
@@ -496,7 +497,7 @@ namespace Dolas
 #if defined(DEBUG) || defined(_DEBUG)
 		// 在调试模式下启用D3D11 debug layer
 		d3d_device_create_flags |= D3D11_CREATE_DEVICE_DEBUG;
-		std::cout << "D3D11 Debug Layer enabled!" << std::endl;
+		LOG_INFO("D3D11 Debug Layer enabled!");
 #endif
 
 		HRESULT hr = D3D11CreateDeviceAndSwapChain(
@@ -518,8 +519,7 @@ namespace Dolas
 		best_adapter->Release();
 
 		if (FAILED(hr)) {
-			std::cout << "Failed to create D3D11 device and swap chain! HRESULT: 0x" 
-					  << std::hex << hr << std::dec << std::endl;
+			LOG_ERROR("Failed to create D3D11 device and swap chain! HRESULT: {0}", hr);
 			return false;
 		}
 
@@ -527,7 +527,7 @@ namespace Dolas
 		hr = m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation));
 		if (SUCCEEDED(hr) && m_d3d_user_annotation)
 		{
-			std::cout << "ID3DUserDefinedAnnotation acquired." << std::endl;
+			LOG_INFO("ID3DUserDefinedAnnotation acquired.");
 		}
 		else
 		{
@@ -536,15 +536,13 @@ namespace Dolas
 
         hr = m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_swap_chain_back_texture));
         if (FAILED(hr)) {
-            std::cout << "Failed to get back buffer! HRESULT: 0x" 
-                      << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to get back buffer! HRESULT: {0}", hr);
             return false;
         }
 
         hr = m_d3d_device->CreateRenderTargetView(m_swap_chain_back_texture, nullptr, &m_back_buffer_render_target_view);
         if (FAILED(hr)) {
-            std::cout << "Failed to create render target view! HRESULT: 0x" 
-                      << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to create render target view! HRESULT: {0}", hr);
             return false;
         }
 
@@ -562,15 +560,15 @@ namespace Dolas
 				// 可选：在警告时也断点（可能会比较频繁）
 				// d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
 				
-				std::cout << "D3D11 Debug Info Queue configured!" << std::endl;
+				LOG_INFO("D3D11 Debug Info Queue configured!");
 				d3d_info_queue->Release();
 			}
 			d3d_debug->Release();
 		}
 #endif
 
-		std::cout << "Successfully created D3D11 device and swap chain!" << std::endl;
-		std::cout << "Feature Level: " << std::hex << feature_level << std::dec << std::endl;
+		LOG_INFO("Successfully created D3D11 device and swap chain!");
+		LOG_INFO("Feature Level: {0:#x}", static_cast<int>(feature_level));
 		return true;
 	}
 

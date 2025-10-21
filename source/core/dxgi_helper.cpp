@@ -49,10 +49,9 @@ namespace Dolas
         pFactory->Release();
         
         if (bestAdapter) {
-            std::cout << "\n*** Selected Best Adapter " << bestIndex 
-                    << " with score: " << bestScore << " ***" << std::endl;
+            LOG_INFO("Selected Best Adapter {0} with score: {1}", bestIndex, bestScore);
         } else {
-            std::cout << "No suitable adapter found!" << std::endl;
+            LOG_ERROR("No suitable adapter found!");
         }
         
         return bestAdapter;
@@ -73,22 +72,21 @@ namespace Dolas
             return;
         }
         // Output basic information
-        std::cout << "======Adapter Info======" << std::endl;
-        std::wcout << L"Description: " << desc.Description << std::endl;
+        LOG_INFO("======Adapter Info======");
+        LOG_INFO("Description: {0}", StringUtil::WStringToString(desc.Description));
         // Output vendor and device ID (hexadecimal)
-        std::cout << "Vendor ID: 0x" << std::hex << desc.VendorId << std::dec << std::endl;
-        std::cout << "Device ID: 0x" << std::hex << desc.DeviceId << std::dec << std::endl;
-        std::cout << "Subsystem ID: 0x" << std::hex << desc.SubSysId << std::dec << std::endl;
-        std::cout << "Revision: 0x" << std::hex << desc.Revision << std::dec << std::endl;
+        LOG_INFO("Vendor ID: {0}", desc.VendorId);
+        LOG_INFO("Device ID: {0}", desc.DeviceId);
+        LOG_INFO("Subsystem ID: {0}", desc.SubSysId);
+        LOG_INFO("Revision: {0}", desc.Revision);
         // Output memory information (convert to MB)
         const float MB = 1024.0f * 1024.0f;
-        std::cout << "Dedicated Video Memory: " << desc.DedicatedVideoMemory / MB << " MB" << std::endl;
-        std::cout << "Dedicated System Memory: " << desc.DedicatedSystemMemory / MB << " MB" << std::endl;
-        std::cout << "Shared System Memory: " << desc.SharedSystemMemory / MB << " MB" << std::endl;
+        LOG_INFO("Dedicated Video Memory: {0} MB", desc.DedicatedVideoMemory / MB);
+        LOG_INFO("Dedicated System Memory: {0} MB", desc.DedicatedSystemMemory / MB);
+        LOG_INFO("Shared System Memory: {0} MB", desc.SharedSystemMemory / MB);
         // Output LUID
-        std::cout << "Adapter LUID: " << desc.AdapterLuid.HighPart 
-                << ":" << desc.AdapterLuid.LowPart << std::endl;
-        std::cout << "========================" << std::endl;
+        LOG_INFO("Adapter LUID: {0}:{1}", desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart);
+        LOG_INFO("========================");
     }
 
     // Calculate adapter performance score

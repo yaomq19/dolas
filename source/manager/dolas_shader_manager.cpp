@@ -5,7 +5,7 @@
 #include "base/dolas_dx_trace.h"
 #include <iostream>
 #include <fstream>
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     ShaderManager::ShaderManager()
@@ -90,13 +90,13 @@ namespace Dolas
         // 加载着色器
         if (!vertex_shader->BuildFromFile(shader_path, entry_point))
         {
-            std::cerr << "ShaderManager::CreateShader: Failed to load shader from " << shader_path << std::endl;
+            LOG_ERROR("Failed to load shader from {0}", shader_path);
             vertex_shader->Release();
             DOLAS_DELETE(vertex_shader);
             return nullptr;
         }
 
-        std::cout << "ShaderManager::CreateShader: Successfully created shader from " << shader_path << std::endl;
+        LOG_INFO("Successfully created shader from {0}", shader_path);
         return vertex_shader;
     }
 
@@ -107,13 +107,13 @@ namespace Dolas
         PixelShader* pixel_shader = DOLAS_NEW(PixelShader);
         if (!pixel_shader->BuildFromFile(shader_path, entry_point))
         {
-            std::cerr << "ShaderManager::CreateShader: Failed to load shader from " << shader_path << std::endl;
+            LOG_ERROR("Failed to load shader from {0}", shader_path);
             pixel_shader->Release();
             DOLAS_DELETE(pixel_shader);
             return nullptr;
         }
 
-        std::cout << "ShaderManager::CreateShader: Successfully created shader from " << shader_path << std::endl;
+        LOG_INFO("Successfully created shader from {0}", shader_path);
         return pixel_shader;
     }
 
