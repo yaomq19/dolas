@@ -29,14 +29,12 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
-[Ll]ib/
 out/
 
 # C++对象文件
 *.o
 *.obj
 *.ilk
-*.pdb
 *.idb
 *.pch
 *.ipdb
@@ -48,7 +46,6 @@ out/
 
 # 可执行文件
 *.exe
-*.dll
 *.so
 *.dylib
 *.out
