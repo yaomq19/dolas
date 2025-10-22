@@ -250,9 +250,11 @@ namespace Dolas
 
 		pixel_shader->ClearShaderResourceViews();
 
-		/*pixel_shader->SetShaderResourceView(0, gbuffer_a_texture->GetShaderResourceView());
-		pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
-		pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());*/
+
+        Texture* sky_box_texture = g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX);
+		DOLAS_RETURN_IF_NULL(sky_box_texture);
+
+		pixel_shader->SetShaderResourceView(0, sky_box_texture->GetShaderResourceView());
 
 		render_entity->Draw(rhi);
     }

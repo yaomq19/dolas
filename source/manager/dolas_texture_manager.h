@@ -29,6 +29,12 @@ namespace Dolas
         uint32_t sampleCount = 1;   // 多重采样数量
     };
 
+    enum class GlobalTextureType
+    {
+        GLOBAL_TEXTURE_SKY_BOX,
+        GLOBAL_TEXTURE_COUNT
+    };
+
     class TextureManager
     {
     public:
@@ -47,6 +53,8 @@ namespace Dolas
 		// 返回: 纹理ID，如果创建失败则返回 TEXTURE_ID_EMPTY
         TextureID CreateTextureFromFile(const std::string& file_name);
 
+        Texture* GetGlobalTexture(GlobalTextureType global_texture_type);
+
 		// 创建2D纹理
 		// dolas_texture2d_desc: 2D纹理描述
 		// 返回: 是否成功创建纹理
@@ -64,6 +72,8 @@ namespace Dolas
         Bool IsDepthFormatShaderCompatible(DXGI_FORMAT format);
 
         std::unordered_map<TextureID, Texture*> m_textures;
+
+		std::unordered_map<GlobalTextureType, TextureID> m_global_textures;
     }; // class TextureManager
 } // namespace Dolas
 

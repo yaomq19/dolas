@@ -37,6 +37,10 @@ namespace Dolas
     
     bool TextureManager::Initialize()
     {
+        // initialize global textures
+		TextureID sky_box_texture_id = CreateTextureFromFile("sky_box.dds");
+        m_global_textures[GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX] = sky_box_texture_id;
+
         return true;
     }
 
@@ -112,6 +116,11 @@ namespace Dolas
         
         // std::cout << "Successfully loaded texture: " << texture_file_path << std::endl;
         return texture->m_file_id;
+    }
+
+    Texture* TextureManager::GetGlobalTexture(GlobalTextureType global_texture_type)
+    {
+		return m_textures[m_global_textures[global_texture_type]];
     }
 
     Bool TextureManager::DolasCreateTexture2D(const DolasTexture2DDesc& dolas_texture2d_desc)
