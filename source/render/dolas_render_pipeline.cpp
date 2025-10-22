@@ -241,7 +241,7 @@ namespace Dolas
 		MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
 		render_entity->SetMeshID(quad_mesh_id);
 
-		MaterialID material_id = g_dolas_engine.m_material_manager->GetDeferredShadingMaterialID();
+		MaterialID material_id = g_dolas_engine.m_material_manager->GetSkyBoxMaterialID();
 		render_entity->SetMaterialID(material_id);
 
 		Material* material = g_dolas_engine.m_material_manager->GetMaterial(material_id);
