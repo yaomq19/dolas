@@ -98,3 +98,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd 
+
+# 其他文件
+*.hdr
