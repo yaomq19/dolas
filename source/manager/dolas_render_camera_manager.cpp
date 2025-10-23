@@ -80,8 +80,6 @@ namespace Dolas
         main_camera->ProcessKeyboardInput(move_forward, move_backward, move_left, move_right,
                                         move_up, move_down, delta_time);
         
-        LOG_INFO("adsf : {}", 21);
-
         if (g_dolas_engine.m_frame_count % 60 == 0)  // 每60帧打印一次调试信息
         {
 			// main_camera->printDebugInfo();
