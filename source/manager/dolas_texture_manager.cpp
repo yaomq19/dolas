@@ -38,7 +38,9 @@ namespace Dolas
     bool TextureManager::Initialize()
     {
         // initialize global textures
-		TextureID sky_box_texture_id = CreateTextureFromFile("sky_box.dds");
+		//TextureID sky_box_texture_id = CreateTextureFromFile("sky_box.dds");
+        TextureID sky_box_texture_id = CreateTextureFromFile("golden_gate_hills_4k.hdr");
+        
         m_global_textures[GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX] = sky_box_texture_id;
 
         return true;
