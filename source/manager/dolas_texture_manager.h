@@ -51,7 +51,9 @@ namespace Dolas
 		// 从文件创建纹理
 		// file_name: 纹理文件名
 		// 返回: 纹理ID，如果创建失败则返回 TEXTURE_ID_EMPTY
-        TextureID CreateTextureFromFile(const std::string& file_name);
+        TextureID CreateTextureFromDDSFile(const std::string& file_name);
+
+        TextureID CreateTextureFromHDRFile(const std::string& file_name);
 
         Texture* GetGlobalTexture(GlobalTextureType global_texture_type);
 

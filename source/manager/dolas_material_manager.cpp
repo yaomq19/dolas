@@ -99,7 +99,7 @@ namespace Dolas
 				std::string texture_name = it.key();
 				std::string texture_file_name = it.value();
 
-				TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromFile(texture_file_name);
+				TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
 				if (texture_id == TEXTURE_ID_EMPTY)
 				{
 					return MATERIAL_ID_EMPTY;
@@ -125,7 +125,7 @@ namespace Dolas
                 std::string texture_name = it.key();
                 std::string texture_file_name = it.value();
                 
-                TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromFile(texture_file_name);
+                TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
                 if (texture_id == TEXTURE_ID_EMPTY)
                 {
                     return MATERIAL_ID_EMPTY;
