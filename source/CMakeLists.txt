@@ -32,13 +32,35 @@ include_directories(
     # ${PROJECT_SOURCE_DIR}/third_party
 )
 
+find_package(spdlog CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(directxtex CONFIG REQUIRED)
+find_package(Tracy CONFIG REQUIRED)
+
 # ============ 可执行文件创建 ============
 # 创建名为${PROJECT_NAME}(即Dolas)的可执行文件，包含所有源文件和头文件
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
+# ============ spdlog 配置 ============
+# 配置 spdlog 使用 C++ 标准库的 std::format 而不是外部 fmt 库
+target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_USE_STD_FORMAT)
+
+# ============ Tracy 配置 ============
+# 启用 Tracy 性能分析（仅在需要时）
+target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE)
+
 # ============ 库链接配置 ============
-# 链接第三方库静态库
-target_link_libraries(${PROJECT_NAME} PRIVATE dolas_third_party)
+# 使用 spdlog 的 header-only 版本（不需要链接库文件）
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
+# 链接 nlohmann/json (header-only)
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+# 链接 assimp
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+# 链接 DirectXTex
+target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectXTex)
+# 链接 Tracy
+target_link_libraries(${PROJECT_NAME} PRIVATE Tracy::TracyClient)
 
 # 如果是Windows平台，链接DirectX相关库
 if(WIN32)
@@ -50,6 +72,8 @@ if(WIN32)
         dxgi.lib
         # DirectX着色器编译器库
         d3dcompiler.lib
+        # DirectX GUID 库（提供 IID 和其他标识符）
+        dxguid.lib
     )
 endif()
 

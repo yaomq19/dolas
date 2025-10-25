@@ -2,6 +2,8 @@
 #include <cmath>
 #include <iostream>
 
+#include <tracy/Tracy.hpp>
+
 #include "base/dolas_base.h"
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
@@ -26,7 +28,6 @@
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_task_manager.h"
-#include "optick/optick.h"
 
 using Dolas::TaskGUID;
 namespace Dolas
@@ -146,7 +147,7 @@ namespace Dolas
 		MSG msg = { 0 };
 		while (msg.message != WM_QUIT)
 		{
-			OPTICK_FRAME("MainThread");
+			FrameMark;
 			// 处理所有当前的窗口消息（非阻塞）
 			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
@@ -173,7 +174,7 @@ namespace Dolas
 
 	void DolasEngine::TickLogic(Float delta_time)
 	{
-		OPTICK_EVENT();
+		ZoneScoped;
 		// 更新输入系统
 		m_input_manager->Tick();
 

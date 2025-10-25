@@ -42,9 +42,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
  
 # ============ 子目录包含 ============
-# 添加第三方库子目录
-add_subdirectory(third_party)
-
 # 添加源代码子目录
 add_subdirectory(source)
 

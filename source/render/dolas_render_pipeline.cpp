@@ -13,7 +13,7 @@
 #include "render/dolas_render_primitive.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_texture_manager.h"
-#include "DirectXTex/DDSTextureLoader11.h"
+#include "DirectXTex.h"
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
 #include "manager/dolas_mesh_manager.h"

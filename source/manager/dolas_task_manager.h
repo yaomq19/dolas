@@ -8,7 +8,7 @@
 #include <memory>
 #include <chrono>
 #include "base/dolas_base.h"
-#include "ThreadPool/ThreadPool.h"
+#include "core/ThreadPool.h"
 
 // 前向声明
 class ThreadPool;

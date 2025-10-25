@@ -9,7 +9,7 @@
 #include "base/dolas_base.h"
 #include "base/dolas_string_util.h"
 #include "base/dolas_paths.h"
-#include "DirectXTex/DDSTextureLoader11.h"
+#include "DirectXTex.h"
 
 namespace Dolas
 {
@@ -78,15 +78,51 @@ namespace Dolas
         ID3D11ShaderResourceView* d3d_shader_resource_view = nullptr;
         std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
         
-        HRESULT hr = DirectX::CreateDDSTextureFromFile(
-            g_dolas_engine.m_rhi->m_d3d_device,
+        // 使用 DirectXTex 的现代 API
+        DirectX::TexMetadata metadata;
+        DirectX::ScratchImage image;
+        
+        // 从 DDS 文件加载
+        HRESULT hr = DirectX::LoadFromDDSFile(
             texture_file_path_w.c_str(),
-            &d3d_resource,                    // 正确的参数类型
+            DirectX::DDS_FLAGS_NONE,
+            &metadata,
+            image);
+
+        if (FAILED(hr)) {
+            std::cout << "Failed to load DDS file: " << texture_file_path 
+                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            return TEXTURE_ID_EMPTY;
+        }
+
+        // 创建纹理和 Shader Resource View
+        hr = DirectX::CreateTexture(
+            g_dolas_engine.m_rhi->m_d3d_device,
+            image.GetImages(),
+            image.GetImageCount(),
+            metadata,
+            &d3d_resource);
+
+        if (FAILED(hr)) {
+            std::cout << "Failed to create texture: " << texture_file_path 
+                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            return TEXTURE_ID_EMPTY;
+        }
+
+        // 创建 Shader Resource View
+        hr = DirectX::CreateShaderResourceView(
+            g_dolas_engine.m_rhi->m_d3d_device,
+            image.GetImages(),
+            image.GetImageCount(),
+            metadata,
             &d3d_shader_resource_view);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to load texture: " << texture_file_path 
+            std::cout << "Failed to create shader resource view: " << texture_file_path 
                       << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            if (d3d_resource) {
+                d3d_resource->Release();
+            }
             return TEXTURE_ID_EMPTY;
         }
 

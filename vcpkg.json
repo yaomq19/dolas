@@ -1,0 +1,15 @@
+{
+    "dependencies": [
+        "spdlog",
+        "nlohmann-json",
+        "assimp",
+        {
+            "name": "directxtex",
+            "features": ["dx11"]
+        },
+        {
+            "name": "tracy",
+            "features": ["on-demand"]
+        }
+    ]
+}
