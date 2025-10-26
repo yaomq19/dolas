@@ -6,7 +6,7 @@
 #include "core/dolas_engine.h"
 #include "manager/dolas_buffer_manager.h"
 #include "render/dolas_render_primitive.h"
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     RenderPrimitiveManager::RenderPrimitiveManager()
@@ -28,42 +28,77 @@ namespace Dolas
         return true;
     }
 
-    Bool RenderPrimitiveManager::BuildFromRawData(
+    RenderPrimitive* RenderPrimitiveManager::BuildFromRawData(
 		RenderPrimitiveID id,
 		const DolasRenderPrimitiveType& render_primitive_type,
 		const DolasInputLayoutType& input_layout_type,
-		const std::vector<float>& vertices,
-		const std::vector<unsigned int>& indices,
-        RenderPrimitive* render_primitive)
+		const std::vector<Float>& vertices,
+		const std::vector<UInt>& indices)
     {
-        render_primitive->m_id = id;
-		render_primitive->m_topology = render_primitive_type;
-        render_primitive->m_input_layout_type = input_layout_type;
+        UInt vertex_stride = 0;
+        UInt vertex_count = 0;
+        UInt index_count = 0;
+        BufferID vertex_buffer_id = BUFFER_ID_EMPTY;
+        BufferID index_buffer_id = BUFFER_ID_EMPTY;
 
         if (input_layout_type == DolasInputLayoutType::POS_3_UV_2_NORM_3)
         {
-            render_primitive->m_vertex_stride = 8;
-            render_primitive->m_vertex_count = vertices.size() / 8;
-            render_primitive->m_index_count = indices.size();
+            vertex_stride = 8; // 3 + 2 + 3 = 8
+            vertex_count = vertices.size() / vertex_stride;
+            index_count = indices.size();
 
-			render_primitive->m_vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(render_primitive->m_vertex_count * 8 * 4, vertices.data());
-			render_primitive->m_index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(render_primitive->m_index_count * 4, indices.data());
+			vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices.size() * sizeof(Float), vertices.data());
+            if (vertex_buffer_id == BUFFER_ID_EMPTY)
+            {
+				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create vertex buffer");
+				return nullptr;
+            }
+
+			index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
+			if (index_buffer_id == BUFFER_ID_EMPTY)
+			{
+				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");
+				return nullptr;
+			}
         }
         else if (input_layout_type == DolasInputLayoutType::POS_3_UV_2)
         {
-			render_primitive->m_vertex_stride = 5;
-			render_primitive->m_vertex_count = vertices.size() / 5;
-			render_primitive->m_index_count = indices.size();
+			vertex_stride = 5; // 3 + 2 = 5
+			vertex_count = vertices.size() / vertex_stride;
+			index_count = indices.size();
 
-			render_primitive->m_vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(render_primitive->m_vertex_count * 5 * 4, vertices.data());
-			render_primitive->m_index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(render_primitive->m_index_count * 4, indices.data());
+			vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices.size() * sizeof(Float), vertices.data());
+			if (vertex_buffer_id == BUFFER_ID_EMPTY)
+			{
+				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create vertex buffer");
+				return nullptr;
+			}
+
+            index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
+			if (index_buffer_id == BUFFER_ID_EMPTY)
+			{
+				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");
+				return nullptr;
+			}
         }
         else
         {
-            return false;
+			LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Unsupported input layout type");
+            return nullptr;
         }
 
-        return true;
+        RenderPrimitive* render_primitive = DOLAS_NEW(RenderPrimitive);
+
+		render_primitive->m_id = id;
+		render_primitive->m_topology = render_primitive_type;
+		render_primitive->m_input_layout_type = input_layout_type;
+		render_primitive->m_vertex_stride = vertex_stride;
+		render_primitive->m_vertex_count = vertex_count;
+		render_primitive->m_index_count = index_count;
+		render_primitive->m_vertex_buffer_id = vertex_buffer_id;
+		render_primitive->m_index_buffer_id = index_buffer_id;
+
+        return render_primitive;
     }
     Bool RenderPrimitiveManager::CreateRenderPrimitive(
         RenderPrimitiveID id,
@@ -72,16 +107,10 @@ namespace Dolas
         const std::vector<Float>& vertices,
 		const std::vector<UInt>& indices)
     {
-        RenderPrimitive* render_primitive = DOLAS_NEW(RenderPrimitive);
-        Bool success = BuildFromRawData(
-            id,
-            render_primitive_type,
-            input_layout_type,
-            vertices,
-            indices,
-			render_primitive);
+		RenderPrimitive* render_primitive = BuildFromRawData(id, render_primitive_type, input_layout_type, vertices, indices);
 
-        if (success)
+
+        if (render_primitive)
         {
 			m_render_primitives[id] = render_primitive;
             return id;

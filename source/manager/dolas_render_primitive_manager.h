@@ -37,13 +37,12 @@ namespace Dolas
         RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id);
     private:
 
-		Bool BuildFromRawData(
+        RenderPrimitive* BuildFromRawData(
 			RenderPrimitiveID id,
 			const DolasRenderPrimitiveType& render_primitive_type,
 			const DolasInputLayoutType& input_layout_type,
 			const std::vector<float>& vertices,
-			const std::vector<unsigned int>& indices,
-			RenderPrimitive* render_primitive);
+			const std::vector<unsigned int>& indices);
 
         std::unordered_map<RenderPrimitiveID, RenderPrimitive*> m_render_primitives;
     }; // class RenderPrimitiveManager

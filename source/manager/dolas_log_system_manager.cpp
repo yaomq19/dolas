@@ -77,7 +77,7 @@ namespace Dolas
     {
         if (m_logger)
         {
-            SPDLOG_INFO("=== Dolas 日志系统关闭 ===");
+            SPDLOG_INFO("=== Dolas Log System Shutdown ===");
             m_logger->flush();
         }
         

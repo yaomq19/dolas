@@ -33,9 +33,15 @@ namespace Dolas
 
         BufferID m_vertex_buffer_id;
         BufferID m_index_buffer_id;
-        uint32_t m_vertex_stride = 0;
-        uint32_t m_vertex_count = 0;
-        uint32_t m_index_count = 0;
+
+		// 每个顶点的步长，单位：Float
+        UInt m_vertex_stride = 0;
+
+		// 顶点数量
+        UInt m_vertex_count = 0;
+        
+		// 索引数量
+        UInt m_index_count = 0;
         DolasRenderPrimitiveType m_topology;
         DolasInputLayoutType m_input_layout_type;
     };// class RenderPrimitive

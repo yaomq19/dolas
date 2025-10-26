@@ -20,6 +20,7 @@ namespace Dolas
         BufferID CreateBuffer(BufferID buffer_id, BufferType type, BufferUsage usage, uint32_t size, uint32_t stride, const void* initial_data);
         
         // 特定类型缓冲区创建
+		// size: 以字节为单位的缓冲区大小
         BufferID CreateVertexBuffer(
             uint32_t size,
             const void* initial_data = nullptr,
