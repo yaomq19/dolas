@@ -20,30 +20,24 @@ namespace Dolas
         ~RenderPrimitive();
 
         bool Clear();
-
-        // 绘制
         void Draw(DolasRHI* rhi);
 
-        // 属性
-        const std::string& GetName() const { return m_name; }
-        RenderPrimitiveID GetId() const { return m_id; }
-
-        std::string m_name;
         RenderPrimitiveID m_id;
-
-        BufferID m_vertex_buffer_id;
-        BufferID m_index_buffer_id;
-
-		// 每个顶点的步长，单位：Float
+		DolasRenderPrimitiveType m_topology;
+		DolasInputLayoutType m_input_layout_type;
+        
+		// The step size of each vertex, unit: Float
         UInt m_vertex_stride = 0;
 
-		// 顶点数量
+		// vertex count
         UInt m_vertex_count = 0;
         
-		// 索引数量
+		// index count
         UInt m_index_count = 0;
-        DolasRenderPrimitiveType m_topology;
-        DolasInputLayoutType m_input_layout_type;
+        
+		BufferID m_vertex_buffer_id;
+
+		BufferID m_index_buffer_id;
     };// class RenderPrimitive
 } // namespace Dolas
 

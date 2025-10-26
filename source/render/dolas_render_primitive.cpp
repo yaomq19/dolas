@@ -10,7 +10,13 @@
 namespace Dolas
 {
     RenderPrimitive::RenderPrimitive()
-        : m_id(0)
+        : m_id(RENDER_PRIMITIVE_ID_EMPTY),
+		m_topology(DolasRenderPrimitiveType::_TRIANGLE_LIST),
+		m_vertex_stride(0),
+		m_vertex_count(0),
+		m_index_count(0),
+		m_vertex_buffer_id(BUFFER_ID_EMPTY),
+		m_index_buffer_id(BUFFER_ID_EMPTY)
     {
     }
 
@@ -29,7 +35,6 @@ namespace Dolas
         m_topology = DolasRenderPrimitiveType::_TRIANGLE_LIST;
         return true;
     }
-
 
     void RenderPrimitive::Draw(DolasRHI* rhi)
     {
