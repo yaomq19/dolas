@@ -23,8 +23,8 @@ namespace Dolas
         void Draw(DolasRHI* rhi);
 
         RenderPrimitiveID m_id;
-		DolasRenderPrimitiveType m_topology;
-		DolasInputLayoutType m_input_layout_type;
+        RenderPrimitiveTopology m_topology;
+		InputLayoutType m_input_layout_type;
         
 		// The step size of each vertex, unit: Float
         UInt m_vertex_stride = 0;

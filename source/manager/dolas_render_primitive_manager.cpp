@@ -30,63 +30,46 @@ namespace Dolas
 
     RenderPrimitive* RenderPrimitiveManager::BuildFromRawData(
 		RenderPrimitiveID id,
-		const DolasRenderPrimitiveType& render_primitive_type,
-		const DolasInputLayoutType& input_layout_type,
+		const RenderPrimitiveTopology& render_primitive_type,
+		const InputLayoutType& input_layout_type,
 		const std::vector<Float>& vertices,
 		const std::vector<UInt>& indices)
     {
         UInt vertex_stride = 0;
-        UInt vertex_count = 0;
-        UInt index_count = 0;
-        BufferID vertex_buffer_id = BUFFER_ID_EMPTY;
-        BufferID index_buffer_id = BUFFER_ID_EMPTY;
 
-        if (input_layout_type == DolasInputLayoutType::POS_3_UV_2_NORM_3)
+        switch (input_layout_type)
         {
+        case InputLayoutType::POS_3:
+            vertex_stride = 3;
+            break;
+        case InputLayoutType::POS_3_UV_2:
+            vertex_stride = 5; // 3 + 2 = 5
+            break;
+        case InputLayoutType::POS_3_UV_2_NORM_3:
             vertex_stride = 8; // 3 + 2 + 3 = 8
-            vertex_count = vertices.size() / vertex_stride;
-            index_count = indices.size();
-
-			vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices.size() * sizeof(Float), vertices.data());
-            if (vertex_buffer_id == BUFFER_ID_EMPTY)
-            {
-				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create vertex buffer");
-				return nullptr;
-            }
-
-			index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
-			if (index_buffer_id == BUFFER_ID_EMPTY)
-			{
-				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");
-				return nullptr;
-			}
-        }
-        else if (input_layout_type == DolasInputLayoutType::POS_3_UV_2)
-        {
-			vertex_stride = 5; // 3 + 2 = 5
-			vertex_count = vertices.size() / vertex_stride;
-			index_count = indices.size();
-
-			vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices.size() * sizeof(Float), vertices.data());
-			if (vertex_buffer_id == BUFFER_ID_EMPTY)
-			{
-				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create vertex buffer");
-				return nullptr;
-			}
-
-            index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
-			if (index_buffer_id == BUFFER_ID_EMPTY)
-			{
-				LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");
-				return nullptr;
-			}
-        }
-        else
-        {
+            break;
+        default:
 			LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Unsupported input layout type");
-            return nullptr;
+			return nullptr;
         }
 
+		UInt vertex_count = vertices.size() / vertex_stride;
+		UInt index_count = indices.size();
+
+        BufferID vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices.size() * sizeof(Float), vertices.data());
+		if (vertex_buffer_id == BUFFER_ID_EMPTY)
+		{
+			LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create vertex buffer");
+			return nullptr;
+		}
+
+        BufferID index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
+		if (index_buffer_id == BUFFER_ID_EMPTY)
+		{
+			LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");
+			return nullptr;
+
+		}
         RenderPrimitive* render_primitive = DOLAS_NEW(RenderPrimitive);
 
 		render_primitive->m_id = id;
@@ -100,23 +83,26 @@ namespace Dolas
 
         return render_primitive;
     }
+
     Bool RenderPrimitiveManager::CreateRenderPrimitive(
         RenderPrimitiveID id,
-        const DolasRenderPrimitiveType& render_primitive_type,
-        const DolasInputLayoutType& input_layout_type,
+        const RenderPrimitiveTopology& render_primitive_type,
+        const InputLayoutType& input_layout_type,
         const std::vector<Float>& vertices,
 		const std::vector<UInt>& indices)
     {
 		RenderPrimitive* render_primitive = BuildFromRawData(id, render_primitive_type, input_layout_type, vertices, indices);
 
-
         if (render_primitive)
         {
 			m_render_primitives[id] = render_primitive;
-            return id;
+            return true;
         }
-
-        return RENDER_PRIMITIVE_ID_EMPTY;
+        else
+        {
+			LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitive: Failed to build render primitive from raw data");
+            return false;
+        }
     }
 
     RenderPrimitive* RenderPrimitiveManager::GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id)

@@ -53,7 +53,7 @@ namespace Dolas
 
         ID3D11InputLayout* input_layout = nullptr; 
         std::vector<D3D11_INPUT_ELEMENT_DESC> input_layout_desc;
-        if (render_primitive->m_input_layout_type == DolasInputLayoutType::POS_3_UV_2_NORM_3)
+        if (render_primitive->m_input_layout_type == InputLayoutType::POS_3_UV_2_NORM_3)
         {
             input_layout_desc = {
                 { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -61,7 +61,7 @@ namespace Dolas
                 { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             };
         }
-        else if (render_primitive->m_input_layout_type == DolasInputLayoutType::POS_3_UV_2)
+        else if (render_primitive->m_input_layout_type == InputLayoutType::POS_3_UV_2)
         {
             input_layout_desc = {
                 { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },

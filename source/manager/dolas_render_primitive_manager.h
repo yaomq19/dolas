@@ -22,15 +22,15 @@ namespace Dolas
         bool Clear();
 
         // Create RenderPrimitive
-		// @param id: 指定要创建的 RenderPrimitive 的 ID
-		// @param render_primitive_type: 指定要创建的 RenderPrimitive 的拓扑
-		// @param input_layout_type: 指定要创建的 RenderPrimitive 的输入布局
-		// @param vertices: 提供顶点数据
-		// @param indices: 提供索引数据
+		// @param id: Specifies the ID of the RenderPrimitive to be created
+		// @param render_primitive_type: Specifies the topology of the RenderPrimitive to create
+		// @param input_layout_type: Specifies the input layout of the RenderPrimitive to be created
+		// @param vertices: Providing vertex data
+		// @param indices: Providing index data
         Bool CreateRenderPrimitive(
             RenderPrimitiveID id,
-            const DolasRenderPrimitiveType& render_primitive_type,
-            const DolasInputLayoutType& input_layout_type,
+            const RenderPrimitiveTopology& render_primitive_type,
+            const InputLayoutType& input_layout_type,
             const std::vector<Float>& vertices,
             const std::vector<UInt>& indices);
 
@@ -39,8 +39,8 @@ namespace Dolas
 
         RenderPrimitive* BuildFromRawData(
 			RenderPrimitiveID id,
-			const DolasRenderPrimitiveType& render_primitive_type,
-			const DolasInputLayoutType& input_layout_type,
+			const RenderPrimitiveTopology& render_primitive_type,
+			const InputLayoutType& input_layout_type,
 			const std::vector<float>& vertices,
 			const std::vector<unsigned int>& indices);
 

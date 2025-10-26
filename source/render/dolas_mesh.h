@@ -8,13 +8,14 @@
 
 namespace Dolas
 {
-    enum class DolasRenderPrimitiveType: UInt
+    enum class RenderPrimitiveTopology : UInt
     {
         _TRIANGLE_LIST
     };
 
-	enum class DolasInputLayoutType : UInt
+	enum class InputLayoutType : UInt
 	{
+        POS_3,
 		POS_3_UV_2,
         POS_3_UV_2_NORM_3
 	};
@@ -29,8 +30,8 @@ namespace Dolas
         MeshID m_file_id;
         
         // RenderPrimitive needs these
-        DolasRenderPrimitiveType m_render_primitive_type;
-        DolasInputLayoutType m_input_layout_type;
+        RenderPrimitiveTopology m_render_primitive_type;
+        InputLayoutType m_input_layout_type;
         std::vector<unsigned int> m_indices;
 		std::vector<float> m_final_vertices;
 

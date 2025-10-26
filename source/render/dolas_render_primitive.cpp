@@ -11,7 +11,7 @@ namespace Dolas
 {
     RenderPrimitive::RenderPrimitive()
         : m_id(RENDER_PRIMITIVE_ID_EMPTY),
-		m_topology(DolasRenderPrimitiveType::_TRIANGLE_LIST),
+		m_topology(RenderPrimitiveTopology::_TRIANGLE_LIST),
 		m_vertex_stride(0),
 		m_vertex_count(0),
 		m_index_count(0),
@@ -32,7 +32,7 @@ namespace Dolas
         m_vertex_stride = 0;
         m_vertex_count = 0;
         m_index_count = 0;
-        m_topology = DolasRenderPrimitiveType::_TRIANGLE_LIST;
+        m_topology = RenderPrimitiveTopology::_TRIANGLE_LIST;
         return true;
     }
 
@@ -54,7 +54,7 @@ namespace Dolas
 		rhi->m_d3d_immediate_context->IASetVertexBuffers(0, 1, &d3d_vertex_buffer, &stride, &offset);
 
         D3D11_PRIMITIVE_TOPOLOGY d3d_topology;
-        if (m_topology == DolasRenderPrimitiveType::_TRIANGLE_LIST)
+        if (m_topology == RenderPrimitiveTopology::_TRIANGLE_LIST)
         {
             d3d_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         }

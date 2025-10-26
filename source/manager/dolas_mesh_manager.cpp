@@ -180,7 +180,7 @@ namespace Dolas
 		{
 			if (pos_element_count == 3 && uv_element_count == 2 && normal_element_count == 3)
 			{
-				mesh->m_input_layout_type = DolasInputLayoutType::POS_3_UV_2_NORM_3;
+				mesh->m_input_layout_type = InputLayoutType::POS_3_UV_2_NORM_3;
                 for (int i = 0; i < mesh->m_vertices.size(); i++)
                 {
                     mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
@@ -204,7 +204,7 @@ namespace Dolas
 		{
 			if (pos_element_count == 3 && uv_element_count == 2)
 			{
-				mesh->m_input_layout_type = DolasInputLayoutType::POS_3_UV_2;
+				mesh->m_input_layout_type = InputLayoutType::POS_3_UV_2;
 				for (int i = 0; i < mesh->m_vertices.size(); i++)
 				{
 					mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
@@ -234,7 +234,7 @@ namespace Dolas
 		const std::string& primitive_str = json_data["primitive"];
 		if (primitive_str == "TriangleList")
 		{
-			mesh->m_render_primitive_type = DolasRenderPrimitiveType::_TRIANGLE_LIST;
+			mesh->m_render_primitive_type = RenderPrimitiveTopology::_TRIANGLE_LIST;
 		}
 		else
 		{

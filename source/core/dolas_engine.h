@@ -13,8 +13,6 @@ namespace Dolas
 		bool Initialize();
 		void Clear();
 		void Run();
-		void TickRender(Float delta_time);
-		void TickLogic(Float delta_time);
 
 		class LogSystemManager* m_log_system_manager;
 		class DolasRHI* m_rhi;
@@ -36,8 +34,8 @@ namespace Dolas
 		class RenderSceneManager* m_render_scene_manager;
 		class InputManager* m_input_manager;
 		class TaskManager* m_task_manager;
-
-		long long m_frame_count = 0;
+		class GeometryManager* m_geometry_manager;
+		class TickManager* m_tick_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

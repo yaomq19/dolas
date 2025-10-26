@@ -28,8 +28,8 @@
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_task_manager.h"
-
-using Dolas::TaskGUID;
+#include "manager/dolas_geometry_manager.h"
+#include "manager/dolas_tick_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -56,6 +56,8 @@ namespace Dolas
 		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
 		m_input_manager = DOLAS_NEW(InputManager);
 		m_task_manager = DOLAS_NEW(TaskManager);
+		m_geometry_manager = DOLAS_NEW(GeometryManager);
+		m_tick_manager = DOLAS_NEW(TickManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -79,7 +81,9 @@ namespace Dolas
 		DOLAS_DELETE(m_render_scene_manager);
 		DOLAS_DELETE(m_input_manager);
 		DOLAS_DELETE(m_task_manager);
+		DOLAS_DELETE(m_geometry_manager);
 		DOLAS_DELETE(m_log_system_manager);
+		DOLAS_DELETE(m_tick_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -108,6 +112,8 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize(m_rhi->m_window_handle));
 		// 初始化任务管理器
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
 		return true;
 	}
 
@@ -132,14 +138,10 @@ namespace Dolas
 		m_render_scene_manager->Clear();
 		m_input_manager->Clear();
 		m_task_manager->Clear();
-		
+		m_geometry_manager->Clear();
 		// 最后清理日志系统
 		m_log_system_manager->Clear();
-	}
-
-	void TickLogic()
-	{
-
+		m_tick_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -156,31 +158,9 @@ namespace Dolas
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-
-			TaskGUID logic_task_guid = m_task_manager->EnqueueTask(&DolasEngine::TickLogic, this, 1.0f);
-			// render frame
-			TickRender(1.0f);
-			m_task_manager->WaitForTask(logic_task_guid);
-			m_frame_count++;
+			// 1.0 is a hack value
+			m_tick_manager->Tick(1.0f);
 		}
 	}
-
-	void DolasEngine::TickRender(Float delta_time)
-	{
-		RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
-		DOLAS_RETURN_IF_NULL(main_render_view);
-		main_render_view->Render(m_rhi);
-	}
-
-	void DolasEngine::TickLogic(Float delta_time)
-	{
-		ZoneScoped;
-		// 更新输入系统
-		m_input_manager->Tick();
-
-		// 更新相机管理器（包含输入处理）
-		m_render_camera_manager->Update(delta_time);
-	}
-
 }// namespace Dolas
 

@@ -1,5 +1,6 @@
 #include "manager/dolas_geometry_manager.h"
-
+#include "core/dolas_engine.h"
+#include "manager/dolas_render_primitive_manager.h"
 namespace Dolas
 {
 
@@ -15,13 +16,22 @@ namespace Dolas
     
     bool GeometryManager::Initialize()
     {
-        /*RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
-        m_geometries[BaseGeometryType::_TRIANGLE] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(triangle_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });
-        m_geometries[BaseGeometryType::_QUAD] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(quad_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });
-        m_geometries[BaseGeometryType::_CUBE] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(cube_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });
-        m_geometries[BaseGeometryType::_SPHERE] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(sphere_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });
-        m_geometries[BaseGeometryType::_CYLINDER] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(cylinder_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });
-        m_geometries[BaseGeometryType::_CONE] = render_primitive_manager->CreateRenderPrimitive(STRING_ID(cone_render_primitive), DolasRenderPrimitiveType::_TRIANGLE_LIST, DolasInputLayoutType::_POSITION_COLOR, { {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f} });*/
+        RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+
+        std::vector<Float> vertices_data;
+        std::vector<UInt> indices_data;
+        
+		StringID sphere_render_primitive_string_id = STRING_ID(sphere_render_primitive);
+		Bool success = render_primitive_manager->CreateRenderPrimitive(
+            sphere_render_primitive_string_id,
+			RenderPrimitiveTopology::_TRIANGLE_LIST,
+			InputLayoutType::POS_3,
+			vertices_data,
+			indices_data);
+        if (success)
+        {
+            m_geometries[BaseGeometryType::_SPHERE] = sphere_render_primitive_string_id;
+        }
         return true;
     }
 
@@ -32,7 +42,14 @@ namespace Dolas
 
     RenderPrimitiveID GeometryManager::GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type)
     {
-        return 0;
+        if (m_geometries.find(geometry_type) != m_geometries.end())
+        {
+			return m_geometries[geometry_type];
+        }
+        else
+        {
+			return RENDER_PRIMITIVE_ID_EMPTY;
+        }
     }
 
 } // namespace Dolas
