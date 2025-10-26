@@ -2,7 +2,7 @@
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
 #include <iostream>
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     Buffer::Buffer()
@@ -21,13 +21,13 @@ namespace Dolas
         ID3D11Device* device = g_dolas_engine.m_rhi->m_d3d_device;
         if (!device)
         {
-            std::cerr << "Buffer::CreateBuffer: D3D11 device is null" << std::endl;
+            LOG_ERROR("Buffer::CreateBuffer: D3D11 device is null");
             return false;
         }
 
         if (size == 0)
         {
-            std::cerr << "Buffer::CreateBuffer: Buffer size cannot be zero" << std::endl;
+            LOG_ERROR("Buffer::CreateBuffer: Buffer size cannot be zero");
             return false;
         }
 
@@ -76,7 +76,7 @@ namespace Dolas
         HRESULT hr = device->CreateBuffer(&desc, p_init_data, &m_d3d_buffer);
         if (FAILED(hr))
         {
-            std::cerr << "Buffer::CreateBuffer: Failed to create buffer" << std::endl;
+            LOG_ERROR("Buffer::CreateBuffer: Failed to create buffer");
             return false;
         }
 
@@ -92,7 +92,7 @@ namespace Dolas
             hr = device->CreateShaderResourceView(m_d3d_buffer, &srv_desc, &m_shader_resource_view);
             if (FAILED(hr))
             {
-                std::cerr << "Buffer::CreateBuffer: Failed to create shader resource view" << std::endl;
+                LOG_ERROR("Buffer::CreateBuffer: Failed to create shader resource view");
             }
         }
 
@@ -114,11 +114,11 @@ namespace Dolas
             hr = device->CreateUnorderedAccessView(m_d3d_buffer, &uav_desc, &m_unordered_access_view);
             if (FAILED(hr))
             {
-                std::cerr << "Buffer::CreateBuffer: Failed to create unordered access view" << std::endl;
+                LOG_ERROR("Buffer::CreateBuffer: Failed to create unordered access view");
             }
         }
 
-        // std::cout << "Buffer::CreateBuffer: Successfully created buffer of size " << size << " bytes" << std::endl;
+        LOG_INFO("Buffer::CreateBuffer: Successfully created buffer of size {0} bytes", size);
         return true;
     }
 
@@ -149,20 +149,20 @@ namespace Dolas
     {
         if (!m_d3d_buffer || !data)
         {
-            std::cerr << "Buffer::UpdateData: Invalid buffer or data" << std::endl;
+            LOG_ERROR("Buffer::UpdateData: Invalid buffer or data");
             return false;
         }
 
         if (offset + size > m_size)
         {
-            std::cerr << "Buffer::UpdateData: Data size exceeds buffer bounds" << std::endl;
+            LOG_ERROR("Buffer::UpdateData: Data size exceeds buffer bounds");
             return false;
         }
 
         ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
         if (!context)
         {
-            std::cerr << "Buffer::UpdateData: D3D11 device context is null" << std::endl;
+            LOG_ERROR("Buffer::UpdateData: D3D11 device context is null");
             return false;
         }
 
@@ -173,7 +173,7 @@ namespace Dolas
             HRESULT hr = context->Map(m_d3d_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource);
             if (FAILED(hr))
             {
-                std::cerr << "Buffer::UpdateData: Failed to map buffer" << std::endl;
+                LOG_ERROR("Buffer::UpdateData: Failed to map buffer");
                 return false;
             }
 
@@ -195,7 +195,7 @@ namespace Dolas
         }
         else
         {
-            std::cerr << "Buffer::UpdateData: Buffer usage does not support updates" << std::endl;
+            LOG_ERROR("Buffer::UpdateData: Buffer usage does not support updates");
             return false;
         }
 
@@ -206,20 +206,20 @@ namespace Dolas
     {
         if (!m_d3d_buffer || m_is_mapped)
         {
-            std::cerr << "Buffer::Map: Invalid buffer or buffer already mapped" << std::endl;
+            LOG_ERROR("Buffer::Map: Invalid buffer or buffer already mapped");
             return false;
         }
 
         if (m_buffer_usage != BufferUsage::DYNAMIC && m_buffer_usage != BufferUsage::STAGING)
         {
-            std::cerr << "Buffer::Map: Buffer usage does not support mapping" << std::endl;
+            LOG_ERROR("Buffer::Map: Buffer usage does not support mapping");
             return false;
         }
 
         ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
         if (!context)
         {
-            std::cerr << "Buffer::Map: D3D11 device context is null" << std::endl;
+            LOG_ERROR("Buffer::Map: D3D11 device context is null");
             return false;
         }
 
@@ -229,7 +229,7 @@ namespace Dolas
         HRESULT hr = context->Map(m_d3d_buffer, 0, map_type, 0, &mapped_resource);
         if (FAILED(hr))
         {
-            std::cerr << "Buffer::Map: Failed to map buffer" << std::endl;
+            LOG_ERROR("Buffer::Map: Failed to map buffer");
             return false;
         }
 
@@ -258,19 +258,19 @@ namespace Dolas
     {
         if (!m_d3d_buffer || !output_data)
         {
-            std::cerr << "Buffer::ReadData: Invalid buffer or output data" << std::endl;
+            LOG_ERROR("Buffer::ReadData: Invalid buffer or output data");
             return false;
         }
 
         if (m_buffer_usage != BufferUsage::STAGING)
         {
-            std::cerr << "Buffer::ReadData: Buffer must be staging buffer for reading" << std::endl;
+            LOG_ERROR("Buffer::ReadData: Buffer must be staging buffer for reading");
             return false;
         }
 
         if (offset + size > m_size)
         {
-            std::cerr << "Buffer::ReadData: Read size exceeds buffer bounds" << std::endl;
+            LOG_ERROR("Buffer::ReadData: Read size exceeds buffer bounds");
             return false;
         }
 

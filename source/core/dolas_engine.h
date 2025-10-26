@@ -16,8 +16,6 @@ namespace Dolas
 		void TickRender(Float delta_time);
 		void TickLogic(Float delta_time);
 
-		void Test();
-		
 		class LogSystemManager* m_log_system_manager;
 		class DolasRHI* m_rhi;
 		class RenderPipelineManager* m_render_pipeline_manager;

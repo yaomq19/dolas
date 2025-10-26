@@ -2,7 +2,7 @@
 #include "render/dolas_buffer.h"
 #include "base/dolas_base.h"
 #include <iostream>
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     BufferManager::BufferManager()
@@ -31,7 +31,7 @@ namespace Dolas
             }
         }
         m_buffers.clear();
-        std::cout << "BufferManager::Clear: All buffers cleared" << std::endl;
+        LOG_INFO("BufferManager::Clear: All buffers cleared");
         return true;
     }
 
@@ -133,14 +133,13 @@ namespace Dolas
         // 创建结构化缓冲区
         if (!buffer->CreateStructuredBuffer(element_count, element_size, initial_data, usage))
         {
-            std::cerr << "BufferManager::CreateStructuredBuffer: Failed to create structured buffer: " << buffer_id << std::endl;
+            LOG_ERROR("BufferManager::CreateStructuredBuffer: Failed to create structured buffer: {0}", buffer_id);
             return BUFFER_ID_EMPTY;
         }
 
         m_buffers[buffer_id] = buffer;
         uint32_t total_size = element_count * element_size;
-        std::cout << "BufferManager::CreateStructuredBuffer: Successfully created structured buffer: " << buffer_id 
-                  << " (" << element_count << " elements, " << element_size << " bytes each, total: " << total_size << " bytes)" << std::endl;
+        LOG_INFO("BufferManager::CreateStructuredBuffer: Successfully created structured buffer: {0} ({1} elements, {2} bytes each, total: {3} bytes)", buffer_id, element_count, element_size, total_size);
         return buffer_id;
     }
 

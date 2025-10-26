@@ -114,7 +114,7 @@ namespace Dolas
 		}
 		else
 		{
-			std::cerr << "Unknown camera perspective type: " << camera_asset->perspective_type << std::endl;
+			LOG_ERROR("Unknown camera perspective type: {0}", camera_asset->perspective_type);
 			return false;
 		}
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);

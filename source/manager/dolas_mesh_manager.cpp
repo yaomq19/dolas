@@ -65,7 +65,7 @@ namespace Dolas
         // 验证顶点数量
         if (!json_data.contains("vertex_count") || !json_data.contains("vertex_list"))
         {
-            std::cerr << "MeshManager::CreateMesh: vertex_count or vertex_list not found in " << mesh_file_path << std::endl;
+            LOG_ERROR("MeshManager::CreateMesh: vertex_count or vertex_list not found in {0}", mesh_file_path);
             return MESH_ID_EMPTY;
         }
 
@@ -74,7 +74,7 @@ namespace Dolas
 
         if (vertex_count != vertex_list.size())
         {
-            std::cerr << "MeshManager::CreateMesh: vertex_count mismatch in " << mesh_file_path << std::endl;
+            LOG_ERROR("MeshManager::CreateMesh: vertex_count mismatch in {0}", mesh_file_path);
             return MESH_ID_EMPTY;
         }
 
@@ -93,7 +93,7 @@ namespace Dolas
                 }
                 else
                 {
-                    std::cerr << "MeshManager::CreateMesh: invalid position data in " << mesh_file_path << std::endl;
+                    LOG_ERROR("MeshManager::CreateMesh: invalid position data in {0}", mesh_file_path);
                 }
             }
             if (vertex.contains("uv"))
@@ -105,7 +105,7 @@ namespace Dolas
                 }
                 else
                 {
-                    std::cerr << "MeshManager::CreateMesh: invalid uv data in " << mesh_file_path << std::endl;
+                    LOG_ERROR("MeshManager::CreateMesh: invalid uv data in {0}", mesh_file_path);
                     return MESH_ID_EMPTY;
                 }
             }
@@ -118,7 +118,7 @@ namespace Dolas
 				}
 				else
 				{
-					std::cerr << "MeshManager::CreateMesh: invalid normal data in " << mesh_file_path << std::endl;
+					LOG_ERROR("MeshManager::CreateMesh: invalid normal data in {0}", mesh_file_path);
 					return MESH_ID_EMPTY;
 				}
 			}
@@ -132,7 +132,7 @@ namespace Dolas
 
             if (index_count != index_list.size())
             {
-                std::cerr << "MeshManager::CreateMesh: index_count mismatch in " << mesh_file_path << std::endl;
+                LOG_ERROR("MeshManager::CreateMesh: index_count mismatch in {0}", mesh_file_path);
                 return MESH_ID_EMPTY;
             }
 
@@ -146,7 +146,7 @@ namespace Dolas
 		// 解析 IA
 		if (!json_data.contains("input_layout"))
 		{
-			std::cerr << "MeshManager::CreateMesh: input_layout is Empty" << mesh_file_path << std::endl;
+			LOG_ERROR("MeshManager::CreateMesh: input_layout is Empty {0}", mesh_file_path);
 			return MESH_ID_EMPTY;
 		}
 		const auto& input_layout = json_data["input_layout"];
@@ -228,7 +228,7 @@ namespace Dolas
 		// 解析 Primitive
 		if (!json_data.contains("primitive"))
 		{
-			std::cerr << "MeshManager::CreateMesh: primitive is Empty" << mesh_file_path << std::endl;
+			LOG_ERROR("MeshManager::CreateMesh: primitive is Empty {0}", mesh_file_path);
 			return MESH_ID_EMPTY;
 		}
 		const std::string& primitive_str = json_data["primitive"];

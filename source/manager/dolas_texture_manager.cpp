@@ -10,7 +10,7 @@
 #include "base/dolas_string_util.h"
 #include "base/dolas_paths.h"
 #include "DirectXTex.h"
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     // Helper: set D3D11 debug name for RenderDoc and debug layer
@@ -91,8 +91,7 @@ namespace Dolas
             image);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to load DDS file: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to load DDS file: {0} ", texture_file_path);
             return TEXTURE_ID_EMPTY;
         }
 
@@ -105,8 +104,7 @@ namespace Dolas
             &d3d_resource);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to create texture: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to create texture: {0} ", texture_file_path);
             return TEXTURE_ID_EMPTY;
         }
 
@@ -119,8 +117,7 @@ namespace Dolas
             &d3d_shader_resource_view);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to create shader resource view: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to create shader resource view: {0}", texture_file_path);
             if (d3d_resource) {
                 d3d_resource->Release();
             }
@@ -132,7 +129,7 @@ namespace Dolas
         hr = d3d_resource->QueryInterface(__uuidof(ID3D11Texture2D), 
                                          reinterpret_cast<void**>(&d3d_texture_2d));
         if (FAILED(hr)) {
-            std::cout << "Failed to query ID3D11Texture2D interface!" << std::endl;
+            LOG_ERROR("Failed to query ID3D11Texture2D interface!");
             d3d_resource->Release();
             if (d3d_shader_resource_view) d3d_shader_resource_view->Release();
             return TEXTURE_ID_EMPTY;
@@ -153,7 +150,7 @@ namespace Dolas
         
         m_textures[texture->m_file_id] = texture;
         
-        // std::cout << "Successfully loaded texture: " << texture_file_path << std::endl;
+        LOG_INFO("Successfully loaded texture: {0}", texture_file_path);
         return texture->m_file_id;
     }
 
@@ -177,8 +174,7 @@ namespace Dolas
             image);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to load HDR file: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to load HDR file: {0}", texture_file_path);
             return TEXTURE_ID_EMPTY;
         }
 
@@ -191,8 +187,7 @@ namespace Dolas
             &d3d_resource);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to create texture from HDR: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to create texture from HDR: {0}", texture_file_path);
             return TEXTURE_ID_EMPTY;
         }
 
@@ -205,8 +200,7 @@ namespace Dolas
             &d3d_shader_resource_view);
 
         if (FAILED(hr)) {
-            std::cout << "Failed to create shader resource view from HDR: " << texture_file_path 
-                      << " HRESULT: 0x" << std::hex << hr << std::dec << std::endl;
+            LOG_ERROR("Failed to create shader resource view from HDR: {0}", texture_file_path);
             if (d3d_resource) {
                 d3d_resource->Release();
             }
@@ -218,7 +212,7 @@ namespace Dolas
         hr = d3d_resource->QueryInterface(__uuidof(ID3D11Texture2D), 
                                          reinterpret_cast<void**>(&d3d_texture_2d));
         if (FAILED(hr)) {
-            std::cout << "Failed to query ID3D11Texture2D interface from HDR!" << std::endl;
+            LOG_ERROR("Failed to query ID3D11Texture2D interface from HDR!");
             d3d_resource->Release();
             if (d3d_shader_resource_view) d3d_shader_resource_view->Release();
             return TEXTURE_ID_EMPTY;
@@ -239,7 +233,7 @@ namespace Dolas
         
         m_textures[texture->m_file_id] = texture;
         
-        std::cout << "Successfully loaded HDR texture: " << texture_file_path << std::endl;
+        LOG_INFO("Successfully loaded HDR texture: {0}", texture_file_path);
         return texture->m_file_id;
     }
 

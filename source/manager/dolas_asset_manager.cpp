@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include "base/dolas_paths.h"
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     AssetManager::AssetManager()
@@ -135,7 +136,7 @@ namespace Dolas
 		}
 		else
 		{
-			std::cout << "Unknown camera perspective type!" << std::endl;
+			LOG_ERROR("Unknown camera perspective type!");
 			DOLAS_DELETE(camera_asset);
 			return nullptr;
 		}
@@ -167,7 +168,7 @@ namespace Dolas
 				}
 				else
 				{
-					std::cout << "Invalid scene entity format in JSON!" << std::endl;
+					LOG_ERROR("Invalid scene entity format in JSON!");
 				}
 			}
 			for (const auto& object_name : json_data["models"])
@@ -177,7 +178,7 @@ namespace Dolas
 		}
 		else
 		{
-			std::cout << "Scene JSON does not contain valid entities array!" << std::endl;
+			LOG_ERROR("Scene JSON does not contain valid entities array!");
 		}
 		return scene_asset;
 	}

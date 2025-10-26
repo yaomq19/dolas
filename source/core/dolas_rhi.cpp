@@ -79,7 +79,7 @@ namespace Dolas
         HRESULT hr = device->CreateRenderTargetView(texture->GetD3DTexture2D(), &rtv_desc, &m_d3d_render_target_view);
         if (FAILED(hr))
         {
-            std::cout << "Failed to create render target view!" << std::endl;
+			LOG_ERROR("Failed to create render target view!");
             return;
         }
     }
@@ -154,7 +154,7 @@ namespace Dolas
 		HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(texture->GetD3DTexture2D(), &dsv_desc, &m_d3d_depth_stencil_view);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to create depth stencil view!" << std::endl;
+			LOG_ERROR("Failed to create depth stencil view!");
 			return;
 		}
 	}
@@ -259,7 +259,7 @@ namespace Dolas
 		HRESULT hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to create per view constant buffer!" << std::endl;
+			LOG_ERROR("Failed to create per view constant buffer!");
 			return false;
 		}
 
@@ -272,7 +272,7 @@ namespace Dolas
 		hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to create per frame constant buffer!" << std::endl;
+			LOG_ERROR("Failed to create per frame constant buffer!");
 			return false;
 		}
 		return true;
@@ -376,7 +376,7 @@ namespace Dolas
 		HRESULT hr = m_d3d_device->CreateShaderResourceView(resource, nullptr, &shader_resource_view);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to create shader resource view!" << std::endl;
+			LOG_ERROR("Failed to create shader resource view!");
 			return nullptr;
 		}
 		return shader_resource_view;
@@ -392,7 +392,7 @@ namespace Dolas
 		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to map per view constant buffer!" << std::endl;
+			LOG_ERROR("Failed to map per view constant buffer!");
 			return;
 		}
 		memcpy_s(mappedData.pData, sizeof(per_frame_constant_buffer), &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
@@ -410,7 +410,7 @@ namespace Dolas
 		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
 		if (FAILED(hr))
 		{
-			std::cout << "Failed to map per view constant buffer!" << std::endl;
+			LOG_ERROR("Failed to map per view constant buffer!");
 			return;
 		}
 		memcpy_s(mappedData.pData, sizeof(per_view_constant_buffer), &per_view_constant_buffer, sizeof(per_view_constant_buffer));
@@ -461,7 +461,7 @@ namespace Dolas
 	{
         IDXGIAdapter* best_adapter = DXGIHelper::SelectBestAdapter();
 		if (!best_adapter) {
-			std::cout << "Failed to select best adapter!" << std::endl;
+			LOG_ERROR("Failed to select best adapter!");
 			return false;
 		}
 

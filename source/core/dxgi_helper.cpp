@@ -9,7 +9,7 @@ namespace Dolas
         IDXGIFactory* pFactory = nullptr;
         HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
         if (FAILED(hr)) {
-            std::cout << "Failed to create DXGI Factory!" << std::endl;
+            LOG_ERROR("Failed to create DXGI Factory!");
             return nullptr;
         }
         
@@ -61,14 +61,14 @@ namespace Dolas
     void DXGIHelper::PrintAdapterInfo(IDXGIAdapter* pAdapter)
     {
         if (!pAdapter) {
-            std::cout << "Adapter is null!" << std::endl;
+            LOG_ERROR("Adapter is null!");
             return;
         }
         DXGI_ADAPTER_DESC desc;
         HRESULT hr = pAdapter->GetDesc(&desc);
         
         if (FAILED(hr)) {
-            std::cout << "Failed to get adapter description!" << std::endl;
+            LOG_ERROR("Failed to get adapter description!");
             return;
         }
         // Output basic information

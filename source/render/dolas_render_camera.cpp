@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "manager/dolas_asset_manager.h"
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     using namespace DirectX;
@@ -149,10 +150,10 @@ namespace Dolas
 
     void RenderCamera::printDebugInfo()
     {
-		std::cout << "Camera Position: (" << m_position.x << ", " << m_position.y << ", " << m_position.z << ")\n";
-		std::cout << "Camera Forward: (" << m_forward.x << ", " << m_forward.y << ", " << m_forward.z << ")\n";
-		std::cout << "Camera Up: (" << m_up.x << ", " << m_up.y << ", " << m_up.z << ")\n";
-		std::cout << "Move Speed: " << m_move_speed << std::endl;
+        LOG_INFO("Camera Position: ({0}, {1}, {2})", m_position.x, m_position.y, m_position.z);
+        LOG_INFO("Camera Forward: ({0}, {1}, {2})", m_forward.x, m_forward.y, m_forward.z);
+        LOG_INFO("Camera Up: ({0}, {1}, {2})", m_up.x, m_up.y, m_up.z);
+        LOG_INFO("Move Speed: {0}", m_move_speed);
     }
 
     void RenderCamera::CorrectUpVector()

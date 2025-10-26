@@ -23,6 +23,7 @@
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
+#include "manager/dolas_log_system_manager.h"
 
 namespace Dolas
 {
@@ -276,7 +277,7 @@ namespace Dolas
 		}
 		else
 		{
-			std::cout << "Render resource not found!" << std::endl;
+			LOG_ERROR("Render resource not found!");
         }
         rhi->m_swap_chain->Present(0, 0);
     }

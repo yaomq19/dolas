@@ -182,9 +182,5 @@ namespace Dolas
 		m_render_camera_manager->Update(delta_time);
 	}
 
-	void DolasEngine::Test()
-	{
-		std::cout << "String ID to String conversion failed!" << std::endl;
-	}
 }// namespace Dolas
 
