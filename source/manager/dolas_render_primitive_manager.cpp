@@ -65,12 +65,12 @@ namespace Dolas
 
         return true;
     }
-    RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitive(
+    Bool RenderPrimitiveManager::CreateRenderPrimitive(
         RenderPrimitiveID id,
         const DolasRenderPrimitiveType& render_primitive_type,
         const DolasInputLayoutType& input_layout_type,
-        const std::vector<float>& vertices,
-		const std::vector<unsigned int>& indices)
+        const std::vector<Float>& vertices,
+		const std::vector<UInt>& indices)
     {
         RenderPrimitive* render_primitive = DOLAS_NEW(RenderPrimitive);
         Bool success = BuildFromRawData(

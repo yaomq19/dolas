@@ -9,6 +9,7 @@
 #include "nlohmann/json.hpp"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
+#include "manager/dolas_log_system_manager.h"
 using json = nlohmann::json;
 
 namespace Dolas
@@ -239,15 +240,20 @@ namespace Dolas
 		{
 			return MESH_ID_EMPTY;
 		}
-
-        mesh->m_render_primitive_id = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
+        
+        Bool success = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
             mesh->m_file_id,
             mesh->m_render_primitive_type,
             mesh->m_input_layout_type,
             mesh->m_final_vertices,
             mesh->m_indices
         );
-
+        mesh->m_render_primitive_id = mesh->m_file_id;
+		if (!success)
+		{
+			LOG_ERROR("MeshManager::CreateMesh: failed to create render primitive for {0}", mesh_file_path);
+			return MESH_ID_EMPTY;
+		}
         m_meshes[mesh->m_file_id] = mesh;
         return mesh->m_file_id;
     }
