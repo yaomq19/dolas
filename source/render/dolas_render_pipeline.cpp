@@ -25,6 +25,8 @@
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_geometry_manager.h"
+#include "render/dolas_render_camera.h"
+
 namespace Dolas
 {
     RenderPipeline::RenderPipeline()
@@ -237,12 +239,17 @@ namespace Dolas
         RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
 		RenderPrimitive* sphere_render_primitive = primitive_manager->GetRenderPrimitiveByID(sphere_render_primitive_id);
 		DOLAS_RETURN_IF_NULL(sphere_render_primitive);
+        
         Pose pose;
-		pose.m_postion = Vector3(0.0f, 0.0f, 0.0f);
-		pose.m_rotation = Vector4(0.0, 0.0, 0.0, 0.0);
-		pose.m_scale = Vector3(500.0f, 500.0f, 500.0f);
+        RenderCamera* eye_camera = TryGetRenderCamera();
+		DOLAS_RETURN_IF_NULL(eye_camera);
+        
+        pose.m_postion = eye_camera->GetPosition();
+		pose.m_rotation = Vector4(1.0, 0.0, 0.0, 0.0);
+        const Float hack_scale = 0.99f;
+		Float scale = eye_camera->GetFarPlane() * hack_scale;
+		pose.m_scale = Vector3(scale, scale, scale);
         rhi->UpdatePerObjectParameters(pose);
-
 
         Texture* sky_box_texture = g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX);
 		DOLAS_RETURN_IF_NULL(sky_box_texture);
