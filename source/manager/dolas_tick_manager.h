@@ -14,6 +14,7 @@ namespace Dolas
         bool Clear();
 
         void Tick(Float delta_time);
+		unsigned long long GetFrameCount() const { return m_frame_count; }
     protected:
         void TickRender(Float delta_time);
         void TickLogic(Float delta_time);

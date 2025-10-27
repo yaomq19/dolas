@@ -437,15 +437,15 @@ namespace Dolas
 	void DolasRHI::UpdatePerObjectParameters(Pose pose)
 	{
 		PerObjectConstantBuffer per_object_constant_buffer;
-		
+
 		// 从 Pose 构建世界矩阵
 		// 世界矩阵 = 缩放矩阵 * 旋转矩阵 * 平移矩阵
-		
+
 		// 提取 Pose 数据
 		Vector3 position = pose.m_postion;  // 注意：原始代码中拼写是 m_postion
-		Vector4 quat = pose.m_rotation;     // 四元数 (x, y, z, w)
+		Quaternion quat = pose.m_rotation;     // 四元数 (x, y, z, w)
 		Vector3 scale = pose.m_scale;
-		
+
 		// 归一化四元数（确保是单位四元数）
 		Float quat_length = sqrt(quat.x * quat.x + quat.y * quat.y + quat.z * quat.z + quat.w * quat.w);
 		if (quat_length > 0.0001f)
@@ -455,7 +455,7 @@ namespace Dolas
 			quat.z /= quat_length;
 			quat.w /= quat_length;
 		}
-		
+
 		// 从四元数构建旋转矩阵
 		Float xx = quat.x * quat.x;
 		Float yy = quat.y * quat.y;
@@ -466,36 +466,29 @@ namespace Dolas
 		Float wx = quat.w * quat.x;
 		Float wy = quat.w * quat.y;
 		Float wz = quat.w * quat.z;
-		
-		// 构建世界矩阵（结合缩放、旋转和平移）
-		// DirectX 使用行主序矩阵，但在内存中按列存储
-		Matrix4x4 world_matrix;
-		
-		// 第一行（X轴）
-		world_matrix.data[0][0] = (1.0f - 2.0f * (yy + zz)) * scale.x;
-		world_matrix.data[0][1] = (2.0f * (xy + wz)) * scale.x;
-		world_matrix.data[0][2] = (2.0f * (xz - wy)) * scale.x;
-		world_matrix.data[0][3] = position.x;
-		
-		// 第二行（Y轴）
-		world_matrix.data[1][0] = (2.0f * (xy - wz)) * scale.y;
-		world_matrix.data[1][1] = (1.0f - 2.0f * (xx + zz)) * scale.y;
-		world_matrix.data[1][2] = (2.0f * (yz + wx)) * scale.y;
-		world_matrix.data[1][3] = position.y;
-		
-		// 第三行（Z轴）
-		world_matrix.data[2][0] = (2.0f * (xz + wy)) * scale.z;
-		world_matrix.data[2][1] = (2.0f * (yz - wx)) * scale.z;
-		world_matrix.data[2][2] = (1.0f - 2.0f * (xx + yy)) * scale.z;
-		world_matrix.data[2][3] = position.z;
-		
-		// 第四行（齐次坐标）
-		world_matrix.data[3][0] = 0.0f;
-		world_matrix.data[3][1] = 0.0f;
-		world_matrix.data[3][2] = 0.0f;
-		world_matrix.data[3][3] = 1.0f;
-		
-		per_object_constant_buffer.world = world_matrix;
+
+		Matrix4x4 ratation_mat{
+			1.0f - 2.0f * (yy + zz),     2.0f * (xy - wz),         2.0f * (xz + wy),         0.0f,
+			2.0f * (xy + wz),           1.0f - 2.0f * (xx + zz),   2.0f * (yz - wx),       0.0f,
+			2.0f * (xz - wy),           2.0f * (yz + wx),         1.0f - 2.0f * (xx + yy), 0.0f ,
+			0.0f,                       0.0f,                     0.0f,                     1.0f
+		};
+
+		Matrix4x4 scale_mat{
+			scale.x, 0.0f,     0.0f,     0.0f,
+			0.0f,     scale.y, 0.0f,     0.0f,
+			0.0f,     0.0f,     scale.z, 0.0f,
+			0.0f,     0.0f,     0.0f,     1.0f
+		};
+
+		Matrix4x4 trans_mat{
+			1.0f, 0.0f, 0.0f, position.x,
+			0.0f, 1.0f, 0.0f, position.y,
+			0.0f, 0.0f, 1.0f, position.z,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+
+		per_object_constant_buffer.world = trans_mat * scale_mat * ratation_mat;
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
 		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);

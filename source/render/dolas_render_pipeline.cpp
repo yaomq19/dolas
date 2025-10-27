@@ -26,9 +26,12 @@
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_geometry_manager.h"
 #include "render/dolas_render_camera.h"
+#include "manager/dolas_tick_manager.h"
 
 namespace Dolas
 {
+	const UInt k_print_debug_info_every_n_frames = 20;
+
     RenderPipeline::RenderPipeline()
     {
 
@@ -71,6 +74,7 @@ namespace Dolas
         ForwardShadingPass(rhi);
         SkyboxPass(rhi);
         PostProcessPass(rhi);
+        DebugPass(rhi);
         PresentPass(rhi);
     }
 
@@ -245,7 +249,7 @@ namespace Dolas
 		DOLAS_RETURN_IF_NULL(eye_camera);
         
         pose.m_postion = eye_camera->GetPosition();
-		pose.m_rotation = Vector4(1.0, 0.0, 0.0, 0.0);
+		pose.m_rotation = Quaternion(1.0, 0.0, 0.0, 0.0);
         const Float hack_scale = 0.99f;
 		Float scale = eye_camera->GetFarPlane() * hack_scale;
 		pose.m_scale = Vector3(scale, scale, scale);
@@ -317,6 +321,18 @@ namespace Dolas
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"PostProcessPass");
+    }
+
+    void RenderPipeline::DebugPass(DolasRHI* rhi)
+    {
+        unsigned long long frame_count = g_dolas_engine.m_tick_manager->GetFrameCount();
+        if (frame_count % k_print_debug_info_every_n_frames == 0)
+        {
+			RenderCamera* eye_camera = TryGetRenderCamera();
+			LOG_INFO("camera pos : ({0}, {1}, {2})", eye_camera->GetPosition().x, eye_camera->GetPosition().y, eye_camera->GetPosition().z);
+			LOG_INFO("camera up vector : ({0}, {1}, {2})", eye_camera->GetUp().x, eye_camera->GetUp().y, eye_camera->GetUp().z);
+			LOG_INFO("camera forward vector : ({0}, {1}, {2})", eye_camera->GetForward().x, eye_camera->GetForward().y, eye_camera->GetForward().z);
+        }
     }
 
     void RenderPipeline::PresentPass(DolasRHI* rhi)
