@@ -5,7 +5,7 @@
 #include "base/dolas_base.h"
 #include "core/dolas_rhi.h"
 #include <iostream>
-
+#include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
     RenderObjectManager::RenderObjectManager()
@@ -82,7 +82,7 @@ namespace Dolas
         RenderEntityID entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file_name);
         if (entity_id == RENDER_ENTITY_ID_EMPTY)
         {
-            std::cerr << "Failed to create render entity from file: " << entity_file_name << std::endl;
+            LOG_ERROR("Failed to create render entity from file: {0}", entity_file_name);
             return RENDER_OBJECT_ID_EMPTY;
         }
 

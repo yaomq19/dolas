@@ -88,10 +88,22 @@ namespace Dolas
 		Vector4 camera_position; // w is unused
 	};
 
+	struct PerObjectConstantBuffer
+	{
+		Matrix4x4 world;
+	};
+
 	struct PerFrameConstantBuffer
 	{
 		Vector4 light_direction_intensity;
 		Vector4 light_color; // w is unused
+	};
+
+	struct Pose
+	{
+		Vector3 m_postion;
+		Vector4 m_rotation; // Quaternion
+		Vector3 m_scale;
 	};
 
 	// 渲染硬件接口(RHI)相关定义将在这里
@@ -123,6 +135,7 @@ namespace Dolas
 		ID3D11ShaderResourceView* CreateShaderResourceView(ID3D11Resource* resource);
 		void UpdatePerFrameParameters();
 		void UpdatePerViewParameters(class RenderCamera* render_camera);
+		void UpdatePerObjectParameters(Pose pose);
 		// User annotation helpers (RenderDoc / PIX markers)
 		void BeginEvent(const wchar_t* name);
 		void EndEvent();
@@ -141,6 +154,7 @@ namespace Dolas
 
 		ID3D11Buffer* m_d3d_per_frame_parameters_buffer;
 		ID3D11Buffer* m_d3d_per_view_parameters_buffer;
+		ID3D11Buffer* m_d3d_per_object_parameters_buffer;
 	};
 
 	// RAII scope for GPU events

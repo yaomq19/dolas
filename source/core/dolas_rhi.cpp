@@ -275,6 +275,20 @@ namespace Dolas
 			LOG_ERROR("Failed to create per frame constant buffer!");
 			return false;
 		}
+
+		// Per object
+		ZeroMemory(&cbd, sizeof(cbd));
+		cbd.Usage = D3D11_USAGE_DYNAMIC;
+		cbd.ByteWidth = sizeof(PerObjectConstantBuffer);
+		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		// 新建常量缓冲区，不使用初始数据
+		hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_object_parameters_buffer);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create per frame constant buffer!");
+			return false;
+		}
 		return true;
 	}
 
@@ -283,7 +297,8 @@ namespace Dolas
 		// 释放常量缓冲区
 		if (m_d3d_per_frame_parameters_buffer) { m_d3d_per_frame_parameters_buffer->Release(); m_d3d_per_frame_parameters_buffer = nullptr; }
 		if (m_d3d_per_view_parameters_buffer) { m_d3d_per_view_parameters_buffer->Release(); m_d3d_per_view_parameters_buffer = nullptr; }
-		
+		if (m_d3d_per_object_parameters_buffer) { m_d3d_per_object_parameters_buffer->Release(); m_d3d_per_object_parameters_buffer = nullptr; }
+
 		if (m_swap_chain_back_texture) { m_swap_chain_back_texture->Release(); m_swap_chain_back_texture = nullptr; }
 		if (m_back_buffer_render_target_view) { m_back_buffer_render_target_view->Release(); m_back_buffer_render_target_view = nullptr; }
 		if (m_d3d_user_annotation) { m_d3d_user_annotation->Release(); m_d3d_user_annotation = nullptr; }
@@ -362,12 +377,14 @@ namespace Dolas
 	{
 		m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
 		m_d3d_immediate_context->VSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
+		m_d3d_immediate_context->VSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
 	}
 
 	void DolasRHI::PSSetConstantBuffers()
 	{
 		m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
 		m_d3d_immediate_context->PSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
+		m_d3d_immediate_context->PSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
 	}
 
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
@@ -417,7 +434,81 @@ namespace Dolas
 		m_d3d_immediate_context->Unmap(m_d3d_per_view_parameters_buffer, 0);
 	}
 
-	bool DolasRHI::InitializeWindow()
+	void DolasRHI::UpdatePerObjectParameters(Pose pose)
+	{
+		PerObjectConstantBuffer per_object_constant_buffer;
+		
+		// 从 Pose 构建世界矩阵
+		// 世界矩阵 = 缩放矩阵 * 旋转矩阵 * 平移矩阵
+		
+		// 提取 Pose 数据
+		Vector3 position = pose.m_postion;  // 注意：原始代码中拼写是 m_postion
+		Vector4 quat = pose.m_rotation;     // 四元数 (x, y, z, w)
+		Vector3 scale = pose.m_scale;
+		
+		// 归一化四元数（确保是单位四元数）
+		Float quat_length = sqrt(quat.x * quat.x + quat.y * quat.y + quat.z * quat.z + quat.w * quat.w);
+		if (quat_length > 0.0001f)
+		{
+			quat.x /= quat_length;
+			quat.y /= quat_length;
+			quat.z /= quat_length;
+			quat.w /= quat_length;
+		}
+		
+		// 从四元数构建旋转矩阵
+		Float xx = quat.x * quat.x;
+		Float yy = quat.y * quat.y;
+		Float zz = quat.z * quat.z;
+		Float xy = quat.x * quat.y;
+		Float xz = quat.x * quat.z;
+		Float yz = quat.y * quat.z;
+		Float wx = quat.w * quat.x;
+		Float wy = quat.w * quat.y;
+		Float wz = quat.w * quat.z;
+		
+		// 构建世界矩阵（结合缩放、旋转和平移）
+		// DirectX 使用行主序矩阵，但在内存中按列存储
+		Matrix4x4 world_matrix;
+		
+		// 第一行（X轴）
+		world_matrix.data[0][0] = (1.0f - 2.0f * (yy + zz)) * scale.x;
+		world_matrix.data[0][1] = (2.0f * (xy + wz)) * scale.x;
+		world_matrix.data[0][2] = (2.0f * (xz - wy)) * scale.x;
+		world_matrix.data[0][3] = position.x;
+		
+		// 第二行（Y轴）
+		world_matrix.data[1][0] = (2.0f * (xy - wz)) * scale.y;
+		world_matrix.data[1][1] = (1.0f - 2.0f * (xx + zz)) * scale.y;
+		world_matrix.data[1][2] = (2.0f * (yz + wx)) * scale.y;
+		world_matrix.data[1][3] = position.y;
+		
+		// 第三行（Z轴）
+		world_matrix.data[2][0] = (2.0f * (xz + wy)) * scale.z;
+		world_matrix.data[2][1] = (2.0f * (yz - wx)) * scale.z;
+		world_matrix.data[2][2] = (1.0f - 2.0f * (xx + yy)) * scale.z;
+		world_matrix.data[2][3] = position.z;
+		
+		// 第四行（齐次坐标）
+		world_matrix.data[3][0] = 0.0f;
+		world_matrix.data[3][1] = 0.0f;
+		world_matrix.data[3][2] = 0.0f;
+		world_matrix.data[3][3] = 1.0f;
+		
+		per_object_constant_buffer.world = world_matrix;
+
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to map per object constant buffer!");
+			return;
+		}
+		memcpy_s(mappedData.pData, sizeof(per_object_constant_buffer), &per_object_constant_buffer, sizeof(per_object_constant_buffer));
+		m_d3d_immediate_context->Unmap(m_d3d_per_object_parameters_buffer, 0);
+	}
+
+	Bool DolasRHI::InitializeWindow()
 	{
 		WNDCLASS wc;
         wc.style = CS_HREDRAW | CS_VREDRAW;

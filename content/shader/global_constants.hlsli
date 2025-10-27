@@ -13,4 +13,9 @@ cbuffer PerFrameConstantBuffer : register(b1)
     float4 g_LightDirectionIntensity;
     float4 g_LightColor;
 }
+
+cbuffer PerObjectConstantBuffer : register(b2)
+{
+    matrix g_WorldMatrix;
+}
 #endif

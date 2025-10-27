@@ -87,7 +87,7 @@ namespace Dolas
 		HR(D3DCompileFromFile(
 			StringUtil::StringToWString(file_path).c_str(), // file path
 			nullptr, // macros
-			D3D_COMPILE_STANDARD_FILE_INCLUDE, // include
+			D3D_COMPILE_STANDARD_FILE_INCLUDE, // include?
 			entry_point.c_str(), // entry point
 			"vs_5_0", // shader model
 			D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // flags

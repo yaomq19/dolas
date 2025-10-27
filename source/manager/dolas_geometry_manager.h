@@ -26,6 +26,8 @@ namespace Dolas
         RenderPrimitiveID GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type);
     private:
         std::unordered_map<BaseGeometryType, RenderPrimitiveID> m_geometries;
+
+        Bool generateSphereGeometry(UInt segments, std::vector<Float>& vertices, std::vector<UInt>& indices);
     };// class GeometryManager
 } // namespace Dolas
 #endif // DOLAS_GEOMETRY_MANAGER_H

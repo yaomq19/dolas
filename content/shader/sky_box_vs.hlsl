@@ -1,27 +1,16 @@
 // 参考 deferred_shading_vs.hlsl
-struct VS_INPUT
-{
-    float3 posL : POSITION;
-    float2 texcoord : TEXCOORD0;
-};
-
-struct VS_OUTPUT
-{
-    float4 posH : SV_POSITION;
-    float2 texcoord : TEXCOORD0;
-};
-
-struct PS_INPUT
-{
-    float4 posH : SV_POSITION;
-    float2 texcoord : TEXCOORD0;
-};
-
+#include "global_constants.hlsli"
+#include "sky_box_common.hlsli"
 // Basic vertex shader
 VS_OUTPUT VS(VS_INPUT input)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
-    output.posH = float4(input.posL, 1.0f);
-    output.texcoord = input.texcoord;
+    float4 local_position = float4(input.posL, 1.0f);
+    float4 world_position = mul(local_position, g_WorldMatrix);
+    float4 view_position = mul(world_position, g_ViewMatrix);
+    float4 proj_position = mul(view_position, g_ProjectionMatrix);
+    
+    output.posH = proj_position;
+    output.posL = input.posL;
     return output;
 }
