@@ -105,13 +105,32 @@ namespace Dolas
         }
     }
 
-    RenderPrimitive* RenderPrimitiveManager::GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id)
+    RenderPrimitive* RenderPrimitiveManager::GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const
     {
         if (m_render_primitives.find(render_primitive_id) != m_render_primitives.end())
         {
-            return m_render_primitives[render_primitive_id];
+            return m_render_primitives.at(render_primitive_id);
         }
         return nullptr;
+    }
+
+    Bool RenderPrimitiveManager::DeleteRenderPrimitiveByID(RenderPrimitiveID render_primitive_id)
+    {
+        auto finder = m_render_primitives.find(render_primitive_id);
+		if (finder == m_render_primitives.end())
+		{
+			return false;
+		}
+
+        if (finder->second == nullptr)
+        {
+            return false;
+        }
+
+        finder->second->Clear();
+        m_render_primitives.erase(finder);
+
+        return true;
     }
 }
 

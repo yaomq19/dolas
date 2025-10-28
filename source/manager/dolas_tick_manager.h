@@ -16,9 +16,17 @@ namespace Dolas
         void Tick(Float delta_time);
 		unsigned long long GetFrameCount() const { return m_frame_count; }
     protected:
-        void TickRender(Float delta_time);
-        void TickLogic(Float delta_time);
+        void TickRenderThread(Float delta_time);
+        void TickLogicThread(Float delta_time);
 
+        void TickPreRender(Float delta_time);
+        void TickRender(Float delta_time);
+        void TickPostRender(Float delta_time);
+
+        void TickPreLogic(Float delta_time);
+        void TickLogic(Float delta_time);
+        void TickPostLogic(Float delta_time);
+        
         unsigned long long m_frame_count = 0;
     };
 }// namespace Dolas

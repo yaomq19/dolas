@@ -6,6 +6,7 @@
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_imgui_manager.h"
+#include "manager/dolas_debug_draw_manager.h"
 namespace Dolas
 {
 	using Dolas::TaskGUID;
@@ -30,29 +31,58 @@ namespace Dolas
 
     void TickManager::Tick(Float delta_time)
     {
-        TaskGUID logic_task_guid = g_dolas_engine.m_task_manager->EnqueueTask(&TickManager::TickLogic, this, delta_time);
+        TaskGUID logic_task_guid = g_dolas_engine.m_task_manager->EnqueueTask(&TickManager::TickLogicThread, this, delta_time);
         // render frame
-        TickRender(delta_time);
+        TickRenderThread(delta_time);
         g_dolas_engine.m_task_manager->WaitForTask(logic_task_guid);
         m_frame_count++;
     }
 
-    void TickManager::TickRender(Float delta_time)
+    void TickManager::TickRenderThread(Float delta_time)
+    {
+        TickPreRender(delta_time);
+        TickRender(delta_time);
+        TickPostRender(delta_time);
+    }
+
+    void TickManager::TickLogicThread(Float delta_time)
+    {
+        ZoneScoped;
+        TickPreLogic(delta_time);
+        TickLogic(delta_time);
+        TickPostLogic(delta_time);
+    }
+
+    void TickManager::TickPreRender(Float delta_time)
     {
         g_dolas_engine.m_imgui_manager->Tick();
+        g_dolas_engine.m_debug_draw_manager->Tick(delta_time);
+    }
 
+    void TickManager::TickRender(Float delta_time)
+    {
         RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
 		DOLAS_RETURN_IF_NULL(main_render_view);
 		main_render_view->Render(g_dolas_engine.m_rhi);
     }
 
+    void TickManager::TickPostRender(Float delta_time)
+    {
+    }
+
+    void TickManager::TickPreLogic(Float delta_time)
+    {
+    }
+
     void TickManager::TickLogic(Float delta_time)
     {
-        ZoneScoped;
-		// 更新输入系统
+        // update input manager
 		g_dolas_engine.m_input_manager->Tick();
-
-		// 更新相机管理器（包含输入处理）
+		// update render camera manager
 		g_dolas_engine.m_render_camera_manager->Update(delta_time);
+    }
+
+    void TickManager::TickPostLogic(Float delta_time)
+    {
     }
 }

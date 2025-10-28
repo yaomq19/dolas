@@ -34,7 +34,8 @@ namespace Dolas
             const std::vector<Float>& vertices,
             const std::vector<UInt>& indices);
 
-        RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id);
+        RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const;
+        Bool DeleteRenderPrimitiveByID(RenderPrimitiveID render_primitive_id);
     private:
 
         RenderPrimitive* BuildFromRawData(

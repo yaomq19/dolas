@@ -99,37 +99,6 @@ namespace Dolas
 		Vector4 light_color; // w is unused
 	};
 
-	struct Quaternion
-	{
-		Quaternion()
-		{
-			w = 1.0f;
-			x = 0.0f;
-			y = 0.0f;
-			z = 0.0f;
-		}
-
-		Quaternion(Float w, Float x, Float y, Float z)
-		{
-			this->w = w;
-			this->x = x;
-			this->y = y;
-			this->z = z;
-		}
-
-		Float w;
-		Float x;
-		Float y;
-		Float z;
-	};
-
-	struct Pose
-	{
-		Vector3 m_postion;
-		Quaternion m_rotation; // 
-		Vector3 m_scale;
-	};
-
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{

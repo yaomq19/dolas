@@ -31,6 +31,7 @@
 #include "manager/dolas_geometry_manager.h"
 #include "manager/dolas_tick_manager.h"
 #include "manager/dolas_imgui_manager.h"
+#include "manager/dolas_debug_draw_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -60,6 +61,7 @@ namespace Dolas
 		m_geometry_manager = DOLAS_NEW(GeometryManager);
 		m_tick_manager = DOLAS_NEW(TickManager);
 		m_imgui_manager = DOLAS_NEW(ImGuiManager);
+		m_debug_draw_manager = DOLAS_NEW(DebugDrawManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -87,6 +89,7 @@ namespace Dolas
 		DOLAS_DELETE(m_log_system_manager);
 		DOLAS_DELETE(m_tick_manager);
 		DOLAS_DELETE(m_imgui_manager);
+		DOLAS_DELETE(m_debug_draw_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -116,6 +119,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
 		return true;
 	}
 
@@ -145,6 +149,7 @@ namespace Dolas
 		m_log_system_manager->Clear();
 		m_tick_manager->Clear();
 		m_imgui_manager->Clear();
+		m_debug_draw_manager->Clear();
 	}
 
 	void DolasEngine::Run()

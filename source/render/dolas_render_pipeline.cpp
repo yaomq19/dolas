@@ -28,6 +28,7 @@
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_tick_manager.h"
 #include "manager/dolas_imgui_manager.h"
+#include "manager/dolas_debug_draw_manager.h"
 namespace Dolas
 {
 	const UInt k_print_debug_info_every_n_frames = 20;
@@ -325,6 +326,7 @@ namespace Dolas
 
     void RenderPipeline::DebugPass(DolasRHI* rhi)
     {
+        g_dolas_engine.m_debug_draw_manager->Render();
         g_dolas_engine.m_imgui_manager->Render();
     }
 

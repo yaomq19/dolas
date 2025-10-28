@@ -5,6 +5,14 @@
 namespace Dolas
 {
     #define DOLAS_PI (3.14159265358979323846)
+    #define DOLAS_FLOAT_MAX (3.40282346638528859812e+38f)
+    #define DOLAS_FLOAT_MIN (-3.40282346638528859812e+38f)
+    #define DOLAS_FLOAT_EPSILON (1.1920928955078125e-07f)
+    #define DOLAS_FLOAT_INFINITY (3.40282346638528859812e+38f)
+    #define DOLAS_FLOAT_NEGATIVE_INFINITY (-3.40282346638528859812e+38f)
+    #define DOLAS_FLOAT_NAN (0.0f / 0.0f)
+    #define DOLAS_FLOAT_POSITIVE_INFINITY (3.40282346638528859812e+38f)
+    #define DOLAS_FLOAT_NEGATIVE_INFINITY (-3.40282346638528859812e+38f)
     class Matrix4x4;
 
     class Vector2
@@ -233,5 +241,36 @@ namespace Dolas
     {
         return m * scalar;
     }
+
+	struct Quaternion
+	{
+		Quaternion()
+		{
+			w = 1.0f;
+			x = 0.0f;
+			y = 0.0f;
+			z = 0.0f;
+		}
+
+		Quaternion(Float w, Float x, Float y, Float z)
+		{
+			this->w = w;
+			this->x = x;
+			this->y = y;
+			this->z = z;
+		}
+
+		Float w;
+		Float x;
+		Float y;
+		Float z;
+	};
+
+	struct Pose
+	{
+		Vector3 m_postion;
+		Quaternion m_rotation; // 
+		Vector3 m_scale;
+	};
 }
 #endif // DOLAS_MATH_H
