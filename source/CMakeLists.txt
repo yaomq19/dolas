@@ -26,10 +26,7 @@ endforeach()
 # ============ 包含目录设置 ============
 # 添加项目的包含目录
 include_directories(
-    # 添加当前source目录，使得可以使用#include "header.h"
     ${CMAKE_CURRENT_SOURCE_DIR}
-    # 注意：第三方库的包含目录通过target_link_libraries自动传递
-    # ${PROJECT_SOURCE_DIR}/third_party
 )
 
 find_package(spdlog CONFIG REQUIRED)
@@ -37,6 +34,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(directxtex CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 # ============ 可执行文件创建 ============
 # 创建名为${PROJECT_NAME}(即Dolas)的可执行文件，包含所有源文件和头文件
@@ -61,6 +59,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectXTex)
 # 链接 Tracy
 target_link_libraries(${PROJECT_NAME} PRIVATE Tracy::TracyClient)
+# 链接 ImGui
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
 
 # 如果是Windows平台，链接DirectX相关库
 if(WIN32)

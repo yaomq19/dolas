@@ -6,9 +6,6 @@ int main()
     {
         Dolas::g_dolas_engine.Run();
     }
-    
-    // 程序退出前清理所有资源
     Dolas::g_dolas_engine.Clear();
-    
     return 0;
 }

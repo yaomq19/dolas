@@ -88,7 +88,7 @@ namespace Dolas
 
 	bool DolasEngine::Initialize()
 	{
-		// 首先初始化日志系统
+		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
 		
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
@@ -108,9 +108,8 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_camera_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_scene_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
-		// 初始化输入管理器（需要在RHI初始化之后，因为需要窗口句柄）
+		// Initialize the input manager (must be done after RHI initialization, as it requires a window handle)
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize(m_rhi->m_window_handle));
-		// 初始化任务管理器
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
@@ -139,7 +138,7 @@ namespace Dolas
 		m_input_manager->Clear();
 		m_task_manager->Clear();
 		m_geometry_manager->Clear();
-		// 最后清理日志系统
+		// Finally, clean up the log system
 		m_log_system_manager->Clear();
 		m_tick_manager->Clear();
 	}
@@ -150,13 +149,28 @@ namespace Dolas
 		while (msg.message != WM_QUIT)
 		{
 			FrameMark;
-			// 处理所有当前的窗口消息（非阻塞）
+
+			// Limit the maximum time for message processing (microseconds)
+			const auto start_time = std::chrono::high_resolution_clock::now();
+			const auto max_message_time = std::chrono::microseconds(500); // 0.5ms
+
+			// Process all current window messages (non blocking)
 			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
 				if (msg.message == WM_QUIT)
+				{
 					break;
+				}
+					
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
+
+				// Check if timeout exceeded
+				auto current_time = std::chrono::high_resolution_clock::now();
+				if (current_time - start_time > max_message_time)
+				{
+					break; // Leave remaining messages for next frame
+				}
 			}
 			// 1.0 is a hack value
 			m_tick_manager->Tick(1.0f);
