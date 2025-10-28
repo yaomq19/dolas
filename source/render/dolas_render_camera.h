@@ -48,7 +48,7 @@ namespace Dolas
 
         virtual void BuildFromAsset(class CameraAsset* camera_asset) = 0;
 
-        void printDebugInfo();
+        void PrintDebugInfo();
         protected:
         void CorrectUpVector();
         void UpdateViewMatrix();

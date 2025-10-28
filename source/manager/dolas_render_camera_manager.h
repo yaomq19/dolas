@@ -23,6 +23,8 @@ namespace Dolas
         
         // 输入处理
         void ProcessInput(Float delta_time);
+
+        void DumpCameraInfo();
     private:
         std::unordered_map<RenderCameraID, RenderCamera*> m_render_cameras;
     };// class RenderCameraManager

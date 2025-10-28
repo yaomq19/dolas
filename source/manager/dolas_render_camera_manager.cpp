@@ -10,6 +10,8 @@
 #include "manager/dolas_asset_manager.h"
 #include "nlohmann/json.hpp"
 #include "manager/dolas_log_system_manager.h"
+#include "manager/dolas_render_view_manager.h"
+#include "render/dolas_render_view.h"
 using json = nlohmann::json;
 namespace Dolas
 {
@@ -116,6 +118,17 @@ namespace Dolas
 		m_render_cameras[render_camera_id] = render_camera;
 
 		return true;
+    }
+
+    void RenderCameraManager::DumpCameraInfo()
+    {
+        // 只打印 main camera 的信息
+        RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
+		DOLAS_RETURN_IF_NULL(main_render_view);
+        RenderCameraID main_render_camera_id = main_render_view->GetRenderCameraID();
+        RenderCamera* main_render_camera = g_dolas_engine.m_render_camera_manager->GetRenderCameraByID(main_render_camera_id);
+		DOLAS_RETURN_IF_NULL(main_render_camera);
+        main_render_camera->PrintDebugInfo();
     }
 } // namespace Dolas
 

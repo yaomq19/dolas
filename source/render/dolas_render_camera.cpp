@@ -148,12 +148,14 @@ namespace Dolas
         UpdateProjectionMatrix();
     }
 
-    void RenderCamera::printDebugInfo()
+    void RenderCamera::PrintDebugInfo()
     {
-        LOG_INFO("Camera Position: ({0}, {1}, {2})", m_position.x, m_position.y, m_position.z);
-        LOG_INFO("Camera Forward: ({0}, {1}, {2})", m_forward.x, m_forward.y, m_forward.z);
-        LOG_INFO("Camera Up: ({0}, {1}, {2})", m_up.x, m_up.y, m_up.z);
-        LOG_INFO("Move Speed: {0}", m_move_speed);
+		LOG_INFO(
+            "\nCamera Position: ({0}, {1}, {2}); \nCamera Forward: ({3}, {4}, {5}); \nCamera Up: ({6}, {7}, {8}); \nMove Speed: {9}",
+			m_position.x, m_position.y, m_position.z,
+			m_forward.x, m_forward.y, m_forward.z,
+			m_up.x, m_up.y, m_up.z,
+			m_move_speed);
     }
 
     void RenderCamera::CorrectUpVector()

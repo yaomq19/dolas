@@ -5,6 +5,7 @@
 #include "core/dolas_rhi.h"
 #include "manager/dolas_imgui_manager.h"
 #include "manager/dolas_input_manager.h"
+#include "manager/dolas_render_camera_manager.h"
 namespace Dolas
 {
     ImGuiManager::ImGuiManager()
@@ -58,15 +59,15 @@ namespace Dolas
         // 2. 构建 UI（这里是你的 UI 代码）
         if (m_is_imgui_window_open)
         {
-            ImGui::Begin("Demo Window");
-            ImGui::Text("Hello, ImGui!");
+            ImGui::Begin("ImGUI Window");
+            /*ImGui::Text("Hello, ImGui!");
             
-            static float f = 0.0f;
-            ImGui::SliderFloat("Float", &f, 0.0f, 1.0f);
+			static float f = 0.0f;
+			ImGui::SliderFloat("Float", &f, 0.0f, 1.0f);*/
             
-            if (ImGui::Button("Click Me"))
+            if (ImGui::Button("Dump Camera Info"))
             {
-                // 按钮点击逻辑
+                g_dolas_engine.m_render_camera_manager->DumpCameraInfo();
             }
             
             ImGui::End();

@@ -5,8 +5,9 @@
 - Asset系统优化
 - 制作简易RSD系统
 - 制作C#工具项目，第一个工具：ShaderCompiler
-- 引入 ImGUI
 
+# 2025-10-29
+- 集成 ImGUI
 # 2025-10-28
 - 实现SkyBox完整功能
 # 2025-10-25

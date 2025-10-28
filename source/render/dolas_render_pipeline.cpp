@@ -325,15 +325,6 @@ namespace Dolas
 
     void RenderPipeline::DebugPass(DolasRHI* rhi)
     {
-        unsigned long long frame_count = g_dolas_engine.m_tick_manager->GetFrameCount();
-        if (frame_count % k_print_debug_info_every_n_frames == 0)
-        {
-			RenderCamera* eye_camera = TryGetRenderCamera();
-			LOG_INFO("camera pos : ({0}, {1}, {2})", eye_camera->GetPosition().x, eye_camera->GetPosition().y, eye_camera->GetPosition().z);
-			LOG_INFO("camera up vector : ({0}, {1}, {2})", eye_camera->GetUp().x, eye_camera->GetUp().y, eye_camera->GetUp().z);
-			LOG_INFO("camera forward vector : ({0}, {1}, {2})", eye_camera->GetForward().x, eye_camera->GetForward().y, eye_camera->GetForward().z);
-        }
-        
         g_dolas_engine.m_imgui_manager->Render();
     }
 
