@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 #include <unordered_map>
+#include <queue>
 #include "core/dolas_math.h"
 
 namespace Dolas
@@ -15,8 +16,9 @@ namespace Dolas
 
 	enum class EventOccurState
 	{
-		YES,
-        NO
+		PRESS,
+        RELEASE,
+        NONE
 	};
 
     class InputManager
@@ -25,11 +27,17 @@ namespace Dolas
         InputManager();
         ~InputManager();
 
-        bool Initialize(HWND window_handle);
+        bool Initialize();
         void Clear();
         void Tick();
 
         bool IsKeyDown(int key_code) const;
+        bool IsKeyUp(int key_code) const;
+
+        void ProduceKeyPressEvent(int key_code);
+        void ProduceKeyReleaseEvent(int key_code);
+        EventOccurState ConsumeKeyEvent(int key_code);
+
         Vector2 GetMouseDelta() const;
         float GetMouseWheelDelta() const;
 		bool IsMouseCaptured() const;
@@ -42,7 +50,8 @@ namespace Dolas
         bool m_mouse_captured;
 
         std::unordered_map<int, KeyState> m_key_states;
-        
+        std::unordered_map<int, std::queue<EventOccurState>> m_key_event_occur_states;
+
         Vector2 m_mouse_position;
         Vector2 m_previous_mouse_position;
         Vector2 m_mouse_delta;

@@ -36,6 +36,7 @@ namespace Dolas
 		class TaskManager* m_task_manager;
 		class GeometryManager* m_geometry_manager;
 		class TickManager* m_tick_manager;
+		class ImGuiManager* m_imgui_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

@@ -30,6 +30,7 @@
 #include "manager/dolas_task_manager.h"
 #include "manager/dolas_geometry_manager.h"
 #include "manager/dolas_tick_manager.h"
+#include "manager/dolas_imgui_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -58,6 +59,7 @@ namespace Dolas
 		m_task_manager = DOLAS_NEW(TaskManager);
 		m_geometry_manager = DOLAS_NEW(GeometryManager);
 		m_tick_manager = DOLAS_NEW(TickManager);
+		m_imgui_manager = DOLAS_NEW(ImGuiManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -84,13 +86,13 @@ namespace Dolas
 		DOLAS_DELETE(m_geometry_manager);
 		DOLAS_DELETE(m_log_system_manager);
 		DOLAS_DELETE(m_tick_manager);
+		DOLAS_DELETE(m_imgui_manager);
 	}
 
 	bool DolasEngine::Initialize()
 	{
 		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
-		
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
@@ -109,10 +111,11 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_scene_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
 		// Initialize the input manager (must be done after RHI initialization, as it requires a window handle)
-		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize(m_rhi->m_window_handle));
+		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		return true;
 	}
 
@@ -141,6 +144,7 @@ namespace Dolas
 		// Finally, clean up the log system
 		m_log_system_manager->Clear();
 		m_tick_manager->Clear();
+		m_imgui_manager->Clear();
 	}
 
 	void DolasEngine::Run()

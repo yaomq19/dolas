@@ -1,9 +1,15 @@
-#include "dolas_input_manager.h"
 #include <iostream>
+#include <imgui_impl_win32.h>
+#include "core/dolas_engine.h"
+#include "core/dolas_rhi.h"
+#include "dolas_input_manager.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
+    HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace Dolas
 {
-    // 全局输入管理器实例
+    // Global input manager instance
     InputManager::InputManager()
         : m_window_handle(nullptr)
         , m_mouse_captured(false)
@@ -20,17 +26,17 @@ namespace Dolas
         Clear();
     }
 
-    bool InputManager::Initialize(HWND window_handle)
+    bool InputManager::Initialize()
     {
-        m_window_handle = window_handle;
+        m_window_handle = g_dolas_engine.m_rhi->GetWindowHandle();
         
-        // 获取窗口中心点
+        // Get the window center point
         RECT rect;
         GetClientRect(m_window_handle, &rect);
         m_screen_center.x = (rect.right - rect.left) / 2.0f;
         m_screen_center.y = (rect.bottom - rect.top) / 2.0f;
         
-        // 初始化鼠标位置
+        // Initialize mouse position
         POINT cursor_pos;
         GetCursorPos(&cursor_pos);
         ScreenToClient(m_window_handle, &cursor_pos);
@@ -53,13 +59,40 @@ namespace Dolas
 
     void InputManager::Tick()
     {
-        // 更新鼠标位置和增量
+        // Update mouse position and delta
     }
 
     bool InputManager::IsKeyDown(int key_code) const
     {
         auto it = m_key_states.find(key_code);
         return it != m_key_states.end() && it->second == KeyState::DOWN;
+    }
+
+    bool InputManager::IsKeyUp(int key_code) const
+    {
+        auto it = m_key_states.find(key_code);
+        return it == m_key_states.end() || it->second == KeyState::UP;
+    }
+
+    void InputManager::ProduceKeyPressEvent(int key_code)
+    {
+        m_key_event_occur_states[key_code].push(EventOccurState::PRESS);
+    }
+
+    void InputManager::ProduceKeyReleaseEvent(int key_code)
+    {
+        m_key_event_occur_states[key_code].push(EventOccurState::RELEASE);
+    }
+
+    EventOccurState InputManager::ConsumeKeyEvent(int key_code)
+    {
+        if (!m_key_event_occur_states[key_code].empty())
+        {
+            EventOccurState event_occur_state = m_key_event_occur_states[key_code].front();
+            m_key_event_occur_states[key_code].pop();
+            return event_occur_state;
+        }
+        return EventOccurState::NONE;
     }
 
     Vector2 InputManager::GetMouseDelta() const
@@ -76,13 +109,13 @@ namespace Dolas
     {
         if (capture && !m_mouse_captured)
         {
-            // 捕获鼠标
+            // Capture the mouse
             SetCapture(m_window_handle);
             
-            // 隐藏鼠标光标
+            // Hide mouse cursor
             ShowCursor(FALSE);
             
-            // 将鼠标移动到屏幕中心
+            // Move mouse to screen center
             POINT center_point;
             center_point.x = static_cast<LONG>(m_screen_center.x);
             center_point.y = static_cast<LONG>(m_screen_center.y);
@@ -93,10 +126,10 @@ namespace Dolas
         }
         else if (!capture && m_mouse_captured)
         {
-            // 释放鼠标捕获
+            // Release mouse capture
             ReleaseCapture();
             
-            // 显示鼠标光标
+            // Show mouse cursor
             ShowCursor(TRUE);
             
             m_mouse_captured = false;
@@ -116,10 +149,10 @@ namespace Dolas
     void InputManager::UpdateMouseWheelDelta(WPARAM wParam)
     {
         DOLAS_RETURN_IF_FALSE(m_mouse_captured);
-		// 处理滚轮事件
-		// wParam的高16位包含滚轮增量值
+		// Handle mouse wheel event
+		// The high 16 bits of wParam contain the wheel delta value
 		short wheel_delta = GET_WHEEL_DELTA_WPARAM(wParam);
-		// WHEEL_DELTA通常是120，我们将其标准化为1.0或-1.0
+		// WHEEL_DELTA is usually 120, normalize it to 1.0 or -1.0
 		float normalized_delta = static_cast<float>(wheel_delta) / WHEEL_DELTA;
 		m_mouse_wheel_delta += normalized_delta;
     }
@@ -129,16 +162,16 @@ namespace Dolas
         DOLAS_RETURN_IF_FALSE(m_mouse_captured);
 
         m_previous_mouse_position = m_mouse_position;
-        // 获取当前鼠标位置
+        // Get current mouse position
         POINT cursor_pos;
         GetCursorPos(&cursor_pos);
         ScreenToClient(m_window_handle, &cursor_pos);
             
-        // 计算相对于屏幕中心的偏移
+        // Calculate offset relative to screen center
         m_mouse_delta.x = cursor_pos.x - m_screen_center.x;
         m_mouse_delta.y = cursor_pos.y - m_screen_center.y;
             
-        // 将鼠标重新设置到屏幕中心
+        // Reset mouse to screen center
         if (m_mouse_delta.x != 0.0f || m_mouse_delta.y != 0.0f)
         {
             POINT center_point;
@@ -153,17 +186,31 @@ namespace Dolas
 
     LRESULT InputManager::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        // 处理输入相关的消息
+        // Let ImGui handle the message
+        if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
+        {
+            return true;
+        }
+    
+        // Handle input-related messages
         switch (msg)
         {
             // Keyboard
 			case WM_KEYDOWN:
 			case WM_SYSKEYDOWN:
+                if (IsKeyUp(static_cast<int>(wParam)))
+                {
+                    ProduceKeyPressEvent(static_cast<int>(wParam));
+                }
                 UpdateKeyState(static_cast<int>(wParam), true);
 				break;
 
 			case WM_KEYUP:
 			case WM_SYSKEYUP:
+                if (IsKeyDown(static_cast<int>(wParam)))
+                {
+                    ProduceKeyReleaseEvent(static_cast<int>(wParam));
+                }
                 UpdateKeyState(static_cast<int>(wParam), false);
 				break;
 
@@ -182,16 +229,14 @@ namespace Dolas
 
             case WM_MOUSEMOVE:
 				UpdateMousePosition();
-			default:
                 break;
-        }
 
-        // 处理系统消息
-        switch (msg)
-        {
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
+
+			default:
+                break;
         }
         
         return DefWindowProc(hwnd, msg, wParam, lParam);

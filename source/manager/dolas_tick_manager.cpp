@@ -5,6 +5,7 @@
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
+#include "manager/dolas_imgui_manager.h"
 namespace Dolas
 {
 	using Dolas::TaskGUID;
@@ -38,6 +39,8 @@ namespace Dolas
 
     void TickManager::TickRender(Float delta_time)
     {
+        g_dolas_engine.m_imgui_manager->Tick();
+
         RenderView* main_render_view = g_dolas_engine.m_render_view_manager->GetMainRenderView();
 		DOLAS_RETURN_IF_NULL(main_render_view);
 		main_render_view->Render(g_dolas_engine.m_rhi);

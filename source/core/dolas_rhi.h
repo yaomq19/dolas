@@ -140,10 +140,10 @@ namespace Dolas
 		void Clear();
 		void Present();	
 
-		HWND m_window_handle;
-		int m_client_width;
-		int m_client_height;
-		
+		HWND GetWindowHandle() const { return m_window_handle; }
+		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
+		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
+
 		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
 		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view);
 		void SetViewPort(const ViewPort& viewport);
@@ -175,6 +175,10 @@ namespace Dolas
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
+
+		HWND m_window_handle;
+		int m_client_width;
+		int m_client_height;
 
 		ID3D11Buffer* m_d3d_per_frame_parameters_buffer;
 		ID3D11Buffer* m_d3d_per_view_parameters_buffer;

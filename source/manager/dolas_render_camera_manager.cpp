@@ -79,7 +79,6 @@ namespace Dolas
 
         main_camera->ProcessKeyboardInput(move_forward, move_backward, move_left, move_right,
                                         move_up, move_down, delta_time);
-        
     }
 
     RenderCamera* RenderCameraManager::GetRenderCameraByID(RenderCameraID id)

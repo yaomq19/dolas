@@ -27,7 +27,7 @@
 #include "manager/dolas_geometry_manager.h"
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_tick_manager.h"
-
+#include "manager/dolas_imgui_manager.h"
 namespace Dolas
 {
 	const UInt k_print_debug_info_every_n_frames = 20;
@@ -333,6 +333,8 @@ namespace Dolas
 			LOG_INFO("camera up vector : ({0}, {1}, {2})", eye_camera->GetUp().x, eye_camera->GetUp().y, eye_camera->GetUp().z);
 			LOG_INFO("camera forward vector : ({0}, {1}, {2})", eye_camera->GetForward().x, eye_camera->GetForward().y, eye_camera->GetForward().z);
         }
+        
+        g_dolas_engine.m_imgui_manager->Render();
     }
 
     void RenderPipeline::PresentPass(DolasRHI* rhi)
