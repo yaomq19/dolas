@@ -1,4 +1,6 @@
 # To Do List
+- 实现时间系统
+- 实现帧率平滑功能
 - 设计RenderPrimitive相关
     - 涉及到的类有：RenderPrimitive, Mesh, RenderEntity, RenderObject, Material, Shader
     - 要求有：
@@ -8,7 +10,6 @@
         - RHI 资源的生命周期的管理要正确，避免出现显存泄露
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系
 - 显示世界坐标系
-- 实现时间系统
 - HR宏优化
 - Asset系统优化
 - 制作简易RSD系统
