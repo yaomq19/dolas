@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 DDS Texture Generator
-Convert image files in content/textures directory to DDS format with mipmaps
+Convert image files in content/raw_texture directory to DDS format with mipmaps
 Supported formats: .jpg, .png, .bmp
 """
 
@@ -17,7 +17,7 @@ class DDSGenerator:
     def __init__(self):
         self.script_dir = Path(__file__).parent.absolute()
         self.project_root = self.script_dir.parent
-        self.content_textures_dir = self.project_root / "content" / "textures"
+        self.content_textures_dir = self.project_root / "content" / "raw_texture"
         self.texconv_exe = None
         
         # Supported input formats
@@ -70,12 +70,6 @@ class DDSGenerator:
         print(f"   - {self.project_root}/tools/texconv.exe")
         print(f"   - {self.script_dir}/texconv.exe")
         print("3. Or ensure texconv.exe is in system PATH")
-        
-    def create_output_directory(self):
-        """Create output directory"""
-        if not self.content_textures_dir.exists():
-            print(f"Creating textures directory: {self.content_textures_dir}")
-            self.content_textures_dir.mkdir(parents=True, exist_ok=True)
         
     def find_image_files(self):
         """Find all supported image files"""
@@ -141,7 +135,6 @@ class DDSGenerator:
             print("❌ Cannot execute conversion: texconv.exe not found")
             return False
         
-        self.create_output_directory()
         image_files = self.find_image_files()
         
         if not image_files:

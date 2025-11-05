@@ -2,7 +2,7 @@
 """
 HLSL Shader Compilation Script
 ==============================
-This script automatically compiles HLSL shader files found in the shaders/ directory.
+This script automatically compiles HLSL shader files found in the shader/ directory.
 It preserves directory structure and handles multiple entry points per file.
 
 Usage:
@@ -31,15 +31,15 @@ class ShaderCompiler:
     
     def __init__(self, project_root: str, output_dir: str = None, verbose: bool = False):
         self.project_root = Path(project_root).resolve()
-        self.shaders_dir = self.project_root / "shaders"
+        self.shaders_dir = self.project_root / "content/shader"
         self.verbose = verbose
         
         # 确定输出目录
         if output_dir:
             self.output_dir = Path(output_dir).resolve()
         else:
-            # 默认使用 build/bin/shaders
-            self.output_dir = self.project_root / "build" / "bin" / "shaders"
+            # 默认使用 build/bin/shader
+            self.output_dir = self.project_root / "build" / "bin" / "shader"
         
         # 着色器类型配置
         self.shader_types = {
@@ -205,14 +205,14 @@ class ShaderCompiler:
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(
-        description="Compile HLSL shaders with automatic entry point detection",
+        description="Compile HLSL shader with automatic entry point detection",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
     
     parser.add_argument(
         '--output-dir', '-o',
-        help='Output directory for compiled shaders (default: build/bin/shaders)'
+        help='Output directory for compiled shader (default: build/bin/shader)'
     )
     
     parser.add_argument(
@@ -240,10 +240,10 @@ def main():
     success = compiler.compile_all_shaders()
     
     if success:
-        print("\n🎉 All shaders compiled successfully!")
+        print("\n🎉 All shader compiled successfully!")
         sys.exit(0)
     else:
-        print("\n❌ Some shaders failed to compile.")
+        print("\n❌ Some shader failed to compile.")
         sys.exit(1)
 
 

@@ -11,15 +11,13 @@ cd /d "%~dp0\.."
 
 REM Run Python script
 echo Running DDSGenerate.py...
-python scripts/DDSGenerate.py %*
+python script/DDSGenerate.py %*
 
 REM Show results
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo ✅ DDS texture generation successful!
 ) else (
     echo.
-    echo ❌ DDS texture generation failed!
     echo Please check error messages and try again.
 )
 

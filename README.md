@@ -96,6 +96,33 @@ cmake --build build --config Debug
 build\bin\Debug\Dolas.exe
 ```
 
+### 6. 使用便捷脚本
+
+项目提供了几个便捷的批处理脚本，位于 `script/utility/` 目录下：
+
+#### `generate_project.bat`
+配置 CMake 项目（使用 default 预设）。首次构建或修改 CMakeLists.txt 后运行。
+
+```bash
+script\utility\generate_project.bat
+```
+
+#### `build_project.bat`
+构建项目到 `build/` 目录。
+
+```bash
+script\utility\build_project.bat
+```
+
+#### `quick_start.bat`
+运行构建好的 Debug 版本应用程序。
+
+```bash
+script\utility\quick_start.bat
+```
+
+> **提示**: 所有脚本执行完毕后会等待按键退出，方便查看输出结果。
+
 ## 第三方库
 
 本项目通过 vcpkg 管理以下依赖：

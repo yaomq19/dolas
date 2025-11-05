@@ -18,7 +18,7 @@ cd /d "%~dp0\.."
 
 REM 运行Python脚本
 echo Running CompileShaders.py...
-python scripts/CompileShaders.py %*
+python script/CompileShaders.py %*
 
 REM 显示结果
 if errorlevel 1 (
