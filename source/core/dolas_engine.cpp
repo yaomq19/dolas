@@ -188,9 +188,7 @@ namespace Dolas
 			}
 			// 1.0 is a hack value
 			m_timer_manager->Tick();
-			Float fps = m_timer_manager->GetFPS();
-			Float delta_time = m_timer_manager->GetDeltaTime();
-			m_tick_manager->Tick(delta_time);
+			m_tick_manager->Tick(m_timer_manager->GetDeltaTime());
 		}
 	}
 }// namespace Dolas

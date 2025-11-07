@@ -7,6 +7,7 @@
 #include "manager/dolas_imgui_manager.h"
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_render_camera_manager.h"
+#include "manager/dolas_timer_manager.h"
 namespace Dolas
 {
 	struct FontConfig
@@ -96,10 +97,16 @@ namespace Dolas
                 g_dolas_engine.m_render_camera_manager->DumpCameraInfo();
             }
             
-            // 使用默认字体
-            ImGui::Text("Large text");
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Red text");
-            ImGui::TextWrapped("This is a long text that will wrap...");
+            // FPS 信息显示
+            static Float fps = 0.0f;
+            
+            if (g_dolas_engine.m_timer_manager->GetFrameCount() % 500 == 0)
+            {
+                fps = g_dolas_engine.m_timer_manager->GetFPS();
+            }
+            // 方法 1：直接使用 ImGui::Text 格式化（推荐）
+            ImGui::Text("FPS: %.2f", fps);
+
             UnsetFontStyle();  // 恢复默认字体
             ImGui::End();
         }
