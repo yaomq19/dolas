@@ -35,7 +35,6 @@ namespace Dolas
         // render frame
         TickRenderThread(delta_time);
         g_dolas_engine.m_task_manager->WaitForTask(logic_task_guid);
-        m_frame_count++;
     }
 
     void TickManager::TickRenderThread(Float delta_time)

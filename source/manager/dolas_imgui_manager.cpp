@@ -1,6 +1,7 @@
 #include <imgui.h>
 #include <imgui_impl_win32.h>  // Win32 后端
 #include <imgui_impl_dx11.h>   // Direct3D 11 后端
+#include <string>
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
 #include "manager/dolas_imgui_manager.h"
@@ -8,6 +9,12 @@
 #include "manager/dolas_render_camera_manager.h"
 namespace Dolas
 {
+	struct FontConfig
+	{
+		std::string font_file_path;
+		Float font_size;
+	} k_font_configs[static_cast<UInt>(FontStyle::FontStyleCount)];
+
     ImGuiManager::ImGuiManager()
     {
         m_is_imgui_window_open = false;
@@ -24,6 +31,22 @@ namespace Dolas
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         
+		k_font_configs[static_cast<UInt>(FontStyle::LargeFont)] = { "C:/Windows/Fonts/arial.ttf", 24.0f };
+		k_font_configs[static_cast<UInt>(FontStyle::SmallFont)] = { "C:/Windows/Fonts/arial.ttf", 12.0f };
+		k_font_configs[static_cast<UInt>(FontStyle::BoldFont)] = { "C:/Windows/Fonts/arialbd.ttf", 16.0f };
+
+        // 加载不同大小的字体
+        ImFont* font_default = io.Fonts->AddFontDefault();
+        for (UInt style = 1; style < static_cast<UInt>(FontStyle::FontStyleCount); style++)
+        {
+            ImFont* font_large = io.Fonts->AddFontFromFileTTF(k_font_configs[style].font_file_path.c_str(), k_font_configs[style].font_size);
+        }
+
+        
+        
+        // 可选：加载中文字体
+        // ImFont* font_chinese = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+
         // 可选：启用键盘导航
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         
@@ -59,6 +82,9 @@ namespace Dolas
         // 2. 构建 UI（这里是你的 UI 代码）
         if (m_is_imgui_window_open)
         {
+            SetFontStyle(FontStyle::BoldFont);
+
+            ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
             ImGui::Begin("ImGUI Window");
             /*ImGui::Text("Hello, ImGui!");
             
@@ -70,6 +96,11 @@ namespace Dolas
                 g_dolas_engine.m_render_camera_manager->DumpCameraInfo();
             }
             
+            // 使用默认字体
+            ImGui::Text("Large text");
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Red text");
+            ImGui::TextWrapped("This is a long text that will wrap...");
+            UnsetFontStyle();  // 恢复默认字体
             ImGui::End();
         }
         
@@ -94,4 +125,16 @@ namespace Dolas
             break;
         }
     }
+
+    void ImGuiManager::SetFontStyle(FontStyle font_style)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::PushFont(io.Fonts->Fonts[static_cast<UInt>(font_style)]);
+    }
+
+	void ImGuiManager::UnsetFontStyle()
+	{
+        ImGuiIO& io = ImGui::GetIO();
+		ImGui::PopFont();
+	}
 }
