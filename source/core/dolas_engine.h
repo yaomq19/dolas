@@ -38,6 +38,7 @@ namespace Dolas
 		class TickManager* m_tick_manager;
 		class ImGuiManager* m_imgui_manager;
 		class DebugDrawManager* m_debug_draw_manager;
+		class TimerManager* m_timer_manager;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

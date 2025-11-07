@@ -32,6 +32,7 @@
 #include "manager/dolas_tick_manager.h"
 #include "manager/dolas_imgui_manager.h"
 #include "manager/dolas_debug_draw_manager.h"
+#include "manager/dolas_timer_manager.h"
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -62,6 +63,7 @@ namespace Dolas
 		m_tick_manager = DOLAS_NEW(TickManager);
 		m_imgui_manager = DOLAS_NEW(ImGuiManager);
 		m_debug_draw_manager = DOLAS_NEW(DebugDrawManager);
+		m_timer_manager = DOLAS_NEW(TimerManager);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -90,6 +92,7 @@ namespace Dolas
 		DOLAS_DELETE(m_tick_manager);
 		DOLAS_DELETE(m_imgui_manager);
 		DOLAS_DELETE(m_debug_draw_manager);
+		DOLAS_DELETE(m_timer_manager);
 	}
 
 	bool DolasEngine::Initialize()
@@ -120,6 +123,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
 		return true;
 	}
 
@@ -150,6 +154,7 @@ namespace Dolas
 		m_tick_manager->Clear();
 		m_imgui_manager->Clear();
 		m_debug_draw_manager->Clear();
+		m_timer_manager->Clear();
 	}
 
 	void DolasEngine::Run()
@@ -182,7 +187,11 @@ namespace Dolas
 				}
 			}
 			// 1.0 is a hack value
-			m_tick_manager->Tick(1.0f);
+			m_timer_manager->Tick();
+			Float fps = m_timer_manager->GetFPS();
+			std::cout << "FPS: " << fps << std::endl;
+			Float delta_time = m_timer_manager->GetDeltaTime();
+			m_tick_manager->Tick(delta_time);
 		}
 	}
 }// namespace Dolas

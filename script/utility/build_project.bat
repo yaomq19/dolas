@@ -9,6 +9,7 @@ echo Building project...
 cmake --build build
 if %errorlevel% neq 0 (
     echo Build failed!
+    pause
     exit /b %errorlevel%
 )
 
