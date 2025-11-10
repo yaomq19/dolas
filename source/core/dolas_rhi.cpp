@@ -553,19 +553,20 @@ namespace Dolas
 		best_adapter->GetDesc(&adapter_desc);
 		DXGIHelper::PrintAdapterInfo(best_adapter);
 
-		// 设置交换链描述
-		DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
-		swap_chain_desc.BufferCount = 1;
-		swap_chain_desc.BufferDesc.Width = m_client_width;
-		swap_chain_desc.BufferDesc.Height = m_client_height;
-		swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		swap_chain_desc.BufferDesc.RefreshRate.Numerator = 60;
-		swap_chain_desc.BufferDesc.RefreshRate.Denominator = 1;
-		swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swap_chain_desc.OutputWindow = m_window_handle;  // 使用创建的窗口句柄
-		swap_chain_desc.SampleDesc.Count = 1;
-		swap_chain_desc.SampleDesc.Quality = 0;
-		swap_chain_desc.Windowed = TRUE;
+	// 设置交换链描述
+	DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
+	swap_chain_desc.BufferCount = 1;
+	swap_chain_desc.BufferDesc.Width = m_client_width;
+	swap_chain_desc.BufferDesc.Height = m_client_height;
+	swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	// Set to 0/0 to let DXGI choose the best refresh rate (no limit)
+	swap_chain_desc.BufferDesc.RefreshRate.Numerator = 0;
+	swap_chain_desc.BufferDesc.RefreshRate.Denominator = 0;
+	swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swap_chain_desc.OutputWindow = m_window_handle;  // 使用创建的窗口句柄
+	swap_chain_desc.SampleDesc.Count = 1;
+	swap_chain_desc.SampleDesc.Quality = 0;
+	swap_chain_desc.Windowed = TRUE;
 
 		// 设置特性级别
 		D3D_FEATURE_LEVEL feature_levels[] = {

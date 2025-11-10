@@ -120,12 +120,16 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
-		return true;
-	}
+	DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
+	DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
+	DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
+	DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
+	
+	// Set default frame rate limit (0 = unlimited, 144 = 144 FPS, etc.)
+	m_timer_manager->SetMaxFPS(144.0f);
+	
+	return true;
+}
 
 	void DolasEngine::Clear()
 	{
@@ -179,17 +183,18 @@ namespace Dolas
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 
-				// Check if timeout exceeded
-				auto current_time = std::chrono::high_resolution_clock::now();
-				if (current_time - start_time > max_message_time)
-				{
-					break; // Leave remaining messages for next frame
-				}
-			}
-			// 1.0 is a hack value
-			m_timer_manager->Tick();
-			m_tick_manager->Tick(m_timer_manager->GetDeltaTime());
+		// Check if timeout exceeded
+		auto current_time = std::chrono::high_resolution_clock::now();
+		if (current_time - start_time > max_message_time)
+		{
+			break; // Leave remaining messages for next frame
 		}
 	}
+	
+	// Update timing information (includes frame rate limiting)
+	m_timer_manager->Tick();
+	m_tick_manager->Tick(m_timer_manager->GetDeltaTime());
+	}
+}
 }// namespace Dolas
 

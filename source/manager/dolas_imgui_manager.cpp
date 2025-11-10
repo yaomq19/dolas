@@ -100,7 +100,7 @@ namespace Dolas
             // FPS 信息显示
             static Float fps = 0.0f;
             
-            if (g_dolas_engine.m_timer_manager->GetFrameCount() % 500 == 0)
+            if (g_dolas_engine.m_timer_manager->GetFrameCount() % 50 == 0)
             {
                 fps = g_dolas_engine.m_timer_manager->GetFPS();
             }
