@@ -35,7 +35,7 @@ namespace Dolas
     {
 		Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
 		DOLAS_RETURN_IF_NULL(mesh);
-		Material* material = g_dolas_engine.m_material_manager->GetMaterial(m_material_id);
+		Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
         // 处理纹理

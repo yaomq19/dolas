@@ -1,5 +1,4 @@
 # To Do List
-- 实现帧率平滑功能
 - 设计RenderPrimitive相关
     - 涉及到的类有：RenderPrimitive, Mesh, RenderEntity, RenderObject, Material, Shader
     - 要求有：
@@ -17,6 +16,8 @@
 - 实现 Logic Render Swap Buffer
 - 确定 spdlog 的线程安全性
 
+# 2025-11-11
+- 实现帧率上限功能
 # 2025-11-8
 - 实现时间系统
 - ImGUI 新增字体管理功能

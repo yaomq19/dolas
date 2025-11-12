@@ -183,8 +183,6 @@ namespace Dolas
         rhi->SetDepthStencilState(*depth_stencil_state);
         rhi->SetBlendState(*blend_state);
 
-		
-
 		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
         RenderEntityID quad_render_entity_id = STRING_ID(Quad);
 		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
@@ -197,10 +195,8 @@ namespace Dolas
         MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
         render_entity->SetMeshID(quad_mesh_id);
 
-        MaterialID material_id = g_dolas_engine.m_material_manager->GetDeferredShadingMaterialID();
-        render_entity->SetMaterialID(material_id);
+        Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
 
-        Material* material = g_dolas_engine.m_material_manager->GetMaterial(material_id);
         PixelShader* pixel_shader = material->GetPixelShader();
         DOLAS_RETURN_IF_NULL(pixel_shader);
 
@@ -259,8 +255,7 @@ namespace Dolas
         Texture* sky_box_texture = g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX);
 		DOLAS_RETURN_IF_NULL(sky_box_texture);
 
-        MaterialID material_id = g_dolas_engine.m_material_manager->GetSkyBoxMaterialID();
-        Material* material = g_dolas_engine.m_material_manager->GetMaterial(material_id);
+        Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
         DOLAS_RETURN_IF_NULL(material);
         // 处理纹理
 		material->BindVertexShaderTextures();

@@ -62,6 +62,7 @@ namespace Dolas
     {
         m_global_materials.m_deferred_shading = CreateMaterial("deferred_shading.material");
         m_global_materials.m_sky_box_material_id = CreateMaterial("sky_box.material");
+        // m_global_materials.m_debug_draw_material_id = CreateMaterial("debug_draw.material");
     }
 
     MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
@@ -156,7 +157,7 @@ namespace Dolas
         return material->m_file_id;
     }
 
-    Material* MaterialManager::GetMaterial(MaterialID material_id)
+    Material* MaterialManager::GetMaterialByID(MaterialID material_id)
     {
         if (m_materials.find(material_id) == m_materials.end())
         {
@@ -165,13 +166,19 @@ namespace Dolas
         return m_materials[material_id];
     }
 
-    MaterialID MaterialManager::GetDeferredShadingMaterialID()
+    Material* MaterialManager::GetDeferredShadingMaterial()
     {
-        return m_global_materials.m_deferred_shading;
+        return GetMaterialByID(m_global_materials.m_deferred_shading);
     }
     
-    MaterialID MaterialManager::GetSkyBoxMaterialID()
+    Material* MaterialManager::GetSkyBoxMaterial()
     {
-        return m_global_materials.m_sky_box_material_id;
+        return GetMaterialByID(m_global_materials.m_sky_box_material_id);
     }
+
+    Material* MaterialManager::GetDebugDrawMaterial()
+    {
+		return GetMaterialByID(m_global_materials.m_debug_draw_material_id);
+    }
+
 } // namespace Dolas

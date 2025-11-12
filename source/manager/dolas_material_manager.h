@@ -13,6 +13,7 @@ namespace Dolas
     {
         MaterialID m_deferred_shading = MATERIAL_ID_EMPTY;
         MaterialID m_sky_box_material_id = MATERIAL_ID_EMPTY;
+        MaterialID m_debug_draw_material_id = MATERIAL_ID_EMPTY;
     };
     class MaterialManager
     {
@@ -23,9 +24,10 @@ namespace Dolas
         bool Clear();
         void InitializeGlobalMaterial();
         MaterialID CreateMaterial(const std::string& file_name);
-        Material* GetMaterial(MaterialID material_id);
-        MaterialID GetDeferredShadingMaterialID();
-        MaterialID GetSkyBoxMaterialID();
+        Material* GetMaterialByID(MaterialID material_id);
+        Material* GetDeferredShadingMaterial();
+        Material* GetSkyBoxMaterial();
+        Material* GetDebugDrawMaterial();
     private:
         std::unordered_map<MaterialID, Material*> m_materials;
 

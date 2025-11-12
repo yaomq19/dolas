@@ -86,13 +86,6 @@ namespace Dolas
         m_last_time_us = current_time_us;
         m_frame_per_second = 1000.0f / m_delta_time_ms;
         m_frame_count++;
-        
-        // Debug: Print FPS every 100 frames to verify stability
-        if (m_frame_count % 100 == 0)
-        {
-            printf("Frame %lld: FPS = %.2f, Delta = %.3f ms (Target: %.2f FPS)\n", 
-                   m_frame_count, m_frame_per_second, m_delta_time_ms, m_max_fps);
-        }
     }
     long long TimerManager::GetMicroSecondsTime() const
     {
