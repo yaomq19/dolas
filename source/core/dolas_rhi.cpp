@@ -13,7 +13,6 @@
 
 namespace Dolas
 {
-
     LRESULT CALLBACK
     MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
@@ -22,110 +21,18 @@ namespace Dolas
         return g_dolas_engine.m_input_manager->MsgProc(hwnd, msg, wParam, lParam);
     }
 
-	RenderTargetView::RenderTargetView()
-		: m_d3d_render_target_view(nullptr)
+	RenderTargetView::RenderTargetView() : m_d3d_render_target_view(nullptr)
 	{
 
 	}
 
-    RenderTargetView::RenderTargetView(TextureID texture_id)
-    {
-        m_d3d_render_target_view = nullptr;
-
-        TextureManager* texture_manager = g_dolas_engine.m_texture_manager;
-        DOLAS_RETURN_IF_NULL(texture_manager);
-
-        Texture* texture = texture_manager->GetTextureByTextureID(texture_id);
-        DOLAS_RETURN_IF_NULL(texture);
-
-        ID3D11Device* device = g_dolas_engine.m_rhi ? g_dolas_engine.m_rhi->m_d3d_device : nullptr;
-        DOLAS_RETURN_IF_NULL(device);
-
-        D3D11_TEXTURE2D_DESC texture_desc = {};
-        texture->GetD3DTexture2D()->GetDesc(&texture_desc);
-
-        D3D11_RENDER_TARGET_VIEW_DESC rtv_desc = {};
-        rtv_desc.Format = texture_desc.Format;
-
-        if (texture_desc.SampleDesc.Count > 1)
-        {
-            if (texture_desc.ArraySize > 1)
-            {
-                rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY;
-                rtv_desc.Texture2DMSArray.FirstArraySlice = 0;
-                rtv_desc.Texture2DMSArray.ArraySize = texture_desc.ArraySize;
-            }
-            else
-            {
-                rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
-            }
-        }
-        else
-        {
-            if (texture_desc.ArraySize > 1)
-            {
-                rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-                rtv_desc.Texture2DArray.MipSlice = 0;
-                rtv_desc.Texture2DArray.FirstArraySlice = 0;
-                rtv_desc.Texture2DArray.ArraySize = texture_desc.ArraySize;
-            }
-            else
-            {
-                rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-                rtv_desc.Texture2D.MipSlice = 0;
-            }
-        }
-
-        HRESULT hr = device->CreateRenderTargetView(texture->GetD3DTexture2D(), &rtv_desc, &m_d3d_render_target_view);
-        if (FAILED(hr))
-        {
-			LOG_ERROR("Failed to create render target view!");
-            return;
-        }
-    }
-
     RenderTargetView::~RenderTargetView()
     {
-        Release();
-    }
-
-    void RenderTargetView::Release()
-    {
-        if (m_d3d_render_target_view)
-        {
-            m_d3d_render_target_view->Release();
-            m_d3d_render_target_view = nullptr;
-        }
-    }
-
-    RenderTargetView::RenderTargetView(const RenderTargetView& other)
-    {
-        m_d3d_render_target_view = other.m_d3d_render_target_view;
-        if (m_d3d_render_target_view) m_d3d_render_target_view->AddRef();
-    }
-
-    RenderTargetView& RenderTargetView::operator=(const RenderTargetView& other)
-    {
-        if (this == &other) return *this;
-        Release();
-        m_d3d_render_target_view = other.m_d3d_render_target_view;
-        if (m_d3d_render_target_view) m_d3d_render_target_view->AddRef();
-        return *this;
-    }
-
-    RenderTargetView::RenderTargetView(RenderTargetView&& other) noexcept
-    {
-        m_d3d_render_target_view = other.m_d3d_render_target_view;
-        other.m_d3d_render_target_view = nullptr;
-    }
-
-    RenderTargetView& RenderTargetView::operator=(RenderTargetView&& other) noexcept
-    {
-        if (this == &other) return *this;
-        Release();
-        m_d3d_render_target_view = other.m_d3d_render_target_view;
-        other.m_d3d_render_target_view = nullptr;
-        return *this;
+		if (m_d3d_render_target_view)
+		{
+			m_d3d_render_target_view->Release();
+			m_d3d_render_target_view = nullptr;
+		}
     }
     
 	DepthStencilView::DepthStencilView() : m_d3d_depth_stencil_view(nullptr)
@@ -133,92 +40,14 @@ namespace Dolas
 
 	}
 
-	DepthStencilView::DepthStencilView(TextureID texture_id)
-	{
-		m_d3d_depth_stencil_view = nullptr;
-
-		TextureManager* texture_manager = g_dolas_engine.m_texture_manager;
-		DOLAS_RETURN_IF_NULL(texture_manager);
-
-		Texture* texture = texture_manager->GetTextureByTextureID(texture_id);
-		DOLAS_RETURN_IF_NULL(texture);
-
-		D3D11_TEXTURE2D_DESC texture_desc = {};
-		texture->GetD3DTexture2D()->GetDesc(&texture_desc);
-
-		D3D11_DEPTH_STENCIL_VIEW_DESC dsv_desc = {};
-		dsv_desc.Format = ConvertToDSVFormat(texture_desc.Format);
-		dsv_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		dsv_desc.Texture2D.MipSlice = 0;
-
-		HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(texture->GetD3DTexture2D(), &dsv_desc, &m_d3d_depth_stencil_view);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create depth stencil view!");
-			return;
-		}
-	}
-
 	DepthStencilView::~DepthStencilView()
 	{
-        Release();
-	}	
-
-    void DepthStencilView::Release()
-    {
-        if (m_d3d_depth_stencil_view)
-        {
-            m_d3d_depth_stencil_view->Release();
-            m_d3d_depth_stencil_view = nullptr;
-        }
-    }
-
-	DXGI_FORMAT DepthStencilView::ConvertToDSVFormat(DXGI_FORMAT origin_format)
-	{
-		DXGI_FORMAT ret_format = origin_format;
-		switch (origin_format)
+		if (m_d3d_depth_stencil_view)
 		{
-		case DXGI_FORMAT_R24G8_TYPELESS:
-			ret_format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-			break;
-        case DXGI_FORMAT_R32_TYPELESS:
-            ret_format = DXGI_FORMAT_D32_FLOAT;
-            break;
-		default:
-			break;
+			m_d3d_depth_stencil_view->Release();
+			m_d3d_depth_stencil_view = nullptr;
 		}
-		return ret_format;
-	}
-
-    DepthStencilView::DepthStencilView(const DepthStencilView& other)
-    {
-        m_d3d_depth_stencil_view = other.m_d3d_depth_stencil_view;
-        if (m_d3d_depth_stencil_view) m_d3d_depth_stencil_view->AddRef();
-    }
-
-    DepthStencilView& DepthStencilView::operator=(const DepthStencilView& other)
-    {
-        if (this == &other) return *this;
-        Release();
-        m_d3d_depth_stencil_view = other.m_d3d_depth_stencil_view;
-        if (m_d3d_depth_stencil_view) m_d3d_depth_stencil_view->AddRef();
-        return *this;
-    }
-
-    DepthStencilView::DepthStencilView(DepthStencilView&& other) noexcept
-    {
-        m_d3d_depth_stencil_view = other.m_d3d_depth_stencil_view;
-        other.m_d3d_depth_stencil_view = nullptr;
-    }
-
-    DepthStencilView& DepthStencilView::operator=(DepthStencilView&& other) noexcept
-    {
-        if (this == &other) return *this;
-        Release();
-        m_d3d_depth_stencil_view = other.m_d3d_depth_stencil_view;
-        other.m_d3d_depth_stencil_view = nullptr;
-        return *this;
-    }
+	}	
 
 	DolasRHI::DolasRHI()
 		: m_d3d_device(nullptr)
@@ -241,7 +70,6 @@ namespace Dolas
 		if (m_d3d_immediate_context) m_d3d_immediate_context->Release();
 		if (m_d3d_device) m_d3d_device->Release();
 		if (m_swap_chain) m_swap_chain->Release();
-		if (m_back_buffer_render_target_view) m_back_buffer_render_target_view->Release();
 	}
 
 	bool DolasRHI::Initialize()
@@ -300,35 +128,37 @@ namespace Dolas
 		if (m_d3d_per_object_parameters_buffer) { m_d3d_per_object_parameters_buffer->Release(); m_d3d_per_object_parameters_buffer = nullptr; }
 
 		if (m_swap_chain_back_texture) { m_swap_chain_back_texture->Release(); m_swap_chain_back_texture = nullptr; }
-		if (m_back_buffer_render_target_view) { m_back_buffer_render_target_view->Release(); m_back_buffer_render_target_view = nullptr; }
 		if (m_d3d_user_annotation) { m_d3d_user_annotation->Release(); m_d3d_user_annotation = nullptr; }
 		if (m_d3d_immediate_context) { m_d3d_immediate_context->Release(); m_d3d_immediate_context = nullptr; }
 		if (m_d3d_device) { m_d3d_device->Release(); m_d3d_device = nullptr; }
 		if (m_swap_chain) { m_swap_chain->Release(); m_swap_chain = nullptr; }
 	}
 
-	void DolasRHI::Present()
+	void DolasRHI::Present(TextureID scene_result_texture_id)
 	{
+		Texture* scene_result_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(scene_result_texture_id);
+		DOLAS_RETURN_IF_NULL(scene_result_texture);
+		m_d3d_immediate_context->CopyResource(m_swap_chain_back_texture, scene_result_texture->GetD3DTexture2D());
 		m_swap_chain->Present(0, 0);
 	}
     
-	void DolasRHI::SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view)
+	void DolasRHI::SetRenderTargetViewAndDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view)
 	{
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
         if (d3d11_render_target_view.size() == 0) {
-            m_d3d_immediate_context->OMSetRenderTargets(0, nullptr, d3d11_depth_stencil_view.GetD3DDepthStencilView());
+            m_d3d_immediate_context->OMSetRenderTargets(0, nullptr, depth_stencil_view->m_d3d_depth_stencil_view);
             return;
         }
 
         ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
 		for (UInt i = 0; i < k_max_render_targets; i++)
 		{
-            d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i].GetD3DRenderTargetView() : nullptr;
+            d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i]->m_d3d_render_target_view : nullptr;
 		}
-        m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, d3d11_depth_stencil_view.GetD3DDepthStencilView());
+        m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
 	}
 
-    void DolasRHI::SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view)
+    void DolasRHI::SetRenderTargetViewWithoutDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view)
     {
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
 		if (d3d11_render_target_view.size() == 0) {
@@ -338,10 +168,75 @@ namespace Dolas
 		ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
 		for (UInt i = 0; i < k_max_render_targets; i++)
 		{
-			d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i].GetD3DRenderTargetView() : nullptr;
+			d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i]->m_d3d_render_target_view : nullptr;
 		}
 		m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, nullptr);
     }
+
+	void DolasRHI::ClearRenderTargetView(std::shared_ptr<RenderTargetView> rtv, const Float clear_color[4])
+	{
+		m_d3d_immediate_context->ClearRenderTargetView(rtv->m_d3d_render_target_view, clear_color);
+	}
+
+	std::shared_ptr<RenderTargetView> DolasRHI::GetBackBufferRTV() const { return m_back_buffer_render_target_view; }
+
+	std::shared_ptr<DepthStencilView> DolasRHI::CreateDepthStencilView(TextureID texture_id)
+	{
+		TextureManager* texture_manager = g_dolas_engine.m_texture_manager;
+		DOLAS_RETURN_NULL_IF_NULL(texture_manager);
+
+		Texture* texture = texture_manager->GetTextureByTextureID(texture_id);
+		DOLAS_RETURN_NULL_IF_NULL(texture);
+
+		ID3D11Texture2D* d3d_texture_2d = texture->GetD3DTexture2D();
+		DOLAS_RETURN_NULL_IF_NULL(d3d_texture_2d);
+
+		D3D11_TEXTURE2D_DESC texture_desc = {};
+		d3d_texture_2d->GetDesc(&texture_desc);
+
+		DXGI_FORMAT dsv_format = texture_desc.Format;
+		switch (texture_desc.Format)
+		{
+		case DXGI_FORMAT_R24G8_TYPELESS:
+			dsv_format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			break;
+		case DXGI_FORMAT_R32_TYPELESS:
+			dsv_format = DXGI_FORMAT_D32_FLOAT;
+			break;
+		default:
+			break;
+		}
+
+		D3D11_DEPTH_STENCIL_VIEW_DESC dsv_desc = {};
+		dsv_desc.Format = dsv_format;
+		dsv_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		dsv_desc.Texture2D.MipSlice = 0;
+
+		std::shared_ptr<DepthStencilView> depth_stencil_view = std::make_shared<DepthStencilView>();
+		HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(d3d_texture_2d, &dsv_desc, &depth_stencil_view->m_d3d_depth_stencil_view);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create depth stencil view!");
+			return nullptr;
+		}
+
+		return depth_stencil_view;
+	}
+
+	void DolasRHI::ClearDepthStencilView(std::shared_ptr<DepthStencilView> dsv, const DepthClearParams& depth_clear_params, const StencilClearParams& stencil_clear_params)
+	{
+		UINT clear_flags = 0;
+		if (depth_clear_params.enable)
+		{
+			clear_flags |= D3D11_CLEAR_DEPTH;
+		}
+		if (stencil_clear_params.enable)
+		{
+			clear_flags |= D3D11_CLEAR_STENCIL;
+		}
+
+		m_d3d_immediate_context->ClearDepthStencilView(dsv->m_d3d_depth_stencil_view, clear_flags, depth_clear_params.clear_value, stencil_clear_params.clear_value);
+	}
 
     void DolasRHI::SetViewPort(const ViewPort& viewport)
 	{
@@ -553,20 +448,20 @@ namespace Dolas
 		best_adapter->GetDesc(&adapter_desc);
 		DXGIHelper::PrintAdapterInfo(best_adapter);
 
-	// 设置交换链描述
-	DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
-	swap_chain_desc.BufferCount = 1;
-	swap_chain_desc.BufferDesc.Width = m_client_width;
-	swap_chain_desc.BufferDesc.Height = m_client_height;
-	swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	// Set to 0/0 to let DXGI choose the best refresh rate (no limit)
-	swap_chain_desc.BufferDesc.RefreshRate.Numerator = 0;
-	swap_chain_desc.BufferDesc.RefreshRate.Denominator = 0;
-	swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swap_chain_desc.OutputWindow = m_window_handle;  // 使用创建的窗口句柄
-	swap_chain_desc.SampleDesc.Count = 1;
-	swap_chain_desc.SampleDesc.Quality = 0;
-	swap_chain_desc.Windowed = TRUE;
+		// 设置交换链描述
+		DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
+		swap_chain_desc.BufferCount = 1;
+		swap_chain_desc.BufferDesc.Width = m_client_width;
+		swap_chain_desc.BufferDesc.Height = m_client_height;
+		swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		// Set to 0/0 to let DXGI choose the best refresh rate (no limit)
+		swap_chain_desc.BufferDesc.RefreshRate.Numerator = 0;
+		swap_chain_desc.BufferDesc.RefreshRate.Denominator = 0;
+		swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		swap_chain_desc.OutputWindow = m_window_handle;  // 使用创建的窗口句柄
+		swap_chain_desc.SampleDesc.Count = 1;
+		swap_chain_desc.SampleDesc.Quality = 0;
+		swap_chain_desc.Windowed = TRUE;
 
 		// 设置特性级别
 		D3D_FEATURE_LEVEL feature_levels[] = {
@@ -625,11 +520,7 @@ namespace Dolas
             return false;
         }
 
-        hr = m_d3d_device->CreateRenderTargetView(m_swap_chain_back_texture, nullptr, &m_back_buffer_render_target_view);
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create render target view! HRESULT: {0}", hr);
-            return false;
-        }
+		m_back_buffer_render_target_view = CreateRenderTargetViewByD3D11Texture(m_swap_chain_back_texture);
 
 #if defined(DEBUG) || defined(_DEBUG)
 		// 启用D3D11 debug layer的额外配置
@@ -679,5 +570,66 @@ namespace Dolas
 		{
 			m_d3d_user_annotation->SetMarker(name);
 		}
+	}
+
+	std::shared_ptr<RenderTargetView> DolasRHI::CreateRenderTargetView(TextureID texture_id)
+	{
+		TextureManager* texture_manager = g_dolas_engine.m_texture_manager;
+		DOLAS_RETURN_NULL_IF_NULL(texture_manager);
+
+		Texture* texture = texture_manager->GetTextureByTextureID(texture_id);
+		DOLAS_RETURN_NULL_IF_NULL(texture);
+
+		ID3D11Texture2D* d3d11_texture = texture->GetD3DTexture2D();
+		return CreateRenderTargetViewByD3D11Texture(d3d11_texture);
+	}
+
+	std::shared_ptr<RenderTargetView> DolasRHI::CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* d3d_texture)
+	{
+		D3D11_TEXTURE2D_DESC texture_desc = {};
+		d3d_texture->GetDesc(&texture_desc);
+
+		D3D11_RENDER_TARGET_VIEW_DESC rtv_desc = {};
+		rtv_desc.Format = texture_desc.Format;
+
+		if (texture_desc.SampleDesc.Count > 1)
+		{
+			if (texture_desc.ArraySize > 1)
+			{
+				rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY;
+				rtv_desc.Texture2DMSArray.FirstArraySlice = 0;
+				rtv_desc.Texture2DMSArray.ArraySize = texture_desc.ArraySize;
+			}
+			else
+			{
+				rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+			}
+		}
+		else
+		{
+			if (texture_desc.ArraySize > 1)
+			{
+				rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+				rtv_desc.Texture2DArray.MipSlice = 0;
+				rtv_desc.Texture2DArray.FirstArraySlice = 0;
+				rtv_desc.Texture2DArray.ArraySize = texture_desc.ArraySize;
+			}
+			else
+			{
+				rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+				rtv_desc.Texture2D.MipSlice = 0;
+			}
+		}
+
+		std::shared_ptr<RenderTargetView> render_target_view = std::make_shared<RenderTargetView>();
+
+		HRESULT hr = m_d3d_device->CreateRenderTargetView(d3d_texture, &rtv_desc, &render_target_view->m_d3d_render_target_view);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create render target view!");
+			return nullptr;
+		}
+
+		return render_target_view;
 	}
 } // namespace Dolas

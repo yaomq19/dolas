@@ -9,6 +9,8 @@
 
 namespace Dolas
 {
+	static const Float k_default_max_fps = 300.0f;
+
     TimerManager::TimerManager()
         : m_last_time_us(0)
         , m_delta_time_ms(0)
@@ -29,7 +31,7 @@ namespace Dolas
         // This improves frame rate stability significantly
         timeBeginPeriod(1);
 #endif
-        
+        SetMaxFPS(k_default_max_fps);
         return true;
     }
     void TimerManager::Clear()

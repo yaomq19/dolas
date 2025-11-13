@@ -87,27 +87,38 @@ namespace Dolas
     void RenderPipeline::ClearPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"ClearPass");
+		RenderResource* render_resource = TryGetRenderResource();
+		DOLAS_RETURN_IF_NULL(render_resource);
+
+		const FLOAT black_clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
         rhi->BeginEvent(L"ClearBackRenderTarget");
-        const FLOAT clear_color[4] = {0.4f, 0.6f, 0.8f, 1.0f};
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(rhi->m_back_buffer_render_target_view, clear_color);
+        rhi->ClearRenderTargetView(rhi->GetBackBufferRTV(), black_clear_color);
         rhi->EndEvent();
 
-        RenderResource* render_resource = TryGetRenderResource();
-        DOLAS_RETURN_IF_NULL(render_resource);
-
         rhi->BeginEvent(L"ClearGBufferTextures");
-        const FLOAT black_clear_color[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_a_id).GetD3DRenderTargetView(), black_clear_color);
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_b_id).GetD3DRenderTargetView(), black_clear_color);
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_gbuffer_c_id).GetD3DRenderTargetView(), black_clear_color);
+        auto gbuffer_a_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_a_id);
+        auto gbuffer_b_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_b_id);
+        auto gbuffer_c_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_c_id);
+        rhi->ClearRenderTargetView(gbuffer_a_rtv, black_clear_color);
+        rhi->ClearRenderTargetView(gbuffer_b_rtv, black_clear_color);
+        rhi->ClearRenderTargetView(gbuffer_c_rtv, black_clear_color);
         rhi->EndEvent();
         
         rhi->BeginEvent(L"ClearSceneDepthTexture");
-        rhi->m_d3d_immediate_context->ClearDepthStencilView(DepthStencilView(render_resource->m_depth_stencil_id).GetD3DDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+        std::shared_ptr<DepthStencilView> scene_dsv = rhi->CreateDepthStencilView(render_resource->m_depth_stencil_id);
+		DepthClearParams depth_clear_params;
+        depth_clear_params.enable = true;
+        depth_clear_params.clear_value = 1.0f;
+		StencilClearParams stencil_clear_params;
+		stencil_clear_params.enable = true;
+		stencil_clear_params.clear_value = 0;
+        rhi->ClearDepthStencilView(scene_dsv, depth_clear_params, stencil_clear_params);
         rhi->EndEvent();
 
         rhi->BeginEvent(L"ClearSceneResultTexture");
-        rhi->m_d3d_immediate_context->ClearRenderTargetView(RenderTargetView(render_resource->m_scene_result_id).GetD3DRenderTargetView(), black_clear_color);
+		auto scene_result_rtv = rhi->CreateRenderTargetView(render_resource->m_scene_result_id);
+        rhi->ClearRenderTargetView(scene_result_rtv, black_clear_color);
         rhi->EndEvent();
     }
 
@@ -133,13 +144,14 @@ namespace Dolas
 		RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
 
-        std::vector<RenderTargetView> rtvs;
-        rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_a_id));
-        rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_b_id));
-		rtvs.push_back(RenderTargetView(render_resource->m_gbuffer_c_id));
-		DepthStencilView dsv(render_resource->m_depth_stencil_id);
+        std::vector<std::shared_ptr<RenderTargetView>> rtvs;
+        rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_a_id));
+        rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_b_id));
+        rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_c_id));
 
-        rhi->SetRenderTargetView(rtvs, dsv);
+        auto dsv = g_dolas_engine.m_rhi->CreateDepthStencilView(render_resource->m_depth_stencil_id);
+
+        rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
 
         RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidBackCull);
@@ -169,10 +181,11 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(gbuffer_b_texture);
         DOLAS_RETURN_IF_NULL(gbuffer_c_texture);
 
-        std::vector<RenderTargetView> rtvs;
-		rtvs.push_back(RenderTargetView(render_resource->m_scene_result_id));
+        std::vector<std::shared_ptr<RenderTargetView>> rtvs;
+        auto scene_result_rtv = g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_scene_result_id);
+        rtvs.push_back(scene_result_rtv);
 
-        rhi->SetRenderTargetView(rtvs);
+        rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
         rhi->SetViewPort(m_viewport);
 
         DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
@@ -221,10 +234,10 @@ namespace Dolas
 		RenderResource* render_resource = TryGetRenderResource();
 		DOLAS_RETURN_IF_NULL(render_resource);
 
-		std::vector<RenderTargetView> rtvs;
-		rtvs.push_back(RenderTargetView(render_resource->m_scene_result_id));
+		std::vector<std::shared_ptr<RenderTargetView>> rtvs;
+		rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_scene_result_id));
 
-		rhi->SetRenderTargetView(rtvs);
+		rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
 		rhi->SetViewPort(m_viewport);
 
 		DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
@@ -329,17 +342,8 @@ namespace Dolas
     {
         UserAnnotationScope scope(rhi, L"PresentPass");
 		RenderResource* render_resource = TryGetRenderResource();
-        if (render_resource)
-        {
-            Texture* scene_result_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_scene_result_id);
-			DOLAS_RETURN_IF_NULL(scene_result_texture);
-			rhi->m_d3d_immediate_context->CopyResource(rhi->m_swap_chain_back_texture, scene_result_texture->GetD3DTexture2D());
-		}
-		else
-		{
-			LOG_ERROR("Render resource not found!");
-        }
-        rhi->m_swap_chain->Present(0, 0);
+        DOLAS_RETURN_IF_NULL(render_resource);
+        rhi->Present(render_resource->m_scene_result_id);
     }
 
     RenderScene* RenderPipeline::TryGetRenderScene() const

@@ -5,7 +5,7 @@
 #include <d3d11_1.h>
 #include <Windows.h>
 #include <vector>
-
+#include <memory>
 #if defined(DEBUG) || defined(_DEBUG)
 #include <d3d11sdklayers.h>  // For ID3D11Debug and ID3D11InfoQueue
 #endif
@@ -25,40 +25,18 @@ namespace Dolas
 	{
 	public:
 		RenderTargetView();
-		RenderTargetView(TextureID texture_id);
 		~RenderTargetView();
-		ID3D11RenderTargetView* GetD3DRenderTargetView() const { return m_d3d_render_target_view; }
 
-		// Copy / Move semantics
-		RenderTargetView(const RenderTargetView& other);
-		RenderTargetView& operator=(const RenderTargetView& other);
-		RenderTargetView(RenderTargetView&& other) noexcept;
-		RenderTargetView& operator=(RenderTargetView&& other) noexcept;
-
-	protected:
 		ID3D11RenderTargetView* m_d3d_render_target_view;
-		void Release();
 	};
 
 	class DepthStencilView
 	{
 	public:
 		DepthStencilView();
-		DepthStencilView(TextureID texture_id);
 		~DepthStencilView();
-		ID3D11DepthStencilView* GetD3DDepthStencilView() const { return m_d3d_depth_stencil_view; }
 
-		// Copy / Move semantics
-		DepthStencilView(const DepthStencilView& other);
-		DepthStencilView& operator=(const DepthStencilView& other);
-		DepthStencilView(DepthStencilView&& other) noexcept;
-		DepthStencilView& operator=(DepthStencilView&& other) noexcept;
-
-	protected:
 		ID3D11DepthStencilView* m_d3d_depth_stencil_view;
-		void Release();
-
-		DXGI_FORMAT ConvertToDSVFormat(DXGI_FORMAT origin_format);
 	};
 
 	struct ViewPort
@@ -99,6 +77,18 @@ namespace Dolas
 		Vector4 light_color; // w is unused
 	};
 
+	struct DepthClearParams
+	{
+		Bool enable = true;
+		Float clear_value = 1.0f;
+	};
+
+	struct StencilClearParams
+	{
+		Bool enable = true;
+		UInt clear_value = 0;
+	};
+
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{
@@ -107,14 +97,12 @@ namespace Dolas
 		~DolasRHI();
 		bool Initialize();
 		void Clear();
-		void Present();	
+		void Present(TextureID scene_result_texture_id);
 
 		HWND GetWindowHandle() const { return m_window_handle; }
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
-		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view, const DepthStencilView& d3d11_depth_stencil_view);
-		void SetRenderTargetView(const std::vector<RenderTargetView>& d3d11_render_target_view);
 		void SetViewPort(const ViewPort& viewport);
 		void SetRasterizerState(const RasterizerState& rasterizer_state);
 		void SetDepthStencilState(const DepthStencilState& depth_stencil_state);
@@ -136,14 +124,22 @@ namespace Dolas
 
 		ID3D11Device* m_d3d_device;
 		ID3D11DeviceContext* m_d3d_immediate_context;
-		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
-		IDXGISwapChain* m_swap_chain;
-		ID3D11Texture2D* m_swap_chain_back_texture;
-		ID3D11RenderTargetView* m_back_buffer_render_target_view;
 
+		// RenderTargetView
+		std::shared_ptr<RenderTargetView> CreateRenderTargetView(TextureID texture_id);
+		void SetRenderTargetViewAndDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view);
+		void SetRenderTargetViewWithoutDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view);
+		void ClearRenderTargetView(std::shared_ptr<RenderTargetView> rtv, const Float clear_color[4]);
+		std::shared_ptr<RenderTargetView> GetBackBufferRTV() const;
+
+		// DepthStencilView
+		std::shared_ptr<DepthStencilView> CreateDepthStencilView(TextureID texture_id);
+		void ClearDepthStencilView(std::shared_ptr<DepthStencilView> dsv, const DepthClearParams& depth_clear_params, const StencilClearParams& stencil_clear_params);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
+
+		std::shared_ptr<RenderTargetView> CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* texture_id);
 
 		HWND m_window_handle;
 		int m_client_width;
@@ -152,6 +148,13 @@ namespace Dolas
 		ID3D11Buffer* m_d3d_per_frame_parameters_buffer;
 		ID3D11Buffer* m_d3d_per_view_parameters_buffer;
 		ID3D11Buffer* m_d3d_per_object_parameters_buffer;
+
+		IDXGISwapChain* m_swap_chain;
+		ID3D11Texture2D* m_swap_chain_back_texture;
+		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
+
+
+		std::shared_ptr<RenderTargetView> m_back_buffer_render_target_view;
 	};
 
 	// RAII scope for GPU events

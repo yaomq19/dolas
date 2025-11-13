@@ -1,4 +1,15 @@
 # To Do List
+- RHI 基建
+    - OM
+        - RenderTarget
+        - Viewport
+        - RasterizerState
+        - DepthStencilState
+        - BlendState
+    - VS
+    - PS
+    - IA
+    - DC
 - 设计RenderPrimitive相关
     - 涉及到的类有：RenderPrimitive, Mesh, RenderEntity, RenderObject, Material, Shader
     - 要求有：
@@ -15,6 +26,7 @@
     - 制作完成后，Shader 从此完全切换为离线编译
 - 实现 Logic Render Swap Buffer
 - 确定 spdlog 的线程安全性
+- 实现 ColorManager
 
 # 2025-11-11
 - 实现帧率上限功能

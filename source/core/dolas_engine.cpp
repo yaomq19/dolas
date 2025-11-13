@@ -120,16 +120,13 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_geometry_manager->Initialize());
-	DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
-	DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
-	DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
-	DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
 	
-	// Set default frame rate limit (0 = unlimited, 144 = 144 FPS, etc.)
-	m_timer_manager->SetMaxFPS(144.0f);
-	
-	return true;
-}
+		return true;
+	}
 
 	void DolasEngine::Clear()
 	{
