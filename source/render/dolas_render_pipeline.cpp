@@ -33,7 +33,7 @@ namespace Dolas
 {
 	const UInt k_print_debug_info_every_n_frames = 20;
 
-    RenderPipeline::RenderPipeline()
+    RenderPipeline::RenderPipeline() : m_viewport(0.0f, 0.0f, DEFAULT_CLIENT_WIDTH, DEFAULT_CLIENT_HEIGHT, 0.0f, 1.0f)
     {
 
     }
@@ -45,15 +45,6 @@ namespace Dolas
 
     bool RenderPipeline::Initialize()
     {
-
-
-        m_viewport.m_d3d_viewport.TopLeftX = 0.0f;
-        m_viewport.m_d3d_viewport.TopLeftY = 0.0f;
-        m_viewport.m_d3d_viewport.Width = DEFAULT_CLIENT_WIDTH;
-        m_viewport.m_d3d_viewport.Height = DEFAULT_CLIENT_HEIGHT;
-        m_viewport.m_d3d_viewport.MinDepth = 0.0f;
-        m_viewport.m_d3d_viewport.MaxDepth = 1.0f;
-
         return true;
     }
 

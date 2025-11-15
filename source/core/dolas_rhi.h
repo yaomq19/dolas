@@ -39,8 +39,11 @@ namespace Dolas
 		ID3D11DepthStencilView* m_d3d_depth_stencil_view;
 	};
 
-	struct ViewPort
+	class ViewPort
 	{
+	public:
+		ViewPort(Float top_left_x, Float top_left_y, Float width, Float height, Float min_depth, Float max_depth);
+		~ViewPort();
 		D3D11_VIEWPORT m_d3d_viewport;
 	};
 
@@ -103,7 +106,6 @@ namespace Dolas
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
-		void SetViewPort(const ViewPort& viewport);
 		void SetRasterizerState(const RasterizerState& rasterizer_state);
 		void SetDepthStencilState(const DepthStencilState& depth_stencil_state);
 		void SetBlendState(const BlendState& blend_state);
@@ -135,6 +137,9 @@ namespace Dolas
 		// DepthStencilView
 		std::shared_ptr<DepthStencilView> CreateDepthStencilView(TextureID texture_id);
 		void ClearDepthStencilView(std::shared_ptr<DepthStencilView> dsv, const DepthClearParams& depth_clear_params, const StencilClearParams& stencil_clear_params);
+	
+		// ViewPort
+		void SetViewPort(const ViewPort& viewport);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();

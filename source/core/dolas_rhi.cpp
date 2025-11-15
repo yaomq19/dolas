@@ -49,6 +49,21 @@ namespace Dolas
 		}
 	}	
 
+	ViewPort::ViewPort(Float top_left_x, Float top_left_y, Float width, Float height, Float min_depth, Float max_depth)
+		: m_d3d_viewport(D3D11_VIEWPORT())
+	{
+		m_d3d_viewport.TopLeftX = top_left_x;
+		m_d3d_viewport.TopLeftY = top_left_y;
+		m_d3d_viewport.Width = width;
+		m_d3d_viewport.Height = height;
+		m_d3d_viewport.MinDepth = min_depth;
+		m_d3d_viewport.MaxDepth = max_depth;
+	}
+	ViewPort::~ViewPort()
+	{
+		m_d3d_viewport = D3D11_VIEWPORT();
+	}
+
 	DolasRHI::DolasRHI()
 		: m_d3d_device(nullptr)
 		, m_d3d_immediate_context(nullptr)
