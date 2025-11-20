@@ -17,7 +17,6 @@
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
 #include "manager/dolas_mesh_manager.h"
-#include "manager/dolas_render_state_manager.h"
 #include "render/dolas_shader.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
@@ -145,16 +144,10 @@ namespace Dolas
         rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
 
-        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidBackCull);
-        DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthEnabled);
-		BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
+        rhi->SetRasterizerState(RasterizerStateType::SolidBackCull);
+        rhi->SetDepthStencilState(DepthStencilStateType::DepthEnabled);
+        rhi->SetBlendState(BlendStateType::Opaque);
 
-        rhi->SetRasterizerState(*rasterizer_state);
-        rhi->SetDepthStencilState(*depth_stencil_state);
-        rhi->SetBlendState(*blend_state);
-
-        
-        
         // render_entity->Draw(rhi);
     }
 
@@ -179,13 +172,9 @@ namespace Dolas
         rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
         rhi->SetViewPort(m_viewport);
 
-        DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
-        RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
-        BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
-
-        rhi->SetRasterizerState(*rasterizer_state);
-        rhi->SetDepthStencilState(*depth_stencil_state);
-        rhi->SetBlendState(*blend_state);
+        rhi->SetRasterizerState(RasterizerStateType::SolidNoneCull);
+        rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
+        rhi->SetBlendState(BlendStateType::Opaque);
 
 		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
         RenderEntityID quad_render_entity_id = STRING_ID(Quad);
@@ -231,13 +220,9 @@ namespace Dolas
 		rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
 		rhi->SetViewPort(m_viewport);
 
-		DepthStencilState* depth_stencil_state = g_dolas_engine.m_render_state_manager->GetDepthStencilState(DepthStencilStateType::DepthDisabled);
-		RasterizerState* rasterizer_state = g_dolas_engine.m_render_state_manager->GetRasterizerState(RasterizerStateType::SolidNoneCull);
-		BlendState* blend_state = g_dolas_engine.m_render_state_manager->GetBlendState(BlendStateType::Opaque);
-
-		rhi->SetRasterizerState(*rasterizer_state);
-		rhi->SetDepthStencilState(*depth_stencil_state);
-		rhi->SetBlendState(*blend_state);
+		rhi->SetRasterizerState(RasterizerStateType::SolidNoneCull);
+		rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
+		rhi->SetBlendState(BlendStateType::Opaque);
 
         RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
 		

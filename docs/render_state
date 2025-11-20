@@ -1,0 +1,8 @@
+以RasterizerState为例，说明怎么使用和新增一个State：
+使用：
+g_dolas_engine.m_rhi->SetRasterizerState(rasterizer_type);
+
+创建：
+1. 为 enum class RasterizerStateType 新增成员 new_type_name
+2. 在 DolasRHI::InitializeRasterizerStateCreateDesc() 中为 new_type_name 添加 D3D11_RASTERIZER_DESC new_type_name
+3. 在需要使用的地方直接调用 g_dolas_engine.m_rhi->SetRasterizerState(new_type_name);

@@ -1,11 +1,5 @@
 # To Do List
 - RHI 基建
-    - OM
-        - RenderTarget
-        - Viewport
-        - RasterizerState
-        - DepthStencilState
-        - BlendState
     - VS
     - PS
     - IA
@@ -28,6 +22,12 @@
 - 确定 spdlog 的线程安全性
 - 实现 ColorManager
 
+# 2025-11-21
+- RHI 基建: RasterizerState, DepthStencilState, BlendState
+# 2025-11-15
+- RHI 基建: Viewport
+# 2025-11-14
+- RHI 基建: RenderTargetView, DepthStencilView
 # 2025-11-11
 - 实现帧率上限功能
 # 2025-11-8

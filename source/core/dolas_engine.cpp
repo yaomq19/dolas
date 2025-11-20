@@ -21,7 +21,6 @@
 #include "manager/dolas_test_manager.h"
 #include "manager/dolas_buffer_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
-#include "manager/dolas_render_state_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
@@ -53,7 +52,6 @@ namespace Dolas
 		m_render_resource_manager = DOLAS_NEW(RenderResourceManager);
 		m_render_primitive_manager = DOLAS_NEW(RenderPrimitiveManager);
 		m_buffer_manager = DOLAS_NEW(BufferManager);
-		m_render_state_manager = DOLAS_NEW(RenderStateManager);
 		m_render_view_manager = DOLAS_NEW(RenderViewManager);
 		m_render_camera_manager = DOLAS_NEW(RenderCameraManager);
 		m_render_scene_manager = DOLAS_NEW(RenderSceneManager);
@@ -112,7 +110,6 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_resource_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_primitive_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_buffer_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_render_state_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_camera_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_scene_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
@@ -143,7 +140,6 @@ namespace Dolas
 		m_render_resource_manager->Clear();
 		m_render_primitive_manager->Clear();
 		m_buffer_manager->Clear();
-		m_render_state_manager->Clear();
 		m_render_view_manager->Clear();
 		m_render_camera_manager->Clear();
 		m_render_scene_manager->Clear();

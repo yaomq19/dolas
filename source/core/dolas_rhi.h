@@ -47,18 +47,55 @@ namespace Dolas
 		D3D11_VIEWPORT m_d3d_viewport;
 	};
 
-	struct RasterizerState
+	enum class RasterizerStateType : UInt
+    {
+		SolidNoneCull,
+        SolidBackCull,
+        SolidFrontCull,
+        Wireframe,
+		RasterizerStateCount,
+    };
+
+	class RasterizerState
 	{
+	public:
+		RasterizerState();
+		~RasterizerState();
+
 		ID3D11RasterizerState* m_d3d_rasterizer_state;
 	};
 
-	struct DepthStencilState
+	enum class DepthStencilStateType : UInt
 	{
+		DepthEnabled,
+		DepthDisabled,
+		DepthReadOnly,
+		DepthStencilStateCount,
+	};
+
+	class DepthStencilState
+	{
+	public:
+		DepthStencilState();
+		~DepthStencilState();
+
 		ID3D11DepthStencilState* m_d3d_depth_stencil_state;
 	};
 
-	struct BlendState
+	enum class BlendStateType : UInt
+    {
+        Opaque,
+        AlphaBlend,
+        Additive,
+		BlendStateCount,
+    };
+
+	class BlendState
 	{
+	public:
+		BlendState();
+		~BlendState();
+
 		ID3D11BlendState* m_d3d_blend_state;
 	};
 
@@ -106,9 +143,7 @@ namespace Dolas
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
-		void SetRasterizerState(const RasterizerState& rasterizer_state);
-		void SetDepthStencilState(const DepthStencilState& depth_stencil_state);
-		void SetBlendState(const BlendState& blend_state);
+		
 		void SetVertexShader();
 		void SetPixelShader();
 
@@ -140,11 +175,28 @@ namespace Dolas
 	
 		// ViewPort
 		void SetViewPort(const ViewPort& viewport);
+
+		// RasterizerState
+		void SetRasterizerState(RasterizerStateType type);
+
+		// DepthStencilState
+		void SetDepthStencilState(DepthStencilStateType type);
+
+		// BlendState
+		void SetBlendState(BlendStateType type);
+
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
 
+		void InitializeRasterizerStateCreateDesc();
+		void InitializeDepthStencilStateCreateDesc();
+		void InitializeBlendStateCreateDesc();
+
 		std::shared_ptr<RenderTargetView> CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* texture_id);
+		ID3D11RasterizerState* CreateRasterizerState(RasterizerStateType type);
+		ID3D11DepthStencilState* CreateDepthStencilState(DepthStencilStateType type);
+		ID3D11BlendState* CreateBlendState(BlendStateType type);
 
 		HWND m_window_handle;
 		int m_client_width;
@@ -158,8 +210,14 @@ namespace Dolas
 		ID3D11Texture2D* m_swap_chain_back_texture;
 		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
 
-
 		std::shared_ptr<RenderTargetView> m_back_buffer_render_target_view;
+		RasterizerState m_rasterizer_states[static_cast<UInt>(RasterizerStateType::RasterizerStateCount)];
+		DepthStencilState m_depth_stencil_states[static_cast<UInt>(DepthStencilStateType::DepthStencilStateCount)];
+		BlendState m_blend_states[static_cast<UInt>(BlendStateType::BlendStateCount)];
+
+		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::RasterizerStateCount)];
+		D3D11_DEPTH_STENCIL_DESC m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthStencilStateCount)];
+		D3D11_BLEND_DESC m_blend_state_create_desc[static_cast<UInt>(BlendStateType::BlendStateCount)];
 	};
 
 	// RAII scope for GPU events

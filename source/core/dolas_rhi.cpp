@@ -64,6 +64,45 @@ namespace Dolas
 		m_d3d_viewport = D3D11_VIEWPORT();
 	}
 
+	RasterizerState::RasterizerState() : m_d3d_rasterizer_state(nullptr)
+	{
+	}
+
+	RasterizerState::~RasterizerState()
+	{
+		if (m_d3d_rasterizer_state)
+		{
+			m_d3d_rasterizer_state->Release();
+			m_d3d_rasterizer_state = nullptr;
+		}
+	}
+
+	DepthStencilState::DepthStencilState() : m_d3d_depth_stencil_state(nullptr)
+	{
+	}
+
+	DepthStencilState::~DepthStencilState()
+	{
+		if (m_d3d_depth_stencil_state)
+		{
+			m_d3d_depth_stencil_state->Release();
+			m_d3d_depth_stencil_state = nullptr;
+		}
+	}
+
+	BlendState::BlendState() : m_d3d_blend_state(nullptr)
+	{
+	}
+
+	BlendState::~BlendState()
+	{
+		if (m_d3d_blend_state)
+		{
+			m_d3d_blend_state->Release();
+			m_d3d_blend_state = nullptr;
+		}
+	}
+
 	DolasRHI::DolasRHI()
 		: m_d3d_device(nullptr)
 		, m_d3d_immediate_context(nullptr)
@@ -257,19 +296,49 @@ namespace Dolas
 	{
 		m_d3d_immediate_context->RSSetViewports(1, &viewport.m_d3d_viewport);
 	}
+	
+	void DolasRHI::SetRasterizerState(RasterizerStateType type)
+	{
+		RasterizerState& rasterizer_state = m_rasterizer_states[static_cast<UInt>(type)];
+		if (rasterizer_state.m_d3d_rasterizer_state == nullptr)
+		{
+			rasterizer_state.m_d3d_rasterizer_state = CreateRasterizerState(type);
+		}
 
-    void DolasRHI::SetRasterizerState(const RasterizerState& rasterizer_state)
-    {
-        m_d3d_immediate_context->RSSetState(rasterizer_state.m_d3d_rasterizer_state);
-    }
+		if (rasterizer_state.m_d3d_rasterizer_state == nullptr)
+		{
+			return;
+		}
+		m_d3d_immediate_context->RSSetState(rasterizer_state.m_d3d_rasterizer_state);
+	}
 
-    void DolasRHI::SetDepthStencilState(const DepthStencilState& depth_stencil_state)
+    void DolasRHI::SetDepthStencilState(DepthStencilStateType type)
     {
+		DepthStencilState& depth_stencil_state = m_depth_stencil_states[static_cast<UInt>(type)];
+		if (depth_stencil_state.m_d3d_depth_stencil_state == nullptr)
+		{
+			depth_stencil_state.m_d3d_depth_stencil_state = CreateDepthStencilState(type);
+		}
+
+		if (depth_stencil_state.m_d3d_depth_stencil_state == nullptr)
+		{
+			return;
+		}
         m_d3d_immediate_context->OMSetDepthStencilState(depth_stencil_state.m_d3d_depth_stencil_state, 0);
     }
 
-    void DolasRHI::SetBlendState(const BlendState& blend_state)
+    void DolasRHI::SetBlendState(BlendStateType type)
     {
+		BlendState& blend_state = m_blend_states[static_cast<UInt>(type)];
+		if (blend_state.m_d3d_blend_state == nullptr)
+		{
+			blend_state.m_d3d_blend_state = CreateBlendState(type);
+		}
+
+		if (blend_state.m_d3d_blend_state == nullptr)
+		{
+			return;
+		}
         m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
     }
 
@@ -560,7 +629,140 @@ namespace Dolas
 
 		LOG_INFO("Successfully created D3D11 device and swap chain!");
 		LOG_INFO("Feature Level: {0:#x}", static_cast<int>(feature_level));
+
+		InitializeRasterizerStateCreateDesc();
+		InitializeDepthStencilStateCreateDesc();
+		InitializeBlendStateCreateDesc();
 		return true;
+	}
+
+	void DolasRHI::InitializeRasterizerStateCreateDesc()
+	{
+		D3D11_RASTERIZER_DESC solid_none_cull_desc = {};
+		solid_none_cull_desc.FillMode = D3D11_FILL_SOLID;
+		solid_none_cull_desc.CullMode = D3D11_CULL_NONE;
+		solid_none_cull_desc.FrontCounterClockwise = FALSE;
+		solid_none_cull_desc.DepthBias = 0;
+		solid_none_cull_desc.DepthBiasClamp = 0.0f;
+		solid_none_cull_desc.SlopeScaledDepthBias = 0.0f;
+		solid_none_cull_desc.DepthClipEnable = TRUE;
+		solid_none_cull_desc.ScissorEnable = FALSE;
+		solid_none_cull_desc.MultisampleEnable = FALSE;
+		solid_none_cull_desc.AntialiasedLineEnable = FALSE;
+		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidNoneCull)] = solid_none_cull_desc;
+
+		D3D11_RASTERIZER_DESC solid_back_cull_desc = {};
+		solid_back_cull_desc.FillMode = D3D11_FILL_SOLID;
+		solid_back_cull_desc.CullMode = D3D11_CULL_BACK;
+		solid_back_cull_desc.FrontCounterClockwise = FALSE;
+		solid_back_cull_desc.DepthBias = 0;
+		solid_back_cull_desc.DepthBiasClamp = 0.0f;
+		solid_back_cull_desc.SlopeScaledDepthBias = 0.0f;
+		solid_back_cull_desc.DepthClipEnable = TRUE;
+		solid_back_cull_desc.ScissorEnable = FALSE;
+		solid_back_cull_desc.MultisampleEnable = FALSE;
+		solid_back_cull_desc.AntialiasedLineEnable = FALSE;
+		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidBackCull)] = solid_back_cull_desc;
+
+		D3D11_RASTERIZER_DESC solid_front_cull_desc = {};
+		solid_front_cull_desc.FillMode = D3D11_FILL_SOLID;
+		solid_front_cull_desc.CullMode = D3D11_CULL_FRONT;
+		solid_front_cull_desc.FrontCounterClockwise = FALSE;
+		solid_front_cull_desc.DepthBias = 0;
+		solid_front_cull_desc.DepthBiasClamp = 0.0f;
+		solid_front_cull_desc.SlopeScaledDepthBias = 0.0f;
+		solid_front_cull_desc.DepthClipEnable = TRUE;
+		solid_front_cull_desc.ScissorEnable = FALSE;
+		solid_front_cull_desc.MultisampleEnable = FALSE;
+		solid_front_cull_desc.AntialiasedLineEnable = FALSE;
+		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidFrontCull)] = solid_front_cull_desc;
+
+		D3D11_RASTERIZER_DESC wireframe_desc = {};
+		wireframe_desc.FillMode = D3D11_FILL_WIREFRAME;
+		wireframe_desc.CullMode = D3D11_CULL_BACK;
+		wireframe_desc.FrontCounterClockwise = FALSE;
+		wireframe_desc.DepthBias = 0;
+		wireframe_desc.DepthBiasClamp = 0.0f;
+		wireframe_desc.SlopeScaledDepthBias = 0.0f;
+		wireframe_desc.DepthClipEnable = TRUE;
+		wireframe_desc.ScissorEnable = FALSE;
+		wireframe_desc.MultisampleEnable = FALSE;
+		wireframe_desc.AntialiasedLineEnable = FALSE;
+		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::Wireframe)] = wireframe_desc;
+	}
+
+	void DolasRHI::InitializeDepthStencilStateCreateDesc()
+	{
+		D3D11_DEPTH_STENCIL_DESC depth_enabled_desc = {};
+        depth_enabled_desc.DepthEnable = TRUE;
+        depth_enabled_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        depth_enabled_desc.DepthFunc = D3D11_COMPARISON_LESS;
+        depth_enabled_desc.StencilEnable = FALSE;
+        depth_enabled_desc.StencilReadMask = 0xFF;
+        depth_enabled_desc.StencilWriteMask = 0xFF;
+		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthEnabled)] = depth_enabled_desc;
+
+		D3D11_DEPTH_STENCIL_DESC depth_disabled_desc = {};
+        depth_disabled_desc.DepthEnable = FALSE;
+        depth_disabled_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        depth_disabled_desc.DepthFunc = D3D11_COMPARISON_LESS;
+        depth_disabled_desc.StencilEnable = FALSE;
+        depth_disabled_desc.StencilReadMask = 0xFF;
+        depth_disabled_desc.StencilWriteMask = 0xFF;
+		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthDisabled)] = depth_disabled_desc;
+
+		D3D11_DEPTH_STENCIL_DESC depth_read_only_desc = {};
+        depth_read_only_desc.DepthEnable = TRUE;
+        depth_read_only_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+        depth_read_only_desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthReadOnly)] = depth_read_only_desc;
+
+	}
+
+	void DolasRHI::InitializeBlendStateCreateDesc()
+	{
+		// Opaque
+		D3D11_BLEND_DESC opaque_desc = {};
+        opaque_desc.AlphaToCoverageEnable = FALSE;
+        opaque_desc.IndependentBlendEnable = FALSE;
+        auto& opaque_rt = opaque_desc.RenderTarget[0];
+        opaque_rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+        opaque_rt.BlendEnable = FALSE;
+        opaque_rt.SrcBlend = D3D11_BLEND_ONE;
+        opaque_rt.DestBlend = D3D11_BLEND_ZERO;
+        opaque_rt.BlendOp = D3D11_BLEND_OP_ADD;
+        opaque_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
+        opaque_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
+        opaque_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::Opaque)] = opaque_desc;
+
+        // AlphaBlend
+		D3D11_BLEND_DESC alpha_blend_desc = {};
+        alpha_blend_desc.AlphaToCoverageEnable = FALSE;
+        alpha_blend_desc.IndependentBlendEnable = FALSE;
+        auto& alpha_blend_rt = alpha_blend_desc.RenderTarget[0];
+		alpha_blend_rt.BlendEnable = TRUE;
+        alpha_blend_rt.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        alpha_blend_rt.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        alpha_blend_rt.BlendOp = D3D11_BLEND_OP_ADD;
+        alpha_blend_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
+        alpha_blend_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
+        alpha_blend_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::AlphaBlend)] = alpha_blend_desc;
+
+        // Additive
+		D3D11_BLEND_DESC additive_desc = {};
+        additive_desc.AlphaToCoverageEnable = FALSE;
+        additive_desc.IndependentBlendEnable = FALSE;
+        auto& additive_rt = additive_desc.RenderTarget[0];
+        additive_rt.BlendEnable = TRUE;
+        additive_rt.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        additive_rt.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        additive_rt.BlendOp = D3D11_BLEND_OP_ADD;
+        additive_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
+        additive_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
+        additive_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::Additive)] = additive_desc;
 	}
 
 	void DolasRHI::BeginEvent(const wchar_t* name)
@@ -646,5 +848,45 @@ namespace Dolas
 		}
 
 		return render_target_view;
+	}
+
+	ID3D11RasterizerState* DolasRHI::CreateRasterizerState(RasterizerStateType type)
+	{
+		D3D11_RASTERIZER_DESC desc = m_rasterizer_state_create_desc[static_cast<UInt>(type)];
+
+		ID3D11RasterizerState* rasterizer_state = nullptr;
+		HRESULT hr = m_d3d_device->CreateRasterizerState(&desc, &rasterizer_state);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create rasterizer state!");
+			return nullptr;
+		}
+		return rasterizer_state;
+	}
+
+	ID3D11DepthStencilState* DolasRHI::CreateDepthStencilState(DepthStencilStateType type)
+	{
+		D3D11_DEPTH_STENCIL_DESC desc = m_depth_stencil_state_create_desc[static_cast<UInt>(type)];
+		ID3D11DepthStencilState* depth_stencil_state = nullptr;
+		HRESULT hr = m_d3d_device->CreateDepthStencilState(&desc, &depth_stencil_state);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create depth stencil state!");
+			return nullptr;
+		}
+		return depth_stencil_state;
+	}
+
+	ID3D11BlendState* DolasRHI::CreateBlendState(BlendStateType type)
+	{
+		D3D11_BLEND_DESC desc = m_blend_state_create_desc[static_cast<UInt>(type)];
+		ID3D11BlendState* blend_state = nullptr;
+		HRESULT hr = m_d3d_device->CreateBlendState(&desc, &blend_state);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create blend state!");
+			return nullptr;
+		}
+		return blend_state;
 	}
 } // namespace Dolas
