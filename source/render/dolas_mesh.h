@@ -5,20 +5,13 @@
 #include <vector>
 #include <DirectXMath.h>
 #include "common/dolas_hash.h"
-
+#include "core/dolas_rhi.h"
 namespace Dolas
 {
     enum class RenderPrimitiveTopology : UInt
     {
         _TRIANGLE_LIST
     };
-
-	enum class InputLayoutType : UInt
-	{
-        POS_3,
-		POS_3_UV_2,
-        POS_3_UV_2_NORM_3
-	};
 
     class Mesh
     {

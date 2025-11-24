@@ -51,7 +51,7 @@ namespace Dolas
 		DOLAS_RETURN_IF_NULL(index_buffer);
 		ID3D11Buffer* d3d_index_buffer = index_buffer->GetBuffer();
 
-		rhi->m_d3d_immediate_context->IASetVertexBuffers(0, 1, &d3d_vertex_buffer, &stride, &offset);
+		rhi->GetD3D11DeviceContext()->IASetVertexBuffers(0, 1, &d3d_vertex_buffer, &stride, &offset);
 
         D3D11_PRIMITIVE_TOPOLOGY d3d_topology;
         if (m_topology == RenderPrimitiveTopology::_TRIANGLE_LIST)
@@ -62,16 +62,16 @@ namespace Dolas
         {
             return;
         }
-		rhi->m_d3d_immediate_context->IASetPrimitiveTopology(d3d_topology);
+		rhi->GetD3D11DeviceContext()->IASetPrimitiveTopology(d3d_topology);
 
 		if (index_buffer)
 		{
-			rhi->m_d3d_immediate_context->IASetIndexBuffer(index_buffer->GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
-			rhi->m_d3d_immediate_context->DrawIndexed(m_index_count, 0, 0);
+			rhi->GetD3D11DeviceContext()->IASetIndexBuffer(index_buffer->GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
+			rhi->GetD3D11DeviceContext()->DrawIndexed(m_index_count, 0, 0);
 		}
 		else
 		{
-			rhi->m_d3d_immediate_context->Draw(m_vertex_count, 0);
+			rhi->GetD3D11DeviceContext()->Draw(m_vertex_count, 0);
 		}
     }
 }

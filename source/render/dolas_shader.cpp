@@ -103,7 +103,7 @@ namespace Dolas
 			return false;
 		}
 
-		ID3D11Device* device = g_dolas_engine.m_rhi->m_d3d_device;
+		ID3D11Device* device = g_dolas_engine.m_rhi->GetD3D11Device();
 		HR(device->CreateVertexShader(m_d3d_shader_blob->GetBufferPointer(), m_d3d_shader_blob->GetBufferSize(), nullptr, &m_d3d_vertex_shader));
 
 		GenerateReflectionAndDesc();
@@ -128,11 +128,11 @@ namespace Dolas
 
 	void VertexShader::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances)
 	{
-		rhi->m_d3d_immediate_context->VSSetShader(m_d3d_vertex_shader, class_instances, num_class_instances);
+		rhi->GetD3D11DeviceContext()->VSSetShader(m_d3d_vertex_shader, class_instances, num_class_instances);
 		std::unordered_map<size_t, ID3D11ShaderResourceView*>::iterator iter = m_shader_resource_views.begin();
 		for ( ;iter != m_shader_resource_views.end(); iter++)
 		{
-			rhi->m_d3d_immediate_context->PSSetShaderResources(iter->first, 1, &iter->second);
+			rhi->GetD3D11DeviceContext()->PSSetShaderResources(iter->first, 1, &iter->second);
 		}
 	}
 
@@ -170,7 +170,7 @@ namespace Dolas
 			return false;
 		}
 
-		ID3D11Device* device = g_dolas_engine.m_rhi->m_d3d_device;
+		ID3D11Device* device = g_dolas_engine.m_rhi->GetD3D11Device();
 		HR(device->CreatePixelShader(m_d3d_shader_blob->GetBufferPointer(), m_d3d_shader_blob->GetBufferSize(), nullptr, &m_d3d_pixel_shader));
 
 		GenerateReflectionAndDesc();
@@ -190,13 +190,13 @@ namespace Dolas
 
 	void PixelShader::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances)
 	{
-		rhi->m_d3d_immediate_context->PSSetShader(this->m_d3d_pixel_shader, class_instances, num_class_instances);
+		rhi->GetD3D11DeviceContext()->PSSetShader(this->m_d3d_pixel_shader, class_instances, num_class_instances);
 
 		std::unordered_map<size_t, ID3D11ShaderResourceView*>::iterator iter = m_shader_resource_views.begin();
 
 		for (; iter != m_shader_resource_views.end(); iter++)
 		{
-			rhi->m_d3d_immediate_context->PSSetShaderResources(iter->first, 1, &iter->second);
+			rhi->GetD3D11DeviceContext()->PSSetShaderResources(iter->first, 1, &iter->second);
 		}
 	}
 

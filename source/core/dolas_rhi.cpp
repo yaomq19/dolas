@@ -103,6 +103,20 @@ namespace Dolas
 		}
 	}
 
+	InputLayout::InputLayout() : m_d3d_input_layout(nullptr)
+	{
+
+	}
+
+	InputLayout::~InputLayout()
+	{
+		if (m_d3d_input_layout)
+		{
+			m_d3d_input_layout->Release();
+			m_d3d_input_layout = nullptr;
+		}
+	}
+
 	DolasRHI::DolasRHI()
 		: m_d3d_device(nullptr)
 		, m_d3d_immediate_context(nullptr)
@@ -341,6 +355,11 @@ namespace Dolas
 		}
         m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
     }
+
+	void DolasRHI::SetPrimitiveTopology(PrimitiveTopology primitive_topology)
+	{
+		m_d3d_immediate_context->IASetPrimitiveTopology(m_d3d11_primitive_topology[static_cast<UInt>(primitive_topology)]);
+	}
 
 	void DolasRHI::SetVertexShader()
 	{
@@ -633,6 +652,8 @@ namespace Dolas
 		InitializeRasterizerStateCreateDesc();
 		InitializeDepthStencilStateCreateDesc();
 		InitializeBlendStateCreateDesc();
+		InitializePrimitiveTopology();
+
 		return true;
 	}
 
@@ -765,6 +786,18 @@ namespace Dolas
         m_blend_state_create_desc[static_cast<UInt>(BlendStateType::Additive)] = additive_desc;
 	}
 
+	void DolasRHI::InitializePrimitiveTopology()
+	{
+		m_d3d11_primitive_topology[static_cast<UInt>(PrimitiveTopology::PrimitiveTopology_TriangleList)] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	}
+
+	void DolasRHI::InitializeInputLayout()
+	{
+		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3)];
+		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3_UV_2)];
+		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3)];
+	}
+
 	void DolasRHI::BeginEvent(const wchar_t* name)
 	{
 		if (m_d3d_user_annotation)
@@ -888,5 +921,15 @@ namespace Dolas
 			return nullptr;
 		}
 		return blend_state;
+	}
+
+	std::shared_ptr<InputLayout> DolasRHI::CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength)
+	{
+		std::shared_ptr<InputLayout> input_layout = std::make_shared<InputLayout>();
+		ID3D11InputLayout* d3d11_input_layout = nullptr;
+		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[static_cast<UInt>(input_layout_type)];
+		m_d3d_device->CreateInputLayout(input_element_desc.data(), input_element_desc.size(), pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout);
+		input_layout->m_d3d_input_layout = d3d11_input_layout;
+		return input_layout;
 	}
 } // namespace Dolas

@@ -2,7 +2,6 @@
 - RHI 基建
     - VS
     - PS
-    - IA
     - DC
 - 设计RenderPrimitive相关
     - 涉及到的类有：RenderPrimitive, Mesh, RenderEntity, RenderObject, Material, Shader
@@ -22,6 +21,8 @@
 - 确定 spdlog 的线程安全性
 - 实现 ColorManager
 
+# 2025-11-24
+- RHI 基建: InputLayout, PrimitiveTopology
 # 2025-11-21
 - RHI 基建: RasterizerState, DepthStencilState, BlendState
 # 2025-11-15

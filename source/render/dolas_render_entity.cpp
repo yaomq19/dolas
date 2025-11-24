@@ -53,7 +53,7 @@ namespace Dolas
 
         ID3D11InputLayout* input_layout = nullptr; 
         std::vector<D3D11_INPUT_ELEMENT_DESC> input_layout_desc;
-        if (render_primitive->m_input_layout_type == InputLayoutType::POS_3_UV_2_NORM_3)
+        if (render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3)
         {
             input_layout_desc = {
                 { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -61,7 +61,7 @@ namespace Dolas
                 { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             };
         }
-        else if (render_primitive->m_input_layout_type == InputLayoutType::POS_3_UV_2)
+        else if (render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2)
         {
             input_layout_desc = {
                 { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -73,13 +73,13 @@ namespace Dolas
             return;
         }
 
-        g_dolas_engine.m_rhi->m_d3d_device->CreateInputLayout(
+        g_dolas_engine.m_rhi->GetD3D11Device()->CreateInputLayout(
             input_layout_desc.data(),
             input_layout_desc.size(),
             material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
             material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
             &input_layout);
-        rhi->m_d3d_immediate_context->IASetInputLayout(input_layout);
+        rhi->GetD3D11DeviceContext()->IASetInputLayout(input_layout);
         input_layout->Release();
         input_layout = nullptr;
 

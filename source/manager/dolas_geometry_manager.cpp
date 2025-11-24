@@ -31,7 +31,7 @@ namespace Dolas
 		success = render_primitive_manager->CreateRenderPrimitive(
             sphere_render_primitive_string_id,
 			RenderPrimitiveTopology::_TRIANGLE_LIST,
-			InputLayoutType::POS_3,
+			InputLayoutType::InputLayoutType_POS_3,
 			vertices_data,
 			indices_data);
         if (success)

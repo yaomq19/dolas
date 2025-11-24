@@ -97,7 +97,7 @@ namespace Dolas
 
         // 创建纹理和 Shader Resource View
         hr = DirectX::CreateTexture(
-            g_dolas_engine.m_rhi->m_d3d_device,
+            g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
@@ -110,7 +110,7 @@ namespace Dolas
 
         // 创建 Shader Resource View
         hr = DirectX::CreateShaderResourceView(
-            g_dolas_engine.m_rhi->m_d3d_device,
+            g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
@@ -180,7 +180,7 @@ namespace Dolas
 
         // 创建纹理
         hr = DirectX::CreateTexture(
-            g_dolas_engine.m_rhi->m_d3d_device,
+            g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
@@ -193,7 +193,7 @@ namespace Dolas
 
         // 创建 Shader Resource View
         hr = DirectX::CreateShaderResourceView(
-            g_dolas_engine.m_rhi->m_d3d_device,
+            g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
@@ -353,7 +353,7 @@ namespace Dolas
         texture->m_height = pDesc->Height;
         texture->m_mip_levels = pDesc->MipLevels;
 
-        g_dolas_engine.m_rhi->m_d3d_device->CreateTexture2D(pDesc, nullptr, &texture->m_d3d_texture_2d);
+        g_dolas_engine.m_rhi->GetD3D11Device()->CreateTexture2D(pDesc, nullptr, &texture->m_d3d_texture_2d);
 
         // Debug name using string id registry if present
         std::string tex_name = ID_TO_STRING(texture_handle);

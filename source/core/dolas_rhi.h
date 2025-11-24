@@ -129,6 +129,29 @@ namespace Dolas
 		UInt clear_value = 0;
 	};
 
+	enum class PrimitiveTopology : UInt
+	{
+		PrimitiveTopology_TriangleList,
+		PrimitiveTopology_Count
+	};
+
+	enum class InputLayoutType : UInt
+	{
+		InputLayoutType_POS_3,
+		InputLayoutType_POS_3_UV_2,
+		InputLayoutType_POS_3_UV_2_NORM_3,
+		InputLayoutType_Count
+	};
+
+	class InputLayout
+	{
+	public:
+		InputLayout();
+		~InputLayout();
+
+		ID3D11InputLayout* m_d3d_input_layout;
+	};
+
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
 	{
@@ -143,7 +166,6 @@ namespace Dolas
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
-		
 		void SetVertexShader();
 		void SetPixelShader();
 
@@ -158,9 +180,6 @@ namespace Dolas
 		void BeginEvent(const wchar_t* name);
 		void EndEvent();
 		void SetMarker(const wchar_t* name);
-
-		ID3D11Device* m_d3d_device;
-		ID3D11DeviceContext* m_d3d_immediate_context;
 
 		// RenderTargetView
 		std::shared_ptr<RenderTargetView> CreateRenderTargetView(TextureID texture_id);
@@ -185,6 +204,8 @@ namespace Dolas
 		// BlendState
 		void SetBlendState(BlendStateType type);
 
+		// PrimitiveTopology
+		void SetPrimitiveTopology(PrimitiveTopology primitive_topology);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
@@ -192,11 +213,17 @@ namespace Dolas
 		void InitializeRasterizerStateCreateDesc();
 		void InitializeDepthStencilStateCreateDesc();
 		void InitializeBlendStateCreateDesc();
+		void InitializePrimitiveTopology();
+		void InitializeInputLayout();
 
 		std::shared_ptr<RenderTargetView> CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* texture_id);
 		ID3D11RasterizerState* CreateRasterizerState(RasterizerStateType type);
 		ID3D11DepthStencilState* CreateDepthStencilState(DepthStencilStateType type);
 		ID3D11BlendState* CreateBlendState(BlendStateType type);
+		std::shared_ptr<InputLayout> CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
+
+		ID3D11Device* m_d3d_device;
+		ID3D11DeviceContext* m_d3d_immediate_context;
 
 		HWND m_window_handle;
 		int m_client_width;
@@ -218,6 +245,9 @@ namespace Dolas
 		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::RasterizerStateCount)];
 		D3D11_DEPTH_STENCIL_DESC m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthStencilStateCount)];
 		D3D11_BLEND_DESC m_blend_state_create_desc[static_cast<UInt>(BlendStateType::BlendStateCount)];
+
+		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[static_cast<UInt>(PrimitiveTopology::PrimitiveTopology_Count)];
+		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_Count)];
 	};
 
 	// RAII scope for GPU events

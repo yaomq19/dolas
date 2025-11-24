@@ -39,13 +39,13 @@ namespace Dolas
 
         switch (input_layout_type)
         {
-        case InputLayoutType::POS_3:
+        case InputLayoutType::InputLayoutType_POS_3:
             vertex_stride = 3;
             break;
-        case InputLayoutType::POS_3_UV_2:
+        case InputLayoutType::InputLayoutType_POS_3_UV_2:
             vertex_stride = 5; // 3 + 2 = 5
             break;
-        case InputLayoutType::POS_3_UV_2_NORM_3:
+        case InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3:
             vertex_stride = 8; // 3 + 2 + 3 = 8
             break;
         default:

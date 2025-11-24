@@ -18,7 +18,7 @@ namespace Dolas
 
     bool Buffer::CreateBuffer(BufferType type, BufferUsage usage, uint32_t size, uint32_t stride, const void* initial_data)
     {
-        ID3D11Device* device = g_dolas_engine.m_rhi->m_d3d_device;
+        ID3D11Device* device = g_dolas_engine.m_rhi->GetD3D11Device();
         if (!device)
         {
             LOG_ERROR("Buffer::CreateBuffer: D3D11 device is null");
@@ -159,7 +159,7 @@ namespace Dolas
             return false;
         }
 
-        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
+        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->GetD3D11DeviceContext();
         if (!context)
         {
             LOG_ERROR("Buffer::UpdateData: D3D11 device context is null");
@@ -216,7 +216,7 @@ namespace Dolas
             return false;
         }
 
-        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
+        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->GetD3D11DeviceContext();
         if (!context)
         {
             LOG_ERROR("Buffer::Map: D3D11 device context is null");
@@ -245,7 +245,7 @@ namespace Dolas
             return;
         }
 
-        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->m_d3d_immediate_context;
+        ID3D11DeviceContext* context = g_dolas_engine.m_rhi->GetD3D11DeviceContext();
         if (context)
         {
             context->Unmap(m_d3d_buffer, 0);
