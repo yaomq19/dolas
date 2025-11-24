@@ -10,7 +10,9 @@
 #include <iostream>
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_log_system_manager.h"
-
+#include "render/dolas_render_primitive.cpp"
+#include "manager/dolas_render_primitive_manager.h"
+#include "manager/dolas_buffer_manager.h"
 namespace Dolas
 {
     LRESULT CALLBACK
@@ -359,6 +361,49 @@ namespace Dolas
 	void DolasRHI::SetPrimitiveTopology(PrimitiveTopology primitive_topology)
 	{
 		m_d3d_immediate_context->IASetPrimitiveTopology(m_d3d11_primitive_topology[static_cast<UInt>(primitive_topology)]);
+	}
+
+	void DolasRHI::SetInputLayout(InputLayoutType input_layout_type, const void* vs_blob, size_t bytecode_length)
+	{
+		std::shared_ptr<InputLayout> input_layout = CreateInputLayout(input_layout_type, vs_blob, bytecode_length);
+		m_d3d_immediate_context->IASetInputLayout(input_layout->m_d3d_input_layout);
+	}
+
+	void DolasRHI::SetVertexBuffers(const std::vector<BufferID>& vertex_buffer_ids, const std::vector<UInt>& vertex_strides, const std::vector<UInt>& vertex_offsets)
+	{
+		std::vector<ID3D11Buffer*> d3d11_buffers;
+		for (int i = 0; i < vertex_buffer_ids.size(); i++)
+		{
+			Buffer* buffer = g_dolas_engine.m_buffer_manager->GetBufferByID(vertex_buffer_ids[i]);
+			d3d11_buffers.push_back(buffer->GetBuffer());
+		}
+		m_d3d_immediate_context->IASetVertexBuffers(0, d3d11_buffers.size(), d3d11_buffers.data(), vertex_strides.data(), vertex_offsets.data());
+	}
+
+	void DolasRHI::SetIndexBuffer(BufferID index_buffer_id)
+	{
+		m_d3d_immediate_context->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);
+	}
+
+	void DolasRHI::DrawIndexed(UInt index_count)
+	{
+		m_d3d_immediate_context->DrawIndexed(index_count, 0, 0);
+	}
+
+	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, const void* vs_blob)
+	{
+		RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
+		DOLAS_RETURN_IF_NULL(render_primitive);
+
+		SetInputLayout(render_primitive->m_input_layout_type, vs_blob, 12);
+
+		SetPrimitiveTopology(render_primitive->m_topology);
+
+		SetVertexBuffers(render_primitive->m_vertex_buffer_ids, render_primitive->m_vertex_strides, render_primitive->m_vertex_offsets);
+
+		SetIndexBuffer(render_primitive->m_index_buffer_id);
+
+		DrawIndexed(render_primitive->m_index_count);
 	}
 
 	void DolasRHI::SetVertexShader()
@@ -932,4 +977,30 @@ namespace Dolas
 		input_layout->m_d3d_input_layout = d3d11_input_layout;
 		return input_layout;
 	}
+
+	void DolasRHI::TestDrawCallTemplate()
+	{
+		g_dolas_engine.m_rhi->BeginEvent(L"event_name");
+
+		// OM & RS
+		std::vector<std::shared_ptr<RenderTargetView>> rtvs;
+		std::shared_ptr<DepthStencilView> dsv;
+		g_dolas_engine.m_rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
+		Float color[4] = { 1.0, 1.0, 1.0, 1.0 };
+		g_dolas_engine.m_rhi->ClearRenderTargetView(rtvs[0], color);
+		g_dolas_engine.m_rhi->SetViewPort(ViewPort(1,1,1,1,1,1));
+		g_dolas_engine.m_rhi->SetRasterizerState(RasterizerStateType::SolidBackCull);
+		g_dolas_engine.m_rhi->SetDepthStencilState(DepthStencilStateType::DepthEnabled);
+		g_dolas_engine.m_rhi->SetBlendState(BlendStateType::AlphaBlend);
+
+		// VS
+
+		// PS
+
+		// DC
+		RenderPrimitiveID render_primitive_id;
+		g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id, nullptr);
+		g_dolas_engine.m_rhi->EndEvent();
+	}
+
 } // namespace Dolas

@@ -12,6 +12,7 @@
 
 #include "common/dolas_hash.h"
 #include "core/dolas_math.h"
+#include "core/dolas_rhi_common.h"
 namespace Dolas
 {
 #ifndef DEFAULT_CLIENT_WIDTH
@@ -21,136 +22,7 @@ namespace Dolas
 #ifndef DEFAULT_CLIENT_HEIGHT
 #define DEFAULT_CLIENT_HEIGHT 1080
 #endif
-	class RenderTargetView
-	{
-	public:
-		RenderTargetView();
-		~RenderTargetView();
-
-		ID3D11RenderTargetView* m_d3d_render_target_view;
-	};
-
-	class DepthStencilView
-	{
-	public:
-		DepthStencilView();
-		~DepthStencilView();
-
-		ID3D11DepthStencilView* m_d3d_depth_stencil_view;
-	};
-
-	class ViewPort
-	{
-	public:
-		ViewPort(Float top_left_x, Float top_left_y, Float width, Float height, Float min_depth, Float max_depth);
-		~ViewPort();
-		D3D11_VIEWPORT m_d3d_viewport;
-	};
-
-	enum class RasterizerStateType : UInt
-    {
-		SolidNoneCull,
-        SolidBackCull,
-        SolidFrontCull,
-        Wireframe,
-		RasterizerStateCount,
-    };
-
-	class RasterizerState
-	{
-	public:
-		RasterizerState();
-		~RasterizerState();
-
-		ID3D11RasterizerState* m_d3d_rasterizer_state;
-	};
-
-	enum class DepthStencilStateType : UInt
-	{
-		DepthEnabled,
-		DepthDisabled,
-		DepthReadOnly,
-		DepthStencilStateCount,
-	};
-
-	class DepthStencilState
-	{
-	public:
-		DepthStencilState();
-		~DepthStencilState();
-
-		ID3D11DepthStencilState* m_d3d_depth_stencil_state;
-	};
-
-	enum class BlendStateType : UInt
-    {
-        Opaque,
-        AlphaBlend,
-        Additive,
-		BlendStateCount,
-    };
-
-	class BlendState
-	{
-	public:
-		BlendState();
-		~BlendState();
-
-		ID3D11BlendState* m_d3d_blend_state;
-	};
-
-	struct PerViewConstantBuffer
-	{
-		Matrix4x4 view;
-		Matrix4x4 proj;
-		Vector4 camera_position; // w is unused
-	};
-
-	struct PerObjectConstantBuffer
-	{
-		Matrix4x4 world;
-	};
-
-	struct PerFrameConstantBuffer
-	{
-		Vector4 light_direction_intensity;
-		Vector4 light_color; // w is unused
-	};
-
-	struct DepthClearParams
-	{
-		Bool enable = true;
-		Float clear_value = 1.0f;
-	};
-
-	struct StencilClearParams
-	{
-		Bool enable = true;
-		UInt clear_value = 0;
-	};
-
-	enum class PrimitiveTopology : UInt
-	{
-		PrimitiveTopology_TriangleList,
-		PrimitiveTopology_Count
-	};
-
-	enum class InputLayoutType : UInt
-	{
-		InputLayoutType_POS_3,
-		InputLayoutType_POS_3_UV_2,
-		InputLayoutType_POS_3_UV_2_NORM_3,
-		InputLayoutType_Count
-	};
-
-	class InputLayout
-	{
-	public:
-		InputLayout();
-		~InputLayout();
-
-		ID3D11InputLayout* m_d3d_input_layout;
-	};
+	
 
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
@@ -204,8 +76,13 @@ namespace Dolas
 		// BlendState
 		void SetBlendState(BlendStateType type);
 
-		// PrimitiveTopology
-		void SetPrimitiveTopology(PrimitiveTopology primitive_topology);
+		
+		// Buffer
+
+		// Texture
+
+		// DC
+		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, const void* vs_blob);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
@@ -222,6 +99,19 @@ namespace Dolas
 		ID3D11BlendState* CreateBlendState(BlendStateType type);
 		std::shared_ptr<InputLayout> CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
 
+		// PrimitiveTopology
+		void SetPrimitiveTopology(PrimitiveTopology primitive_topology);
+
+		// InputLayout
+		void SetInputLayout(InputLayoutType input_layout_type, const void* vs_blob, size_t bytecode_length);
+
+		void SetVertexBuffers(const std::vector<BufferID>& vertex_buffer_ids, const std::vector<UInt>& vertex_strides, const std::vector<UInt>& vertex_offsets);
+
+		void SetIndexBuffer(BufferID index_buffer_id);
+
+		void DrawIndexed(UInt index_count);
+
+		void TestDrawCallTemplate();
 		ID3D11Device* m_d3d_device;
 		ID3D11DeviceContext* m_d3d_immediate_context;
 

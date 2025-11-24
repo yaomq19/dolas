@@ -30,7 +30,7 @@ namespace Dolas
 
     RenderPrimitive* RenderPrimitiveManager::BuildFromRawData(
 		RenderPrimitiveID id,
-		const RenderPrimitiveTopology& render_primitive_type,
+		const PrimitiveTopology& render_primitive_type,
 		const InputLayoutType& input_layout_type,
 		const std::vector<Float>& vertices,
 		const std::vector<UInt>& indices)
@@ -72,13 +72,13 @@ namespace Dolas
 		}
         RenderPrimitive* render_primitive = DOLAS_NEW(RenderPrimitive);
 
-		render_primitive->m_id = id;
+		// render_primitive->m_id = id;
 		render_primitive->m_topology = render_primitive_type;
 		render_primitive->m_input_layout_type = input_layout_type;
-		render_primitive->m_vertex_stride = vertex_stride;
+		//render_primitive->m_vertex_stride = vertex_stride;
 		render_primitive->m_vertex_count = vertex_count;
 		render_primitive->m_index_count = index_count;
-		render_primitive->m_vertex_buffer_id = vertex_buffer_id;
+		//render_primitive->m_vertex_buffer_id = vertex_buffer_id;
 		render_primitive->m_index_buffer_id = index_buffer_id;
 
         return render_primitive;
@@ -86,7 +86,7 @@ namespace Dolas
 
     Bool RenderPrimitiveManager::CreateRenderPrimitive(
         RenderPrimitiveID id,
-        const RenderPrimitiveTopology& render_primitive_type,
+        const PrimitiveTopology& render_primitive_type,
         const InputLayoutType& input_layout_type,
         const std::vector<Float>& vertices,
 		const std::vector<UInt>& indices)

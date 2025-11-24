@@ -49,45 +49,8 @@ namespace Dolas
         rhi->PSSetConstantBuffers();
 
         RenderPrimitiveID render_primitive_id = mesh->GetRenderPrimitiveID();
-        RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 
-        ID3D11InputLayout* input_layout = nullptr; 
-        std::vector<D3D11_INPUT_ELEMENT_DESC> input_layout_desc;
-        if (render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3)
-        {
-            input_layout_desc = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, 12,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-        }
-        else if (render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2)
-        {
-            input_layout_desc = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, 12,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-        }
-        else
-        {
-            return;
-        }
-
-        g_dolas_engine.m_rhi->GetD3D11Device()->CreateInputLayout(
-            input_layout_desc.data(),
-            input_layout_desc.size(),
-            material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
-            material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
-            &input_layout);
-        rhi->GetD3D11DeviceContext()->IASetInputLayout(input_layout);
-        input_layout->Release();
-        input_layout = nullptr;
-
-        // 发起DC
-        if (render_primitive)
-        {
-			render_primitive->Draw(rhi);
-        }
+        g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id, nullptr);
     }
 
     void RenderEntity::SetMeshID(MeshID mesh_id)

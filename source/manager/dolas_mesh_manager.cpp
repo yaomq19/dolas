@@ -234,7 +234,7 @@ namespace Dolas
 		const std::string& primitive_str = json_data["primitive"];
 		if (primitive_str == "TriangleList")
 		{
-			mesh->m_render_primitive_type = RenderPrimitiveTopology::_TRIANGLE_LIST;
+			mesh->m_render_primitive_type = PrimitiveTopology::PrimitiveTopology_TriangleList;
 		}
 		else
 		{

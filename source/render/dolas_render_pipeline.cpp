@@ -300,7 +300,7 @@ namespace Dolas
         input_layout->Release();
         input_layout = nullptr;
 
-        sphere_render_primitive->Draw(rhi);
+        // sphere_render_primitive->Draw(rhi);
     }
 
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)

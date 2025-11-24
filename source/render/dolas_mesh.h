@@ -8,11 +8,6 @@
 #include "core/dolas_rhi.h"
 namespace Dolas
 {
-    enum class RenderPrimitiveTopology : UInt
-    {
-        _TRIANGLE_LIST
-    };
-
     class Mesh
     {
         friend class MeshManager;
@@ -23,7 +18,7 @@ namespace Dolas
         MeshID m_file_id;
         
         // RenderPrimitive needs these
-        RenderPrimitiveTopology m_render_primitive_type;
+        PrimitiveTopology m_render_primitive_type;
         InputLayoutType m_input_layout_type;
         std::vector<unsigned int> m_indices;
 		std::vector<float> m_final_vertices;

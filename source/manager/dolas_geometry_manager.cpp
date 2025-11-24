@@ -30,7 +30,7 @@ namespace Dolas
 		RenderPrimitiveID sphere_render_primitive_string_id = STRING_ID(sphere_render_primitive);
 		success = render_primitive_manager->CreateRenderPrimitive(
             sphere_render_primitive_string_id,
-			RenderPrimitiveTopology::_TRIANGLE_LIST,
+			PrimitiveTopology::PrimitiveTopology_TriangleList,
 			InputLayoutType::InputLayoutType_POS_3,
 			vertices_data,
 			indices_data);

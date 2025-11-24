@@ -6,7 +6,7 @@
 #include <d3d11.h>
 
 #include "common/dolas_hash.h"
-#include "dolas_mesh.h"
+#include "core/dolas_rhi_common.h"
 namespace Dolas
 {
     class DolasRHI;
@@ -20,24 +20,21 @@ namespace Dolas
         ~RenderPrimitive();
 
         bool Clear();
-        void Draw(DolasRHI* rhi);
 
-        RenderPrimitiveID m_id;
-        RenderPrimitiveTopology m_topology;
+        PrimitiveTopology m_topology;
 		InputLayoutType m_input_layout_type;
         
-		// The step size of each vertex, unit: Float
-        UInt m_vertex_stride = 0;
-
+		std::vector<BufferID> m_vertex_buffer_ids;
+		std::vector<UInt> m_vertex_strides;
+		std::vector<UInt> m_vertex_offsets;
+        
 		// vertex count
         UInt m_vertex_count = 0;
         
 		// index count
+        BufferID m_index_buffer_id;
         UInt m_index_count = 0;
-        
-		BufferID m_vertex_buffer_id;
-
-		BufferID m_index_buffer_id;
+		
     };// class RenderPrimitive
 } // namespace Dolas
 

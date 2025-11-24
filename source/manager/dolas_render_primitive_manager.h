@@ -29,7 +29,7 @@ namespace Dolas
 		// @param indices: Providing index data
         Bool CreateRenderPrimitive(
             RenderPrimitiveID id,
-            const RenderPrimitiveTopology& render_primitive_type,
+            const PrimitiveTopology& render_primitive_type,
             const InputLayoutType& input_layout_type,
             const std::vector<Float>& vertices,
             const std::vector<UInt>& indices);
@@ -40,7 +40,7 @@ namespace Dolas
 
         RenderPrimitive* BuildFromRawData(
 			RenderPrimitiveID id,
-			const RenderPrimitiveTopology& render_primitive_type,
+			const PrimitiveTopology& render_primitive_type,
 			const InputLayoutType& input_layout_type,
 			const std::vector<float>& vertices,
 			const std::vector<unsigned int>& indices);
