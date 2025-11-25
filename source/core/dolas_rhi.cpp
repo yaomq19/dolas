@@ -10,7 +10,7 @@
 #include <iostream>
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_log_system_manager.h"
-#include "render/dolas_render_primitive.cpp"
+#include "render/dolas_render_primitive.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_buffer_manager.h"
 namespace Dolas
