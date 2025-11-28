@@ -45,15 +45,7 @@ namespace Dolas
         m_render_entities.clear();
         return true;
     }
-
-    RenderEntityID RenderEntityManager::CreateRenderEntity(RenderEntityID id)
-    {
-		RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
-		render_entity->m_file_id = id;
-		m_render_entities[render_entity->m_file_id] = render_entity;
-		return render_entity->m_file_id;
-    }
-
+#pragma optimize("", off)
     RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const std::string& render_entity_file_name)
     {
         std::string render_entity_file_path = PathUtils::GetEntityDir() + render_entity_file_name;

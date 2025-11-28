@@ -39,7 +39,6 @@ namespace Dolas
     private:
 
         RenderPrimitive* BuildFromRawData(
-			RenderPrimitiveID id,
 			const PrimitiveTopology& render_primitive_type,
 			const InputLayoutType& input_layout_type,
 			const std::vector<std::vector<Float>>& vertices,

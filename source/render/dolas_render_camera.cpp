@@ -5,6 +5,11 @@
 #include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
+    static const Float wheel_affect_scale = 0.005f;
+    static const Float default_move_speed = 0.01f;
+    static const Float min_move_speed = 0.001f;
+    static const Float max_move_speed = 0.07f;
+
     using namespace DirectX;
     /* Render Camera */
     // 顺序：构造 -> 析构 -> Getters -> Setters -> 受保护更新函数
@@ -14,7 +19,8 @@ namespace Dolas
         m_forward(0.0f, 0.0f, 1.0f),
         m_up(0.0f, 1.0f, 0.0f),
         m_near_plane(0.1f),
-        m_far_plane(100.0f)
+        m_far_plane(100.0f),
+		m_move_speed(default_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -25,7 +31,8 @@ namespace Dolas
         m_forward(0.0f, 0.0f, 1.0f),
         m_up(0.0f, 1.0f, 0.0f),
         m_near_plane(0.1f),
-        m_far_plane(100.0f)
+        m_far_plane(100.0f),
+        m_move_speed(default_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -36,7 +43,8 @@ namespace Dolas
         m_forward(0.0f, 0.0f, 1.0f),
         m_up(0.0f, 1.0f, 0.0f),
         m_near_plane(0.1f),
-        m_far_plane(100.0f)
+        m_far_plane(100.0f),
+        m_move_speed(default_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -47,7 +55,8 @@ namespace Dolas
         m_forward(forward),
         m_up(up),
         m_near_plane(0.1f),
-        m_far_plane(100.0f) 
+        m_far_plane(100.0f),
+        m_move_speed(default_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -58,7 +67,8 @@ namespace Dolas
         m_forward(forward),
         m_up(up),
         m_near_plane(near_plane),
-        m_far_plane(far_plane)
+        m_far_plane(far_plane),
+        m_move_speed(0.01f)
     {
         UpdateViewMatrix();
     }
@@ -67,10 +77,6 @@ namespace Dolas
     {
 
     }
-
-	static const Float wheel_affect_scale = 0.01f;
-	static const Float min_move_speed = 0.001f;
-	static const Float max_move_speed = 0.1f;
 
     void RenderCamera::ProcessWheelDelta(Float wheel_delta)
     {

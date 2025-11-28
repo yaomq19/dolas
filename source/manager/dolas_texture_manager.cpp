@@ -140,7 +140,8 @@ namespace Dolas
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
-        texture->m_file_id = STRING_ID(texture_file_path);
+        // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
+        texture->m_file_id = HashConverter::StringHash(texture_file_path);
         texture->m_d3d_texture_2d = d3d_texture_2d;
         texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
 
@@ -223,7 +224,8 @@ namespace Dolas
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
-        texture->m_file_id = STRING_ID(texture_file_path);
+        // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
+        texture->m_file_id = HashConverter::StringHash(texture_file_path);
         texture->m_d3d_texture_2d = d3d_texture_2d;
         texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
 
@@ -239,7 +241,20 @@ namespace Dolas
 
     Texture* TextureManager::GetGlobalTexture(GlobalTextureType global_texture_type)
     {
-		return m_textures[m_global_textures[global_texture_type]];
+		Texture* result_texture = nullptr;
+
+        auto type_iter = m_global_textures.find(global_texture_type);
+        if (type_iter != m_global_textures.end())
+        {
+            TextureID texture_id = type_iter->second;
+
+            auto texture_iter = m_textures.find(texture_id);
+            if (texture_iter != m_textures.end())
+            {
+                result_texture = texture_iter->second;
+            }
+        }
+		return result_texture;
     }
 
     Bool TextureManager::DolasCreateTexture2D(const DolasTexture2DDesc& dolas_texture2d_desc)

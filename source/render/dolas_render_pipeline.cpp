@@ -20,6 +20,7 @@
 #include "render/dolas_shader.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
+#include "render/dolas_render_scene.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_log_system_manager.h"
@@ -104,7 +105,7 @@ namespace Dolas
         depth_clear_params.clear_value = 1.0f;
 		StencilClearParams stencil_clear_params;
 		stencil_clear_params.enable = true;
-		stencil_clear_params.clear_value = 0;
+		stencil_clear_params.clear_value = StencilMaskEnum_SKY;
         rhi->ClearDepthStencilView(scene_dsv, depth_clear_params, stencil_clear_params);
         rhi->EndEvent();
 
@@ -118,10 +119,8 @@ namespace Dolas
     {
         UserAnnotationScope scope(rhi, L"GBufferPass");
         
-        RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
-		DOLAS_RETURN_IF_NULL(render_scene_manager);
-
         RenderScene* render_scene = TryGetRenderScene();
+        DOLAS_RETURN_IF_NULL(render_scene);
 
         // 设置 RT 和 视口
 		RenderResource* render_resource = TryGetRenderResource();
@@ -137,11 +136,17 @@ namespace Dolas
         rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
         rhi->SetViewPort(m_viewport);
 
-        rhi->SetRasterizerState(RasterizerStateType::SolidBackCull);
-        rhi->SetDepthStencilState(DepthStencilStateType::DepthEnabled);
-        rhi->SetBlendState(BlendStateType::Opaque);
+        rhi->SetRasterizerState(RasterizerStateType_SolidBackCull);
+        rhi->SetDepthStencilState(DepthStencilStateType_DepthWriteLess_StencilWriteStatic);
+        rhi->SetBlendState(BlendStateType_Opaque);
 
-        // render_entity->Draw(rhi);
+        const std::vector<RenderEntityID>& render_entities = render_scene->GetRenderEntities();
+        for (RenderEntityID render_entity_id: render_entities)
+        {
+            RenderEntity* render_entity = g_dolas_engine.m_render_entity_manager->GetRenderEntityByID(render_entity_id);
+			DOLAS_CONTINUE_IF_NULL(render_entity);
+			render_entity->Draw(rhi);
+        }
     }
 
     void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)
@@ -158,9 +163,9 @@ namespace Dolas
         rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
         rhi->SetViewPort(m_viewport);
 
-        rhi->SetRasterizerState(RasterizerStateType::SolidNoneCull);
-        rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
-        rhi->SetBlendState(BlendStateType::Opaque);
+        rhi->SetRasterizerState(RasterizerStateType_SolidNoneCull);
+        rhi->SetDepthStencilState(DepthStencilStateType_DepthDisabled_StencilDisable);
+        rhi->SetBlendState(BlendStateType_Opaque);
 
         Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
         DOLAS_RETURN_IF_NULL(material);
@@ -196,23 +201,19 @@ namespace Dolas
 
 		std::vector<std::shared_ptr<RenderTargetView>> rtvs;
 		rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_scene_result_id));
-
-		rhi->SetRenderTargetViewWithoutDepthStencilView(rtvs);
+		std::shared_ptr<DepthStencilView> dsv = g_dolas_engine.m_rhi->CreateDepthStencilView(render_resource->m_depth_stencil_id);
+		rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
 		rhi->SetViewPort(m_viewport);
+		rhi->SetRasterizerState(RasterizerStateType_SolidNoneCull);
+		rhi->SetDepthStencilState(DepthStencilStateType_DepthDisabled_StencilReadSky);
+		rhi->SetBlendState(BlendStateType_Opaque);
 
-		rhi->SetRasterizerState(RasterizerStateType::SolidNoneCull);
-		rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
-		rhi->SetBlendState(BlendStateType::Opaque);
-
-        Pose pose;
         RenderCamera* eye_camera = TryGetRenderCamera();
 		DOLAS_RETURN_IF_NULL(eye_camera);
         
-        pose.m_postion = eye_camera->GetPosition();
-		pose.m_rotation = Quaternion(1.0, 0.0, 0.0, 0.0);
         const Float hack_scale = 0.99f;
-		Float scale = eye_camera->GetFarPlane() * hack_scale;
-		pose.m_scale = Vector3(scale, scale, scale);
+        Float scale = eye_camera->GetFarPlane() * hack_scale;
+        Pose pose(eye_camera->GetPosition(), Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(scale, scale, scale));
         rhi->UpdatePerObjectParameters(pose);
 
         Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();

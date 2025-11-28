@@ -20,8 +20,8 @@ namespace Dolas
         // RenderPrimitive needs these
         PrimitiveTopology m_render_primitive_type;
         InputLayoutType m_input_layout_type;
-        std::vector<unsigned int> m_indices;
-		std::vector<float> m_final_vertices;
+        std::vector<UInt> m_indices;
+        std::vector<std::vector<Float>> m_final_vertices;
 
         // temp data
 		std::vector<DirectX::XMFLOAT3> m_vertices;

@@ -13,7 +13,7 @@ namespace Dolas
 		RenderTargetView();
 		~RenderTargetView();
 
-		ID3D11RenderTargetView* m_d3d_render_target_view;
+		ID3D11RenderTargetView* m_d3d_render_target_view = nullptr;
 	};
 
 	class DepthStencilView
@@ -22,7 +22,7 @@ namespace Dolas
 		DepthStencilView();
 		~DepthStencilView();
 
-		ID3D11DepthStencilView* m_d3d_depth_stencil_view;
+		ID3D11DepthStencilView* m_d3d_depth_stencil_view = nullptr;
 	};
 
 	class ViewPort
@@ -35,11 +35,11 @@ namespace Dolas
 
 	enum RasterizerStateType : UInt
 	{
-		SolidNoneCull,
-		SolidBackCull,
-		SolidFrontCull,
-		Wireframe,
-		RasterizerStateCount,
+		RasterizerStateType_SolidNoneCull,
+		RasterizerStateType_SolidBackCull,
+		RasterizerStateType_SolidFrontCull,
+		RasterizerStateType_Wireframe,
+		RasterizerStateType_Count,
 	};
 
 	class RasterizerState
@@ -48,15 +48,17 @@ namespace Dolas
 		RasterizerState();
 		~RasterizerState();
 
-		ID3D11RasterizerState* m_d3d_rasterizer_state;
+		Bool initialized = false;
+		ID3D11RasterizerState* m_d3d_rasterizer_state = nullptr;
 	};
 
 	enum DepthStencilStateType : UInt
 	{
-		DepthEnabled,
-		DepthDisabled,
-		DepthReadOnly,
-		DepthStencilStateCount,
+		DepthStencilStateType_DepthWriteLess_StencilWriteStatic,
+		DepthStencilStateType_DepthDisabled_StencilDisable,
+		DepthStencilStateType_DepthDisabled_StencilReadSky,
+		DepthStencilStateType_DepthReadOnly,
+		DepthStencilStateType_Count,
 	};
 
 	class DepthStencilState
@@ -65,15 +67,17 @@ namespace Dolas
 		DepthStencilState();
 		~DepthStencilState();
 
-		ID3D11DepthStencilState* m_d3d_depth_stencil_state;
+		Bool initialized = false;
+		UInt m_stencil_ref_value = 0;
+		ID3D11DepthStencilState* m_d3d_depth_stencil_state = nullptr;
 	};
 
 	enum BlendStateType : UInt
 	{
-		Opaque,
-		AlphaBlend,
-		Additive,
-		BlendStateCount,
+		BlendStateType_Opaque,
+		BlendStateType_AlphaBlend,
+		BlendStateType_Additive,
+		BlendStateType_Count,
 	};
 
 	class BlendState
@@ -82,7 +86,8 @@ namespace Dolas
 		BlendState();
 		~BlendState();
 
-		ID3D11BlendState* m_d3d_blend_state;
+		Bool initialized = false;
+		ID3D11BlendState* m_d3d_blend_state = nullptr;
 	};
 
 	struct PerViewConstantBuffer
@@ -107,6 +112,12 @@ namespace Dolas
 	{
 		Bool enable = true;
 		Float clear_value = 1.0f;
+	};
+
+	enum StencilMaskEnum
+	{
+		StencilMaskEnum_SKY = 0x1,
+		StencilMaskEnum_Static = 0x2,
 	};
 
 	struct StencilClearParams
@@ -135,7 +146,7 @@ namespace Dolas
 		InputLayout();
 		~InputLayout();
 
-		ID3D11InputLayout* m_d3d_input_layout;
+		ID3D11InputLayout* m_d3d_input_layout = nullptr;
 	};
 }
 

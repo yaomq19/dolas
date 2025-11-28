@@ -178,21 +178,22 @@ namespace Dolas
 		mesh->m_final_vertices.clear();
 		if (has_position && has_uv && has_normal)
 		{
+            mesh->m_final_vertices.resize(3);
 			if (pos_element_count == 3 && uv_element_count == 2 && normal_element_count == 3)
 			{
 				mesh->m_input_layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3;
                 for (int i = 0; i < mesh->m_vertices.size(); i++)
                 {
-                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
-                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
-                    mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
+                    mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].x);
+                    mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].y);
+                    mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].z);
 
-                    mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
-                    mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
+                    mesh->m_final_vertices[1].push_back(mesh->m_uvs[i].x);
+                    mesh->m_final_vertices[1].push_back(mesh->m_uvs[i].y);
                     
-                    mesh->m_final_vertices.push_back(mesh->m_normals[i].x);
-                    mesh->m_final_vertices.push_back(mesh->m_normals[i].y);
-                    mesh->m_final_vertices.push_back(mesh->m_normals[i].z);
+                    mesh->m_final_vertices[2].push_back(mesh->m_normals[i].x);
+                    mesh->m_final_vertices[2].push_back(mesh->m_normals[i].y);
+                    mesh->m_final_vertices[2].push_back(mesh->m_normals[i].z);
                 }
 			}
 			else
@@ -202,17 +203,18 @@ namespace Dolas
 		}
 		else if (has_position && has_uv)
 		{
+            mesh->m_final_vertices.resize(2);
 			if (pos_element_count == 3 && uv_element_count == 2)
 			{
 				mesh->m_input_layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2;
 				for (int i = 0; i < mesh->m_vertices.size(); i++)
 				{
-					mesh->m_final_vertices.push_back(mesh->m_vertices[i].x);
-					mesh->m_final_vertices.push_back(mesh->m_vertices[i].y);
-					mesh->m_final_vertices.push_back(mesh->m_vertices[i].z);
+					mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].x);
+					mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].y);
+					mesh->m_final_vertices[0].push_back(mesh->m_vertices[i].z);
 
-					mesh->m_final_vertices.push_back(mesh->m_uvs[i].x);
-					mesh->m_final_vertices.push_back(mesh->m_uvs[i].y);
+					mesh->m_final_vertices[1].push_back(mesh->m_uvs[i].x);
+					mesh->m_final_vertices[1].push_back(mesh->m_uvs[i].y);
 				}
 			}
 			else
@@ -241,7 +243,7 @@ namespace Dolas
 			return MESH_ID_EMPTY;
 		}
         
-        /*Bool success = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
+        Bool success = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
             mesh->m_file_id,
             mesh->m_render_primitive_type,
             mesh->m_input_layout_type,
@@ -254,7 +256,7 @@ namespace Dolas
 			LOG_ERROR("MeshManager::CreateMesh: failed to create render primitive for {0}", mesh_file_path);
 			return MESH_ID_EMPTY;
 		}
-        m_meshes[mesh->m_file_id] = mesh;*/
+        m_meshes[mesh->m_file_id] = mesh;
         return mesh->m_file_id;
     }
 

@@ -12,6 +12,8 @@ using namespace DirectX;
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "base/dolas_paths.h"
+#include "core/dolas_engine.h"
+#include "manager/dolas_render_entity_manager.h"
 Assimp::Importer importer;
 
 namespace Dolas
@@ -38,24 +40,33 @@ namespace Dolas
 
     void RenderScene::BuildFromAsset(SceneAsset* scene_asset)
     {
-        for (const std::string model_name : scene_asset->model_names)
-        {
-			std::string model_path = PathUtils::GetModelSourceDir() + model_name;
-			const aiScene* scene = importer.ReadFile(
-				model_path,
-				aiProcess_Triangulate |
-				aiProcess_FlipUVs |
-				aiProcess_CalcTangentSpace |
-				aiProcess_GenNormals
-			);
+   //     for (const std::string model_name : scene_asset->model_names)
+   //     {
+			//std::string model_path = PathUtils::GetModelSourceDir() + model_name;
+			//const aiScene* ai_scene = importer.ReadFile(
+			//	model_path,
+			//	aiProcess_Triangulate |
+			//	aiProcess_FlipUVs |
+			//	aiProcess_CalcTangentSpace |
+			//	aiProcess_GenNormals
+			//);
 
-			if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-				LOG_ERROR("{0}", importer.GetErrorString());
-				return;
+			//if (!ai_scene || ai_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !ai_scene->mRootNode) {
+			//	LOG_ERROR("{0}", importer.GetErrorString());
+			//	return;
+			//}
+
+			//// 这里需要具体实现将aiScene转换为RenderEntity的逻辑
+   //     }
+
+		for (const SceneEntity& scene_entity : scene_asset->entities)
+		{
+			RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(scene_entity.entity_file);
+			if (render_entity_id != RENDER_ENTITY_ID_EMPTY)
+			{
+				m_render_entities.push_back(render_entity_id);
 			}
-
-			// 这里需要具体实现将aiScene转换为RenderEntity的逻辑
-        }
+		}
     }
 
 } // namespace Dolas 

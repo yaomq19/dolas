@@ -330,17 +330,8 @@ namespace Dolas
 
     void DolasRHI::SetDepthStencilState(DepthStencilStateType type)
     {
-		DepthStencilState& depth_stencil_state = m_depth_stencil_states[static_cast<UInt>(type)];
-		if (depth_stencil_state.m_d3d_depth_stencil_state == nullptr)
-		{
-			depth_stencil_state.m_d3d_depth_stencil_state = CreateDepthStencilState(type);
-		}
-
-		if (depth_stencil_state.m_d3d_depth_stencil_state == nullptr)
-		{
-			return;
-		}
-        m_d3d_immediate_context->OMSetDepthStencilState(depth_stencil_state.m_d3d_depth_stencil_state, 0);
+		const DepthStencilState& depth_stencil_state = GetOrCreateDepthStencilState(type);
+        m_d3d_immediate_context->OMSetDepthStencilState(depth_stencil_state.m_d3d_depth_stencil_state, depth_stencil_state.m_stencil_ref_value);
     }
 
     void DolasRHI::SetBlendState(BlendStateType type)
@@ -717,7 +708,7 @@ namespace Dolas
 		solid_none_cull_desc.ScissorEnable = FALSE;
 		solid_none_cull_desc.MultisampleEnable = FALSE;
 		solid_none_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidNoneCull)] = solid_none_cull_desc;
+		m_rasterizer_state_create_desc[RasterizerStateType_SolidNoneCull] = solid_none_cull_desc;
 
 		D3D11_RASTERIZER_DESC solid_back_cull_desc = {};
 		solid_back_cull_desc.FillMode = D3D11_FILL_SOLID;
@@ -730,7 +721,7 @@ namespace Dolas
 		solid_back_cull_desc.ScissorEnable = FALSE;
 		solid_back_cull_desc.MultisampleEnable = FALSE;
 		solid_back_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidBackCull)] = solid_back_cull_desc;
+		m_rasterizer_state_create_desc[RasterizerStateType_SolidBackCull] = solid_back_cull_desc;
 
 		D3D11_RASTERIZER_DESC solid_front_cull_desc = {};
 		solid_front_cull_desc.FillMode = D3D11_FILL_SOLID;
@@ -743,7 +734,7 @@ namespace Dolas
 		solid_front_cull_desc.ScissorEnable = FALSE;
 		solid_front_cull_desc.MultisampleEnable = FALSE;
 		solid_front_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::SolidFrontCull)] = solid_front_cull_desc;
+		m_rasterizer_state_create_desc[RasterizerStateType_SolidFrontCull] = solid_front_cull_desc;
 
 		D3D11_RASTERIZER_DESC wireframe_desc = {};
 		wireframe_desc.FillMode = D3D11_FILL_WIREFRAME;
@@ -756,34 +747,55 @@ namespace Dolas
 		wireframe_desc.ScissorEnable = FALSE;
 		wireframe_desc.MultisampleEnable = FALSE;
 		wireframe_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::Wireframe)] = wireframe_desc;
+		m_rasterizer_state_create_desc[RasterizerStateType_Wireframe] = wireframe_desc;
 	}
 
 	void DolasRHI::InitializeDepthStencilStateCreateDesc()
 	{
-		D3D11_DEPTH_STENCIL_DESC depth_enabled_desc = {};
-        depth_enabled_desc.DepthEnable = TRUE;
-        depth_enabled_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-        depth_enabled_desc.DepthFunc = D3D11_COMPARISON_LESS;
-        depth_enabled_desc.StencilEnable = FALSE;
-        depth_enabled_desc.StencilReadMask = 0xFF;
-        depth_enabled_desc.StencilWriteMask = 0xFF;
-		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthEnabled)] = depth_enabled_desc;
+		D3D11_DEPTH_STENCIL_DESC depth_write_less_stencil_read_static_desc = {};
+		depth_write_less_stencil_read_static_desc.DepthEnable = TRUE;
+		depth_write_less_stencil_read_static_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depth_write_less_stencil_read_static_desc.DepthFunc = D3D11_COMPARISON_LESS;
+		depth_write_less_stencil_read_static_desc.StencilEnable = TRUE;
+		depth_write_less_stencil_read_static_desc.StencilReadMask = 0xFF;
+		depth_write_less_stencil_read_static_desc.StencilWriteMask = 0xFF;
+		depth_write_less_stencil_read_static_desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depth_write_less_stencil_read_static_desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		depth_write_less_stencil_read_static_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+		depth_write_less_stencil_read_static_desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		depth_write_less_stencil_read_static_desc.BackFace = depth_write_less_stencil_read_static_desc.FrontFace;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].first = depth_write_less_stencil_read_static_desc;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].second = StencilMaskEnum_Static;
 
-		D3D11_DEPTH_STENCIL_DESC depth_disabled_desc = {};
-        depth_disabled_desc.DepthEnable = FALSE;
-        depth_disabled_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-        depth_disabled_desc.DepthFunc = D3D11_COMPARISON_LESS;
-        depth_disabled_desc.StencilEnable = FALSE;
-        depth_disabled_desc.StencilReadMask = 0xFF;
-        depth_disabled_desc.StencilWriteMask = 0xFF;
-		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthDisabled)] = depth_disabled_desc;
+		D3D11_DEPTH_STENCIL_DESC depth_disabled_stencil_disable_desc = {};
+		depth_disabled_stencil_disable_desc.DepthEnable = FALSE;
+		depth_disabled_stencil_disable_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depth_disabled_stencil_disable_desc.DepthFunc = D3D11_COMPARISON_LESS;
+		depth_disabled_stencil_disable_desc.StencilEnable = FALSE;
+		depth_disabled_stencil_disable_desc.StencilReadMask = 0xFF;
+		depth_disabled_stencil_disable_desc.StencilWriteMask = 0xFF;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilDisable].first = depth_disabled_stencil_disable_desc;
+
+		D3D11_DEPTH_STENCIL_DESC depth_disabled_stencil_read_sky_desc = {};
+		depth_disabled_stencil_read_sky_desc.DepthEnable = FALSE;
+		depth_disabled_stencil_read_sky_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depth_disabled_stencil_read_sky_desc.DepthFunc = D3D11_COMPARISON_LESS;
+		depth_disabled_stencil_read_sky_desc.StencilEnable = TRUE;
+		depth_disabled_stencil_read_sky_desc.StencilReadMask = 0xFF;
+		depth_disabled_stencil_read_sky_desc.StencilWriteMask = 0xFF;
+		depth_disabled_stencil_read_sky_desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depth_disabled_stencil_read_sky_desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		depth_disabled_stencil_read_sky_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depth_disabled_stencil_read_sky_desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+		depth_disabled_stencil_read_sky_desc.BackFace = depth_disabled_stencil_read_sky_desc.FrontFace;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].first = depth_disabled_stencil_read_sky_desc;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].second = StencilMaskEnum_SKY;
 
 		D3D11_DEPTH_STENCIL_DESC depth_read_only_desc = {};
         depth_read_only_desc.DepthEnable = TRUE;
         depth_read_only_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
         depth_read_only_desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-		m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthReadOnly)] = depth_read_only_desc;
+		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthReadOnly].first = depth_read_only_desc;
 
 	}
 
@@ -802,7 +814,7 @@ namespace Dolas
         opaque_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         opaque_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         opaque_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::Opaque)] = opaque_desc;
+        m_blend_state_create_desc[BlendStateType_Opaque] = opaque_desc;
 
         // AlphaBlend
 		D3D11_BLEND_DESC alpha_blend_desc = {};
@@ -816,7 +828,7 @@ namespace Dolas
         alpha_blend_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         alpha_blend_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         alpha_blend_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::AlphaBlend)] = alpha_blend_desc;
+        m_blend_state_create_desc[BlendStateType_AlphaBlend] = alpha_blend_desc;
 
         // Additive
 		D3D11_BLEND_DESC additive_desc = {};
@@ -830,12 +842,12 @@ namespace Dolas
         additive_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         additive_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         additive_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[static_cast<UInt>(BlendStateType::Additive)] = additive_desc;
+        m_blend_state_create_desc[BlendStateType_Additive] = additive_desc;
 	}
 
 	void DolasRHI::InitializePrimitiveTopology()
 	{
-		m_d3d11_primitive_topology[static_cast<UInt>(PrimitiveTopology::PrimitiveTopology_TriangleList)] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		m_d3d11_primitive_topology[PrimitiveTopology_TriangleList] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
 
 	void DolasRHI::InitializeInputLayoutDescs()
@@ -952,7 +964,7 @@ namespace Dolas
 
 	ID3D11RasterizerState* DolasRHI::CreateRasterizerState(RasterizerStateType type)
 	{
-		D3D11_RASTERIZER_DESC desc = m_rasterizer_state_create_desc[static_cast<UInt>(type)];
+		D3D11_RASTERIZER_DESC desc = m_rasterizer_state_create_desc[type];
 
 		ID3D11RasterizerState* rasterizer_state = nullptr;
 		HRESULT hr = m_d3d_device->CreateRasterizerState(&desc, &rasterizer_state);
@@ -964,22 +976,27 @@ namespace Dolas
 		return rasterizer_state;
 	}
 
-	ID3D11DepthStencilState* DolasRHI::CreateDepthStencilState(DepthStencilStateType type)
+	Bool DolasRHI::CreateDepthStencilState(DepthStencilStateType type)
 	{
-		D3D11_DEPTH_STENCIL_DESC desc = m_depth_stencil_state_create_desc[static_cast<UInt>(type)];
-		ID3D11DepthStencilState* depth_stencil_state = nullptr;
-		HRESULT hr = m_d3d_device->CreateDepthStencilState(&desc, &depth_stencil_state);
+		D3D11_DEPTH_STENCIL_DESC desc = m_depth_stencil_state_create_desc[type].first;
+		UInt stencil_ref_value = m_depth_stencil_state_create_desc[type].second;
+
+		ID3D11DepthStencilState* d3d_depth_stencil_state = nullptr;
+		HRESULT hr = m_d3d_device->CreateDepthStencilState(&desc, &d3d_depth_stencil_state);
 		if (FAILED(hr))
 		{
 			LOG_ERROR("Failed to create depth stencil state!");
-			return nullptr;
+			return false;
 		}
-		return depth_stencil_state;
+
+		m_depth_stencil_states[type].m_d3d_depth_stencil_state = d3d_depth_stencil_state;
+		m_depth_stencil_states[type].m_stencil_ref_value = stencil_ref_value;
+		return true;
 	}
 
 	ID3D11BlendState* DolasRHI::CreateBlendState(BlendStateType type)
 	{
-		D3D11_BLEND_DESC desc = m_blend_state_create_desc[static_cast<UInt>(type)];
+		D3D11_BLEND_DESC desc = m_blend_state_create_desc[type];
 		ID3D11BlendState* blend_state = nullptr;
 		HRESULT hr = m_d3d_device->CreateBlendState(&desc, &blend_state);
 		if (FAILED(hr))
@@ -1000,29 +1017,17 @@ namespace Dolas
 		return input_layout;
 	}
 
-	void DolasRHI::TestDrawCallTemplate()
+	const DepthStencilState& DolasRHI::GetOrCreateDepthStencilState(DepthStencilStateType type)
 	{
-		g_dolas_engine.m_rhi->BeginEvent(L"event_name");
-
-		// OM & RS
-		std::vector<std::shared_ptr<RenderTargetView>> rtvs;
-		std::shared_ptr<DepthStencilView> dsv;
-		g_dolas_engine.m_rhi->SetRenderTargetViewAndDepthStencilView(rtvs, dsv);
-		Float color[4] = { 1.0, 1.0, 1.0, 1.0 };
-		g_dolas_engine.m_rhi->ClearRenderTargetView(rtvs[0], color);
-		g_dolas_engine.m_rhi->SetViewPort(ViewPort(1,1,1,1,1,1));
-		g_dolas_engine.m_rhi->SetRasterizerState(RasterizerStateType::SolidBackCull);
-		g_dolas_engine.m_rhi->SetDepthStencilState(DepthStencilStateType::DepthEnabled);
-		g_dolas_engine.m_rhi->SetBlendState(BlendStateType::AlphaBlend);
-
-		// VS
-
-		// PS
-
-		// DC
-		RenderPrimitiveID render_primitive_id;
-		g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id, nullptr);
-		g_dolas_engine.m_rhi->EndEvent();
+		if (!m_depth_stencil_states[type].initialized)
+		{
+			if (CreateDepthStencilState(type))
+			{
+				m_depth_stencil_states[type].initialized = true;
+			}
+		}
+		
+		return m_depth_stencil_states[type];
 	}
 
 } // namespace Dolas

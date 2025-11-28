@@ -35,6 +35,7 @@ namespace Dolas
     {
 		Mesh* mesh = g_dolas_engine.m_mesh_manager->GetMesh(m_mesh_id);
 		DOLAS_RETURN_IF_NULL(mesh);
+
 		Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
@@ -49,8 +50,7 @@ namespace Dolas
         pixel_shader->Bind(rhi, nullptr, 0, material->GetPixelShaderTextures());
         
         RenderPrimitiveID render_primitive_id = mesh->GetRenderPrimitiveID();
-
-        g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id, nullptr);
+        g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id, vertex_shader->GetD3DShaderBlob());
     }
 
     void RenderEntity::SetMeshID(MeshID mesh_id)

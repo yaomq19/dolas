@@ -268,6 +268,15 @@ namespace Dolas
 
 	struct Pose
 	{
+		Pose() : m_postion(0.0, 0.0, 0.0), m_rotation(1.0f, 0.0f, 0.0f, 0.0f), m_scale(1.0f, 1.0f, 1.0f)
+        {
+
+        }
+
+		Pose(const Vector3& position, const Quaternion& rotation, const Vector3& scale) : m_postion(position), m_rotation(rotation), m_scale(scale)
+        {
+
+        }
 		Vector3 m_postion;
 		Quaternion m_rotation; // 
 		Vector3 m_scale;

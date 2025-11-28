@@ -67,7 +67,7 @@ namespace Dolas
         Matrix4x4 m_projection_matrix;
         Matrix4x4 m_view_matrix;
 
-        Float m_move_speed{ 0.03f };
+        Float m_move_speed;
     }; // class RenderCamera
 
     class RenderCameraPerspective : public RenderCamera

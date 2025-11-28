@@ -29,7 +29,6 @@ namespace Dolas
     }
 
     RenderPrimitive* RenderPrimitiveManager::BuildFromRawData(
-		RenderPrimitiveID id,
 		const PrimitiveTopology& render_primitive_type,
 		const InputLayoutType& input_layout_type,
 		const std::vector<std::vector<Float>>& vertices,
@@ -145,7 +144,7 @@ namespace Dolas
         const std::vector<std::vector<Float>>& vertices,
 		const std::vector<UInt>& indices)
     {
-		RenderPrimitive* render_primitive = BuildFromRawData(id, render_primitive_type, input_layout_type, vertices, indices);
+		RenderPrimitive* render_primitive = BuildFromRawData(render_primitive_type, input_layout_type, vertices, indices);
 
         if (render_primitive)
         {

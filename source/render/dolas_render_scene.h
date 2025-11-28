@@ -21,8 +21,9 @@ namespace Dolas
         bool Initialize();
         bool Clear();
         void BuildFromAsset(class SceneAsset* scene_asset);
+		const std::vector<RenderEntityID>& GetRenderEntities() const { return m_render_entities; }
     private:
-        std::vector<RenderObjectID> m_render_objects;
+        std::vector<RenderEntityID> m_render_entities;
     }; // class RenderScene
 } // namespace Dolas
 

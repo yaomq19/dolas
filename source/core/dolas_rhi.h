@@ -72,10 +72,9 @@ namespace Dolas
 
 		// DepthStencilState
 		void SetDepthStencilState(DepthStencilStateType type);
-
+		
 		// BlendState
 		void SetBlendState(BlendStateType type);
-
 		
 		// Buffer
 
@@ -95,9 +94,10 @@ namespace Dolas
 
 		std::shared_ptr<RenderTargetView> CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* texture_id);
 		ID3D11RasterizerState* CreateRasterizerState(RasterizerStateType type);
-		ID3D11DepthStencilState* CreateDepthStencilState(DepthStencilStateType type);
+		Bool CreateDepthStencilState(DepthStencilStateType type);
 		ID3D11BlendState* CreateBlendState(BlendStateType type);
 		std::shared_ptr<InputLayout> CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
+		const DepthStencilState& GetOrCreateDepthStencilState(DepthStencilStateType type);
 
 		// PrimitiveTopology
 		void SetPrimitiveTopology(PrimitiveTopology primitive_topology);
@@ -111,7 +111,6 @@ namespace Dolas
 
 		void DrawIndexed(UInt index_count);
 
-		void TestDrawCallTemplate();
 		ID3D11Device* m_d3d_device;
 		ID3D11DeviceContext* m_d3d_immediate_context;
 
@@ -128,13 +127,13 @@ namespace Dolas
 		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
 
 		std::shared_ptr<RenderTargetView> m_back_buffer_render_target_view;
-		RasterizerState m_rasterizer_states[RasterizerStateCount];
-		DepthStencilState m_depth_stencil_states[DepthStencilStateCount];
-		BlendState m_blend_states[BlendStateCount];
+		RasterizerState m_rasterizer_states[RasterizerStateType_Count];
+		DepthStencilState m_depth_stencil_states[DepthStencilStateType_Count];
+		BlendState m_blend_states[BlendStateType_Count];
 
-		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[RasterizerStateCount];
-		D3D11_DEPTH_STENCIL_DESC m_depth_stencil_state_create_desc[DepthStencilStateCount];
-		D3D11_BLEND_DESC m_blend_state_create_desc[BlendStateCount];
+		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[RasterizerStateType_Count];
+		std::pair<D3D11_DEPTH_STENCIL_DESC, UInt> m_depth_stencil_state_create_desc[DepthStencilStateType_Count];
+		D3D11_BLEND_DESC m_blend_state_create_desc[BlendStateType_Count];
 
 		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[PrimitiveTopology_Count];
 		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[InputLayoutType_Count];
