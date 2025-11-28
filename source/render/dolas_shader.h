@@ -26,6 +26,7 @@ namespace Dolas
         void SetShaderResourceView(size_t slot, TextureID texture_id);
         void SetShaderResourceView(size_t slot, class Texture* texture);
         ID3D11ShaderResourceView* GetShaderResourceView(size_t slot);
+        const std::unordered_map<size_t, ID3D11ShaderResourceView*>& GetShaderResourceViews() const {return m_shader_resource_views;};
 
     protected:
         virtual void GenerateReflectionAndDesc();
@@ -41,11 +42,11 @@ namespace Dolas
 
     }; // class Shader
 
-    class VertexShader : public Shader
+    class VertexContext : public Shader
     {
     public:
-        VertexShader();
-        ~VertexShader();
+        VertexContext();
+        ~VertexContext();
         virtual bool BuildFromFile(const std::string& file_path, const std::string& entry_point) override;
         virtual void Release() override;
         ID3D11VertexShader* GetD3DVertexShader();
@@ -54,13 +55,13 @@ namespace Dolas
 
     protected:
         ID3D11VertexShader* m_d3d_vertex_shader = nullptr;
-    }; // class VertexShader
+    }; // class VertexContext
 
-    class PixelShader : public Shader
+    class PixelContext : public Shader
     {
     public:
-        PixelShader();
-        ~PixelShader();
+        PixelContext();
+        ~PixelContext();
         virtual bool BuildFromFile(const std::string& file_path, const std::string& entry_point) override;
         virtual void Release() override;
         ID3D11PixelShader* GetD3DPixelShader();
@@ -68,7 +69,7 @@ namespace Dolas
         
     protected:
         ID3D11PixelShader* m_d3d_pixel_shader = nullptr;
-    }; // class PixelShader
+    }; // class PixelContext
     
 } // namespace Dolas
 

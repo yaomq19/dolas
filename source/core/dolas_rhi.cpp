@@ -14,6 +14,7 @@
 #include "render/dolas_render_primitive.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_buffer_manager.h"
+#include "render/dolas_shader.h"
 namespace Dolas
 {
     LRESULT CALLBACK
@@ -350,6 +351,56 @@ namespace Dolas
         m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
     }
 
+	Bool DolasRHI::BindVertexContext(VertexContext* vertex_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	{
+		m_d3d_immediate_context->VSSetShader(vertex_context->GetD3DVertexShader(), class_instances, num_class_instances);
+
+		for (auto tex_slot_id_pair : materal_textures_map)
+		{
+			int slot = tex_slot_id_pair.first;
+			TextureID texture_id = tex_slot_id_pair.second;
+			Texture* tex = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
+			DOLAS_CONTINUE_IF_NULL(tex);
+			ID3D11ShaderResourceView* srv = tex->GetShaderResourceView();
+			DOLAS_CONTINUE_IF_NULL(srv);
+			vertex_context->SetShaderResourceView(slot, srv);
+		}
+
+		const std::unordered_map<size_t, ID3D11ShaderResourceView*>& srvs = vertex_context->GetShaderResourceViews();
+		for (auto srv_iter : srvs)
+		{
+			m_d3d_immediate_context->VSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
+		}
+
+		m_current_vs_blob = vertex_context->GetD3DShaderBlob();
+
+		return true;
+	}
+
+	// PixelContext
+	Bool DolasRHI::BindPixelContext(PixelContext* pixel_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	{
+		m_d3d_immediate_context->PSSetShader(pixel_context->GetD3DPixelShader(), class_instances, num_class_instances);
+
+		for (auto tex_slot_id_pair : materal_textures_map)
+		{
+			int slot = tex_slot_id_pair.first;
+			TextureID texture_id = tex_slot_id_pair.second;
+			Texture* tex = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
+			DOLAS_CONTINUE_IF_NULL(tex);
+			ID3D11ShaderResourceView* srv = tex->GetShaderResourceView();
+			DOLAS_CONTINUE_IF_NULL(srv);
+			pixel_context->SetShaderResourceView(slot, srv);
+		}
+		const std::unordered_map<size_t, ID3D11ShaderResourceView*>& srvs = pixel_context->GetShaderResourceViews();
+		for (auto srv_iter : srvs)
+		{
+			m_d3d_immediate_context->PSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
+		}
+
+		return true;
+	}
+
 	void DolasRHI::SetPrimitiveTopology(PrimitiveTopology primitive_topology)
 	{
 		m_d3d_immediate_context->IASetPrimitiveTopology(m_d3d11_primitive_topology[static_cast<UInt>(primitive_topology)]);
@@ -384,12 +435,12 @@ namespace Dolas
 		m_d3d_immediate_context->DrawIndexed(index_count, 0, 0);
 	}
 
-	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, ID3DBlob* vs_blob)
+	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id)
 	{
 		RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 		DOLAS_RETURN_IF_NULL(render_primitive);
 
-		SetInputLayout(render_primitive->m_input_layout_type, vs_blob->GetBufferPointer(), vs_blob->GetBufferSize());
+		SetInputLayout(render_primitive->m_input_layout_type, m_current_vs_blob->GetBufferPointer(), m_current_vs_blob->GetBufferSize());
 
 		SetPrimitiveTopology(render_primitive->m_topology);
 

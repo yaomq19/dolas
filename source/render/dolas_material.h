@@ -14,8 +14,8 @@ namespace Dolas
     public:
         Material();
         ~Material();
-        class VertexShader* GetVertexShader();
-        class PixelShader* GetPixelShader();
+        class VertexContext* GetVertexShader();
+        class PixelContext* GetPixelShader();
         
         Bool BindPixelShaderTextures();
 
@@ -23,8 +23,8 @@ namespace Dolas
 		const std::unordered_map<int, TextureID>& GetPixelShaderTextures() const { return m_pixel_shader_textures; }
     protected:
         MaterialID m_file_id;
-        class VertexShader* m_vertex_shader = nullptr;
-        class PixelShader* m_pixel_shader = nullptr;
+        class VertexContext* m_vertex_shader = nullptr;
+        class PixelContext* m_pixel_shader = nullptr;
         std::unordered_map<int, TextureID> m_vertex_shader_textures;
         std::unordered_map<int, TextureID> m_pixel_shader_textures;
     }; // class Material

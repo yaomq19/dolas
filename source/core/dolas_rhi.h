@@ -76,12 +76,16 @@ namespace Dolas
 		// BlendState
 		void SetBlendState(BlendStateType type);
 		
+		// VertexContext
+		Bool BindVertexContext(class VertexContext* vertex_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		// PixelContext
+		Bool BindPixelContext(class PixelContext* pixel_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
 		// Buffer
 
 		// Texture
 
 		// DC
-		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, ID3DBlob* vs_blob);
+		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
@@ -137,6 +141,8 @@ namespace Dolas
 
 		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[PrimitiveTopology_Count];
 		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[InputLayoutType_Count];
+
+		ID3DBlob* m_current_vs_blob = nullptr;
 	};
 
 	// RAII scope for GPU events

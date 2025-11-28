@@ -14,12 +14,12 @@ namespace Dolas
 
 	}
 
-	VertexShader* Material::GetVertexShader()
+	VertexContext* Material::GetVertexShader()
 	{
 		return m_vertex_shader;
 	}
 
-	PixelShader* Material::GetPixelShader()
+	PixelContext* Material::GetPixelShader()
 	{
 		return m_pixel_shader;
 	}

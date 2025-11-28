@@ -15,15 +15,15 @@ namespace Dolas
         ~ShaderManager();
         bool Initialize();
         bool Clear();
-        VertexShader* GetOrCreateVertexShader(const std::string& file_path, const std::string& entry_point);
-        PixelShader* GetOrCreatePixelShader(const std::string& file_path, const std::string& entry_point);
+        VertexContext* GetOrCreateVertexShader(const std::string& file_path, const std::string& entry_point);
+        PixelContext* GetOrCreatePixelShader(const std::string& file_path, const std::string& entry_point);
     private:
-        VertexShader* CreateVertexShader(const std::string& file_path, const std::string& entry_point);
-        PixelShader* CreatePixelShader(const std::string& file_path, const std::string& entry_point);
+        VertexContext* CreateVertexShader(const std::string& file_path, const std::string& entry_point);
+        PixelContext* CreatePixelShader(const std::string& file_path, const std::string& entry_point);
         std::string GenerateShaderKey(const std::string& file_path, const std::string& entry_point);
 
-        std::unordered_map<std::string, VertexShader*> m_vertex_shaders;
-        std::unordered_map<std::string, PixelShader*> m_pixel_shaders;
+        std::unordered_map<std::string, VertexContext*> m_vertex_shaders;
+        std::unordered_map<std::string, PixelContext*> m_pixel_shaders;
     }; // class ShaderManager
 } // namespace Dolas
 
