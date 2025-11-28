@@ -4,7 +4,7 @@
 #include "base/dolas_base.h"
 #include "common/dolas_hash.h"
 
-enum class BaseGeometryType : UInt
+enum BaseGeometryType : UInt
 {
     _TRIANGLE,
     _QUAD,
@@ -24,10 +24,14 @@ namespace Dolas
         bool Initialize();
         bool Clear();
         RenderPrimitiveID GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type);
-    private:
-        std::unordered_map<BaseGeometryType, RenderPrimitiveID> m_geometries;
+    protected:
+		Bool InitializeSphereGeometry();
+        Bool InitializeQuadGeometry();
 
-        Bool generateSphereGeometry(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+        Bool GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+        Bool GenerateQuadRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+    protected:
+        std::unordered_map<BaseGeometryType, RenderPrimitiveID> m_geometries;
     };// class GeometryManager
 } // namespace Dolas
 #endif // DOLAS_GEOMETRY_MANAGER_H

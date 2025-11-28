@@ -44,6 +44,8 @@ namespace Dolas
 
     bool RenderPipeline::Initialize()
     {
+        g_dolas_engine.m_rhi->VSSetConstantBuffers();
+        g_dolas_engine.m_rhi->PSSetConstantBuffers();
         return true;
     }
 
@@ -121,15 +123,6 @@ namespace Dolas
 
         RenderScene* render_scene = TryGetRenderScene();
 
-		/*const std::string render_entity_name = "quad.entity";
-        RenderEntity* render_entity = render_entity_manager->GetRenderEntityByFileName(render_entity_name);
-        if (render_entity == nullptr)
-        {
-            RenderEntityID render_entity_id = render_entity_manager->CreateRenderEntityFromFile(render_entity_name);
-            render_entity = render_entity_manager->GetRenderEntityByID(render_entity_id);
-        }
-        DOLAS_RETURN_IF_NULL(render_entity);*/
-
         // 设置 RT 和 视口
 		RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
@@ -158,13 +151,6 @@ namespace Dolas
         RenderResource* render_resource = TryGetRenderResource();
         DOLAS_RETURN_IF_NULL(render_resource);
 
-        Texture* gbuffer_a_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_a_id);
-        Texture* gbuffer_b_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_b_id);
-        Texture* gbuffer_c_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(render_resource->m_gbuffer_c_id);
-        DOLAS_RETURN_IF_NULL(gbuffer_a_texture);
-        DOLAS_RETURN_IF_NULL(gbuffer_b_texture);
-        DOLAS_RETURN_IF_NULL(gbuffer_c_texture);
-
         std::vector<std::shared_ptr<RenderTargetView>> rtvs;
         auto scene_result_rtv = g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_scene_result_id);
         rtvs.push_back(scene_result_rtv);
@@ -176,30 +162,24 @@ namespace Dolas
         rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
         rhi->SetBlendState(BlendStateType::Opaque);
 
-		RenderEntityManager* entity_manager = g_dolas_engine.m_render_entity_manager;
-        RenderEntityID quad_render_entity_id = STRING_ID(Quad);
-		RenderEntity* render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
-        if (render_entity == nullptr)
-        {
-            entity_manager->CreateRenderEntity(quad_render_entity_id);
-            render_entity = entity_manager->GetRenderEntityByID(quad_render_entity_id);
-        }
-        
-        MeshID quad_mesh_id = g_dolas_engine.m_mesh_manager->GetQuadMeshID();
-        render_entity->SetMeshID(quad_mesh_id);
-
         Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
+        DOLAS_RETURN_IF_NULL(material);
+
+        VertexShader* vertex_shader = material->GetVertexShader();
+        DOLAS_RETURN_IF_NULL(vertex_shader);
 
         PixelShader* pixel_shader = material->GetPixelShader();
         DOLAS_RETURN_IF_NULL(pixel_shader);
 
-        pixel_shader->ClearShaderResourceViews();
+        pixel_shader->SetShaderResourceView(0, render_resource->m_gbuffer_a_id);
+        pixel_shader->SetShaderResourceView(1, render_resource->m_gbuffer_b_id);
+        pixel_shader->SetShaderResourceView(2, render_resource->m_gbuffer_c_id);
 
-        pixel_shader->SetShaderResourceView(0, gbuffer_a_texture->GetShaderResourceView());
-        pixel_shader->SetShaderResourceView(1, gbuffer_b_texture->GetShaderResourceView());
-        pixel_shader->SetShaderResourceView(2, gbuffer_c_texture->GetShaderResourceView());
-
-        render_entity->Draw(rhi);
+        vertex_shader->Bind(rhi, nullptr, 0, material->GetVertexShaderTextures());
+		pixel_shader->Bind(rhi, nullptr, 0, material->GetPixelShaderTextures());
+        
+        RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_QUAD);
+        rhi->DrawRenderPrimitive(quad_render_primitive_id, vertex_shader->GetD3DShaderBlob());
     }
 
 	void RenderPipeline::ForwardShadingPass(DolasRHI* rhi)
@@ -224,9 +204,6 @@ namespace Dolas
 		rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
 		rhi->SetBlendState(BlendStateType::Opaque);
 
-        
-
-        
         Pose pose;
         RenderCamera* eye_camera = TryGetRenderCamera();
 		DOLAS_RETURN_IF_NULL(eye_camera);
@@ -238,9 +215,6 @@ namespace Dolas
 		pose.m_scale = Vector3(scale, scale, scale);
         rhi->UpdatePerObjectParameters(pose);
 
-        Texture* sky_box_texture = g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX);
-		DOLAS_RETURN_IF_NULL(sky_box_texture);
-
         Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
         DOLAS_RETURN_IF_NULL(material);
 
@@ -250,19 +224,12 @@ namespace Dolas
         PixelShader* pixel_shader = material->GetPixelShader();
         DOLAS_RETURN_IF_NULL(pixel_shader);
 
-        pixel_shader->ClearShaderResourceViews();
-        pixel_shader->SetShaderResourceView(0, sky_box_texture->GetShaderResourceView());
+        pixel_shader->SetShaderResourceView(0, g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX));
 
-        // 处理材质球自带纹理
-		material->BindVertexShaderTextures();
-		material->BindPixelShaderTextures();
 		// 绑定 Shader
-        material->GetVertexShader()->Bind(rhi, nullptr, 0);
-        material->GetPixelShader()->Bind(rhi, nullptr, 0);
+        vertex_shader->Bind(rhi, nullptr, 0, material->GetVertexShaderTextures());
+        pixel_shader->Bind(rhi, nullptr, 0, material->GetPixelShaderTextures());
         
-        rhi->VSSetConstantBuffers();
-        rhi->PSSetConstantBuffers();
-
         RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
         rhi->DrawRenderPrimitive(sphere_render_primitive_id, vertex_shader->GetD3DShaderBlob());
     }

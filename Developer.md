@@ -20,7 +20,11 @@
 - 实现 Logic Render Swap Buffer
 - 确定 spdlog 的线程安全性
 - 实现 ColorManager
+- Shader 反射系统
 
+# 2025-11-29
+- RHI 基建: VertexBuffer, IndexBuffer, DrawIndexed
+- RHI 基建: VertexShader, Pixel Shader
 # 2025-11-24
 - RHI 基建: InputLayout, PrimitiveTopology
 # 2025-11-21

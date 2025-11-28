@@ -24,10 +24,6 @@ namespace Dolas
 		return m_pixel_shader;
 	}
 
-	Bool Material::BindVertexShaderTextures()
-	{
-		return true;
-	}
 
 	Bool Material::BindPixelShaderTextures()
 	{

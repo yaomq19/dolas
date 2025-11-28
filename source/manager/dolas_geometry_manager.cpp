@@ -17,27 +17,10 @@ namespace Dolas
     
     bool GeometryManager::Initialize()
     {
-        RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+        Bool initialize_result = true;
+        initialize_result &= InitializeSphereGeometry();
+        initialize_result &= InitializeQuadGeometry();
 
-        std::vector<std::vector<Float>> vertices_data;
-        std::vector<UInt> indices_data;
-        Bool success = generateSphereGeometry(10, vertices_data, indices_data);
-        if (!success)
-        {
-            LOG_ERROR("GeometryManager::Initialize: Failed to generate sphere geometry");
-            return false;
-        }
-		RenderPrimitiveID sphere_render_primitive_string_id = STRING_ID(sphere_render_primitive);
-		success = render_primitive_manager->CreateRenderPrimitive(
-            sphere_render_primitive_string_id,
-			PrimitiveTopology::PrimitiveTopology_TriangleList,
-			InputLayoutType::InputLayoutType_POS_3,
-			vertices_data,
-			indices_data);
-        if (success)
-        {
-            m_geometries[BaseGeometryType::_SPHERE] = sphere_render_primitive_string_id;
-        }
         return true;
     }
 
@@ -48,22 +31,77 @@ namespace Dolas
 
     RenderPrimitiveID GeometryManager::GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type)
     {
-        if (m_geometries.find(geometry_type) != m_geometries.end())
+		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
+        auto iter = m_geometries.find(geometry_type);
+        if (iter != m_geometries.end())
         {
-			return m_geometries[geometry_type];
+            render_primitive_id = iter->second;
         }
-        else
-        {
-			return RENDER_PRIMITIVE_ID_EMPTY;
-        }
+		return render_primitive_id;
     }
 
-    Bool GeometryManager::generateSphereGeometry(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+    Bool GeometryManager::InitializeSphereGeometry()
+    {
+        RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+        DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+        std::vector<std::vector<Float>> vertices_data;
+        std::vector<UInt> indices_data;
+        if (!GenerateSphereRawData(10, vertices_data, indices_data))
+        {
+            LOG_ERROR("Failed to generate sphere Raw Data");
+            return false;
+        }
+        RenderPrimitiveID sphere_render_primitive_string_id = STRING_ID(sphere_render_primitive);
+        Bool success = render_primitive_manager->CreateRenderPrimitive(
+            sphere_render_primitive_string_id,
+            PrimitiveTopology::PrimitiveTopology_TriangleList,
+            InputLayoutType::InputLayoutType_POS_3,
+            vertices_data,
+            indices_data);
+        if (!success)
+        {
+            LOG_ERROR("Failed to CreateRenderPrimitive");
+            return false;
+        }
+
+        m_geometries[BaseGeometryType::_SPHERE] = sphere_render_primitive_string_id;
+    }
+
+    Bool GeometryManager::InitializeQuadGeometry()
+    {
+        RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+        DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+        std::vector<std::vector<Float>> vertices_data;
+        std::vector<UInt> indices_data;
+        if (!GenerateQuadRawData(vertices_data, indices_data))
+        {
+            LOG_ERROR("Failed to generate quad Raw Data");
+            return false;
+        }
+        RenderPrimitiveID quad_render_primitive_id = STRING_ID(quad_render_primitive);
+        Bool success = render_primitive_manager->CreateRenderPrimitive(
+            quad_render_primitive_id,
+            PrimitiveTopology::PrimitiveTopology_TriangleList,
+            InputLayoutType::InputLayoutType_POS_3_UV_2,
+            vertices_data,
+            indices_data);
+        if (!success)
+        {
+            LOG_ERROR("Failed to CreateRenderPrimitive");
+            return false;
+        }
+
+        m_geometries[BaseGeometryType::_QUAD] = quad_render_primitive_id;
+    }
+
+    Bool GeometryManager::GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
     {
         // 验证 segments 参数范围
         if (segments < 1 || segments > 100)
         {
-            LOG_ERROR("GeometryManager::generateSphereGeometry: Invalid segments value: {}, valid range is [1, 100]", segments);
+            LOG_ERROR("Invalid segments value: {}, valid range is [1, 100]", segments);
             return false;
         }
 
@@ -130,6 +168,67 @@ namespace Dolas
                 indices.push_back(first + 1);
             }
         }
+
+        return true;
+    }
+
+    Bool GeometryManager::GenerateQuadRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+    {
+        vertices_data.clear();
+        indices.clear();
+
+        // 对应 InputLayoutType_POS_3_UV_2：
+        // stream 0: position (x, y, z)
+        // stream 1: uv       (u, v)
+        vertices_data.resize(2);
+
+        // 在 XY 平面上的单位四边形，中心在原点，面朝 +Z 方向
+        // 顶点顺序：
+        // 0: (-1, -1, 0)  uv (0, 1)
+        // 1: (-1,  1, 0)  uv (0, 0)
+        // 2: ( 1, -1, 0)  uv (1, 1)
+        // 3: ( 1,  1, 0)  uv (1, 0)
+
+        // positions (stream 0)
+        vertices_data[0].push_back(-1.0f); // v0
+        vertices_data[0].push_back(-1.0f);
+        vertices_data[0].push_back(0.5f);
+
+        vertices_data[0].push_back(-1.0f); // v1
+        vertices_data[0].push_back( 1.0f);
+        vertices_data[0].push_back(0.5f);
+
+        vertices_data[0].push_back( 1.0f); // v2
+        vertices_data[0].push_back(-1.0f);
+        vertices_data[0].push_back(0.5f);
+
+        vertices_data[0].push_back( 1.0f); // v3
+        vertices_data[0].push_back( 1.0f);
+        vertices_data[0].push_back(0.5f);
+
+        // uvs (stream 1)
+        vertices_data[1].push_back(0.0f); // v0
+        vertices_data[1].push_back(1.0f);
+
+        vertices_data[1].push_back(0.0f); // v1
+        vertices_data[1].push_back(0.0f);
+
+        vertices_data[1].push_back(1.0f); // v2
+        vertices_data[1].push_back(1.0f);
+
+        vertices_data[1].push_back(1.0f); // v3
+        vertices_data[1].push_back(0.0f);
+
+        // 索引（TriangleList，逆时针，面朝 +Z）
+        // 三角形 1: v0, v2, v1
+        // 三角形 2: v2, v3, v1
+        indices.push_back(0);
+        indices.push_back(2);
+        indices.push_back(1);
+
+        indices.push_back(2);
+        indices.push_back(3);
+        indices.push_back(1);
 
         return true;
     }

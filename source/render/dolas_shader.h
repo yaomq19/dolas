@@ -20,11 +20,12 @@ namespace Dolas
         virtual ID3DBlob* GetD3DShaderBlob();
         virtual ID3D11ShaderReflection* GetD3DShaderReflection();
 
-        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances) = 0;
+        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances, const std::unordered_map<int, TextureID>& temp_vertex_shader_textures) = 0;
 
-        void SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* shader_resource_view);
+        void SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* srv);
+        void SetShaderResourceView(size_t slot, TextureID texture_id);
+        void SetShaderResourceView(size_t slot, class Texture* texture);
         ID3D11ShaderResourceView* GetShaderResourceView(size_t slot);
-        void ClearShaderResourceViews();
 
     protected:
         virtual void GenerateReflectionAndDesc();
@@ -49,7 +50,7 @@ namespace Dolas
         virtual void Release() override;
         ID3D11VertexShader* GetD3DVertexShader();
 
-        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances);
+        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances, const std::unordered_map<int, TextureID>& temp_vertex_shader_textures) override;
 
     protected:
         ID3D11VertexShader* m_d3d_vertex_shader = nullptr;
@@ -63,7 +64,7 @@ namespace Dolas
         virtual bool BuildFromFile(const std::string& file_path, const std::string& entry_point) override;
         virtual void Release() override;
         ID3D11PixelShader* GetD3DPixelShader();
-        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances);
+        virtual void Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances, const std::unordered_map<int, TextureID>& temp_pixel_shader_textures) override;
         
     protected:
         ID3D11PixelShader* m_d3d_pixel_shader = nullptr;

@@ -154,7 +154,7 @@ namespace Dolas
         }
         else
         {
-			LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitive: Failed to build render primitive from raw data");
+			LOG_ERROR("Failed to build render primitive from raw data");
             return false;
         }
     }
