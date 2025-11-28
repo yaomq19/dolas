@@ -53,8 +53,7 @@ namespace Dolas
     }
 
     BufferID BufferManager::CreateVertexBuffer(
-        uint32_t size,
-        const void* initial_data,
+		const std::vector<Float>& vertex_data,
         BufferUsage usage,
         BufferID buffer_id)
     {
@@ -72,7 +71,7 @@ namespace Dolas
             buffer_id = random_uint;
         }
         // 创建顶点缓冲区
-        if (!buffer->CreateVertexBuffer(size, initial_data, usage))
+        if (!buffer->CreateVertexBuffer(vertex_data.size() * sizeof(Float), vertex_data.data(), usage))
         {
             return BUFFER_ID_EMPTY;
         }

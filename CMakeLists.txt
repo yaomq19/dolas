@@ -4,6 +4,14 @@ cmake_minimum_required(VERSION 3.10)
 # 定义项目名称为Dolas，版本为0.1.0，使用C++语言
 project(Dolas VERSION 0.1.0 LANGUAGES CXX)
 
+# 如果通过命令行或脚本传入了 CMAKE_TOOLCHAIN_FILE，显式打印出来，避免“未使用变量”的警告
+if(CMAKE_TOOLCHAIN_FILE)
+    message(STATUS "Using CMake toolchain file: ${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
+# 是否启用 Vulkan 支持（默认关闭，对应 README 中“Vulkan SDK（可选）”）
+option(ENABLE_VULKAN "Enable Vulkan renderer / SDK support" OFF)
+
 # ============ C++标准设置 ============
 # 设置项目使用C++20标准
 set(CMAKE_CXX_STANDARD 20)
@@ -20,13 +28,17 @@ if(WIN32)
     # 添加Windows SDK的库目录，针对x64架构
     link_directories("$ENV{WindowsSdkDir}Lib/$ENV{WindowsSDKVersion}/um/x64")
 
-    # 查找 Vulkan SDK
-    find_package(Vulkan REQUIRED)
-    if(Vulkan_FOUND)
-        message(STATUS "Found Vulkan: ${Vulkan_LIBRARIES}")
-        include_directories(${Vulkan_INCLUDE_DIRS})
+    # 查找 Vulkan SDK（可选）
+    if(ENABLE_VULKAN)
+        find_package(Vulkan REQUIRED)
+        if(Vulkan_FOUND)
+            message(STATUS "Found Vulkan: ${Vulkan_LIBRARIES}")
+            include_directories(${Vulkan_INCLUDE_DIRS})
+        else()
+            message(FATAL_ERROR "Could not find Vulkan SDK")
+        endif()
     else()
-        message(FATAL_ERROR "Could not find Vulkan SDK")
+        message(STATUS "Vulkan support is disabled (ENABLE_VULKAN=OFF).")
     endif()
 
     # 设置为 UTF-8 编码

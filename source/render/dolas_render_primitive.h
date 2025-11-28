@@ -25,8 +25,8 @@ namespace Dolas
 		InputLayoutType m_input_layout_type;
         
 		std::vector<BufferID> m_vertex_buffer_ids;
-		std::vector<UInt> m_vertex_strides;
-		std::vector<UInt> m_vertex_offsets;
+		std::vector<UInt> m_vertex_strides; // unit: byte
+		std::vector<UInt> m_vertex_offsets; // unit: byte
         
 		// vertex count
         UInt m_vertex_count = 0;

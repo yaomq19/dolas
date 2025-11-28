@@ -22,8 +22,7 @@ namespace Dolas
         // 特定类型缓冲区创建
 		// size: 以字节为单位的缓冲区大小
         BufferID CreateVertexBuffer(
-            uint32_t size,
-            const void* initial_data = nullptr,
+            const std::vector<Float>& vertex_data,
             BufferUsage usage = BufferUsage::IMMUTABLE,
             BufferID buffer_id = BUFFER_ID_EMPTY);
 

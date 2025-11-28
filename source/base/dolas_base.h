@@ -39,6 +39,8 @@ namespace Dolas
     #define Int64 int64_t
     #define Float32 float
 
+    #define DOLAS_DEBUG
+
     #if defined(DEBUG) | defined(_DEBUG)
     #ifndef HR
     #define HR(x)                                                \

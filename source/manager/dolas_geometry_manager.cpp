@@ -19,7 +19,7 @@ namespace Dolas
     {
         RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
 
-        std::vector<Float> vertices_data;
+        std::vector<std::vector<Float>> vertices_data;
         std::vector<UInt> indices_data;
         Bool success = generateSphereGeometry(10, vertices_data, indices_data);
         if (!success)
@@ -58,7 +58,7 @@ namespace Dolas
         }
     }
 
-    Bool GeometryManager::generateSphereGeometry(UInt segments, std::vector<Float>& vertices, std::vector<UInt>& indices)
+    Bool GeometryManager::generateSphereGeometry(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
     {
         // 验证 segments 参数范围
         if (segments < 1 || segments > 100)
@@ -67,9 +67,10 @@ namespace Dolas
             return false;
         }
 
-        vertices.clear();
+        vertices_data.clear();
         indices.clear();
 
+		vertices_data.resize(1); // 只使用一种顶点格式，这里使用第一个元素存储位置数据
         const Float PI = 3.14159265358979323846f;
         const Float radius = 1.0f;
 
@@ -103,9 +104,9 @@ namespace Dolas
                 Float y = radius * cosPhi;
                 Float z = radius * sinPhi * sinTheta;
 
-                vertices.push_back(x);
-                vertices.push_back(y);
-                vertices.push_back(z);
+                vertices_data[0].push_back(x);
+                vertices_data[0].push_back(y);
+                vertices_data[0].push_back(z);
             }
         }
 
@@ -129,9 +130,6 @@ namespace Dolas
                 indices.push_back(first + 1);
             }
         }
-
-        LOG_INFO("GeometryManager::generateSphereGeometry: Generated sphere with {} vertices and {} triangles", 
-                 vertices.size() / 3, indices.size() / 3);
 
         return true;
     }

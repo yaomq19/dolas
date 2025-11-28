@@ -6,7 +6,7 @@ cd /d "%~dp0..\.."
 
 :: Build project
 echo Building project...
-cmake --build build
+cmake --build build  --config Debug
 if %errorlevel% neq 0 (
     echo Build failed!
     pause
@@ -16,4 +16,3 @@ if %errorlevel% neq 0 (
 echo Build completed successfully!
 pause
 endlocal
-

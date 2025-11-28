@@ -33,7 +33,7 @@ namespace Dolas
 		D3D11_VIEWPORT m_d3d_viewport;
 	};
 
-	enum class RasterizerStateType : UInt
+	enum RasterizerStateType : UInt
 	{
 		SolidNoneCull,
 		SolidBackCull,
@@ -51,7 +51,7 @@ namespace Dolas
 		ID3D11RasterizerState* m_d3d_rasterizer_state;
 	};
 
-	enum class DepthStencilStateType : UInt
+	enum DepthStencilStateType : UInt
 	{
 		DepthEnabled,
 		DepthDisabled,
@@ -68,7 +68,7 @@ namespace Dolas
 		ID3D11DepthStencilState* m_d3d_depth_stencil_state;
 	};
 
-	enum class BlendStateType : UInt
+	enum BlendStateType : UInt
 	{
 		Opaque,
 		AlphaBlend,
@@ -115,13 +115,13 @@ namespace Dolas
 		UInt clear_value = 0;
 	};
 
-	enum class PrimitiveTopology : UInt
+	enum PrimitiveTopology : UInt
 	{
 		PrimitiveTopology_TriangleList,
 		PrimitiveTopology_Count
 	};
 
-	enum class InputLayoutType : UInt
+	enum InputLayoutType
 	{
 		InputLayoutType_POS_3,
 		InputLayoutType_POS_3_UV_2,

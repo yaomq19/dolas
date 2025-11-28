@@ -241,7 +241,7 @@ namespace Dolas
 			return MESH_ID_EMPTY;
 		}
         
-        Bool success = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
+        /*Bool success = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitive(
             mesh->m_file_id,
             mesh->m_render_primitive_type,
             mesh->m_input_layout_type,
@@ -254,7 +254,7 @@ namespace Dolas
 			LOG_ERROR("MeshManager::CreateMesh: failed to create render primitive for {0}", mesh_file_path);
 			return MESH_ID_EMPTY;
 		}
-        m_meshes[mesh->m_file_id] = mesh;
+        m_meshes[mesh->m_file_id] = mesh;*/
         return mesh->m_file_id;
     }
 

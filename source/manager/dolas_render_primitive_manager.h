@@ -31,7 +31,7 @@ namespace Dolas
             RenderPrimitiveID id,
             const PrimitiveTopology& render_primitive_type,
             const InputLayoutType& input_layout_type,
-            const std::vector<Float>& vertices,
+            const std::vector<std::vector<Float>>& vertices,
             const std::vector<UInt>& indices);
 
         RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const;
@@ -42,8 +42,8 @@ namespace Dolas
 			RenderPrimitiveID id,
 			const PrimitiveTopology& render_primitive_type,
 			const InputLayoutType& input_layout_type,
-			const std::vector<float>& vertices,
-			const std::vector<unsigned int>& indices);
+			const std::vector<std::vector<Float>>& vertices,
+			const std::vector<UInt>& indices);
 
         std::unordered_map<RenderPrimitiveID, RenderPrimitive*> m_render_primitives;
     }; // class RenderPrimitiveManager

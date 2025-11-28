@@ -224,11 +224,8 @@ namespace Dolas
 		rhi->SetDepthStencilState(DepthStencilStateType::DepthDisabled);
 		rhi->SetBlendState(BlendStateType::Opaque);
 
-        RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
-		
-        RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
-		RenderPrimitive* sphere_render_primitive = primitive_manager->GetRenderPrimitiveByID(sphere_render_primitive_id);
-		DOLAS_RETURN_IF_NULL(sphere_render_primitive);
+        
+
         
         Pose pose;
         RenderCamera* eye_camera = TryGetRenderCamera();
@@ -246,7 +243,17 @@ namespace Dolas
 
         Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
         DOLAS_RETURN_IF_NULL(material);
-        // 处理纹理
+
+        VertexShader* vertex_shader = material->GetVertexShader();
+        DOLAS_RETURN_IF_NULL(vertex_shader);
+
+        PixelShader* pixel_shader = material->GetPixelShader();
+        DOLAS_RETURN_IF_NULL(pixel_shader);
+
+        pixel_shader->ClearShaderResourceViews();
+        pixel_shader->SetShaderResourceView(0, sky_box_texture->GetShaderResourceView());
+
+        // 处理材质球自带纹理
 		material->BindVertexShaderTextures();
 		material->BindPixelShaderTextures();
 		// 绑定 Shader
@@ -256,51 +263,8 @@ namespace Dolas
         rhi->VSSetConstantBuffers();
         rhi->PSSetConstantBuffers();
 
-		PixelShader* pixel_shader = material->GetPixelShader();
-		DOLAS_RETURN_IF_NULL(pixel_shader);
-
-		pixel_shader->ClearShaderResourceViews();
-		pixel_shader->SetShaderResourceView(0, sky_box_texture->GetShaderResourceView());
-
-        ID3D11InputLayout* input_layout = nullptr; 
-        std::vector<D3D11_INPUT_ELEMENT_DESC> input_layout_desc;
-        if (sphere_render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3)
-        {
-            input_layout_desc = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, 12,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-        }
-        else if (sphere_render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3_UV_2)
-        {
-            input_layout_desc = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, 12,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-        }
-        else if (sphere_render_primitive->m_input_layout_type == InputLayoutType::InputLayoutType_POS_3)
-        {
-            input_layout_desc = {
-                { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-        }
-        else
-        {
-            return;
-        }
-
-        g_dolas_engine.m_rhi->GetD3D11Device()->CreateInputLayout(
-            input_layout_desc.data(),
-            input_layout_desc.size(),
-            material->GetVertexShader()->GetD3DShaderBlob()->GetBufferPointer(),
-            material->GetVertexShader()->GetD3DShaderBlob()->GetBufferSize(),
-            &input_layout);
-        rhi->GetD3D11DeviceContext()->IASetInputLayout(input_layout);
-        input_layout->Release();
-        input_layout = nullptr;
-
-        // sphere_render_primitive->Draw(rhi);
+        RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
+        rhi->DrawRenderPrimitive(sphere_render_primitive_id, vertex_shader->GetD3DShaderBlob());
     }
 
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)

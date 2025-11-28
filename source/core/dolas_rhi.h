@@ -82,7 +82,7 @@ namespace Dolas
 		// Texture
 
 		// DC
-		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, const void* vs_blob);
+		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, ID3DBlob* vs_blob);
 	private:
 		bool InitializeWindow();
 		bool InitializeD3D();
@@ -91,7 +91,7 @@ namespace Dolas
 		void InitializeDepthStencilStateCreateDesc();
 		void InitializeBlendStateCreateDesc();
 		void InitializePrimitiveTopology();
-		void InitializeInputLayout();
+		void InitializeInputLayoutDescs();
 
 		std::shared_ptr<RenderTargetView> CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* texture_id);
 		ID3D11RasterizerState* CreateRasterizerState(RasterizerStateType type);
@@ -128,16 +128,16 @@ namespace Dolas
 		ID3DUserDefinedAnnotation* m_d3d_user_annotation;
 
 		std::shared_ptr<RenderTargetView> m_back_buffer_render_target_view;
-		RasterizerState m_rasterizer_states[static_cast<UInt>(RasterizerStateType::RasterizerStateCount)];
-		DepthStencilState m_depth_stencil_states[static_cast<UInt>(DepthStencilStateType::DepthStencilStateCount)];
-		BlendState m_blend_states[static_cast<UInt>(BlendStateType::BlendStateCount)];
+		RasterizerState m_rasterizer_states[RasterizerStateCount];
+		DepthStencilState m_depth_stencil_states[DepthStencilStateCount];
+		BlendState m_blend_states[BlendStateCount];
 
-		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[static_cast<UInt>(RasterizerStateType::RasterizerStateCount)];
-		D3D11_DEPTH_STENCIL_DESC m_depth_stencil_state_create_desc[static_cast<UInt>(DepthStencilStateType::DepthStencilStateCount)];
-		D3D11_BLEND_DESC m_blend_state_create_desc[static_cast<UInt>(BlendStateType::BlendStateCount)];
+		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[RasterizerStateCount];
+		D3D11_DEPTH_STENCIL_DESC m_depth_stencil_state_create_desc[DepthStencilStateCount];
+		D3D11_BLEND_DESC m_blend_state_create_desc[BlendStateCount];
 
-		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[static_cast<UInt>(PrimitiveTopology::PrimitiveTopology_Count)];
-		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_Count)];
+		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[PrimitiveTopology_Count];
+		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[InputLayoutType_Count];
 	};
 
 	// RAII scope for GPU events

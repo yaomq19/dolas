@@ -382,7 +382,9 @@ namespace Dolas
 
 	void DolasRHI::SetIndexBuffer(BufferID index_buffer_id)
 	{
-		m_d3d_immediate_context->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);
+		Buffer* buffer = g_dolas_engine.m_buffer_manager->GetBufferByID(index_buffer_id);
+		DOLAS_RETURN_IF_NULL(buffer);
+		m_d3d_immediate_context->IASetIndexBuffer(buffer->GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
 	}
 
 	void DolasRHI::DrawIndexed(UInt index_count)
@@ -390,12 +392,12 @@ namespace Dolas
 		m_d3d_immediate_context->DrawIndexed(index_count, 0, 0);
 	}
 
-	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, const void* vs_blob)
+	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id, ID3DBlob* vs_blob)
 	{
 		RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 		DOLAS_RETURN_IF_NULL(render_primitive);
 
-		SetInputLayout(render_primitive->m_input_layout_type, vs_blob, 12);
+		SetInputLayout(render_primitive->m_input_layout_type, vs_blob->GetBufferPointer(), vs_blob->GetBufferSize());
 
 		SetPrimitiveTopology(render_primitive->m_topology);
 
@@ -698,7 +700,7 @@ namespace Dolas
 		InitializeDepthStencilStateCreateDesc();
 		InitializeBlendStateCreateDesc();
 		InitializePrimitiveTopology();
-
+		InitializeInputLayoutDescs();
 		return true;
 	}
 
@@ -836,11 +838,26 @@ namespace Dolas
 		m_d3d11_primitive_topology[static_cast<UInt>(PrimitiveTopology::PrimitiveTopology_TriangleList)] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	}
 
-	void DolasRHI::InitializeInputLayout()
+	void DolasRHI::InitializeInputLayoutDescs()
 	{
-		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3)];
-		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3_UV_2)];
-		m_input_element_descs[static_cast<UInt>(InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3)];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_desc = m_input_element_descs[InputLayoutType_POS_3];
+		pos_3_desc =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2];
+		pos_3_uv_2_desc =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3];
+		pos_3_uv_2_norm_3_desc =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
 	}
 
 	void DolasRHI::BeginEvent(const wchar_t* name)
@@ -972,7 +989,7 @@ namespace Dolas
 	{
 		std::shared_ptr<InputLayout> input_layout = std::make_shared<InputLayout>();
 		ID3D11InputLayout* d3d11_input_layout = nullptr;
-		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[static_cast<UInt>(input_layout_type)];
+		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[input_layout_type];
 		m_d3d_device->CreateInputLayout(input_element_desc.data(), input_element_desc.size(), pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout);
 		input_layout->m_d3d_input_layout = d3d11_input_layout;
 		return input_layout;
