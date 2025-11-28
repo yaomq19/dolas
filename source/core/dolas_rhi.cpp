@@ -8,6 +8,7 @@
 #endif
 
 #include <iostream>
+#include <imm.h>  // 输入法控制（切换到英文输入状态）
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_log_system_manager.h"
 #include "render/dolas_render_primitive.h"
@@ -573,6 +574,10 @@ namespace Dolas
 
         ShowWindow(m_window_handle, SW_SHOW);
         UpdateWindow(m_window_handle);
+
+        // 启动时彻底禁用这个窗口上的 IME（直接输入，不经过中文输入法）
+        // 这样键盘消息不会被输入法拦截，可直接用于游戏按键。
+        ImmAssociateContext(m_window_handle, NULL);
 
         return true;
 	}

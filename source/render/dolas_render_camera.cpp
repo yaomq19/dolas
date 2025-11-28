@@ -6,33 +6,38 @@
 namespace Dolas
 {
     static const Float wheel_affect_scale = 0.005f;
-    static const Float default_move_speed = 0.01f;
-    static const Float min_move_speed = 0.001f;
-    static const Float max_move_speed = 0.07f;
+    static const Float min_camera_move_speed = 0.001f;
+    static const Float max_camera_move_speed = 0.07f;
+    static const Float default_camera_move_speed = 0.01f;
+    static const Vector3 default_camera_position(0.0f, 0.0f, 0.0f);
+    static const Vector3 default_camera_forward(0.0f, 0.0f, 1.0f);
+    static const Vector3 default_camera_up(0.0f, 1.0f, 0.0f);
+    static const Float default_camera_near_plane = 0.1f;
+    static const Float default_camera_far_plane = 2000.0f;
 
     using namespace DirectX;
     /* Render Camera */
     // 顺序：构造 -> 析构 -> Getters -> Setters -> 受保护更新函数
     RenderCamera::RenderCamera()
     :   m_camera_perspective_type(CameraPerspectiveType::PERSPECTIVE),
-        m_position(0.0f, 0.0f, 0.0f),
-        m_forward(0.0f, 0.0f, 1.0f),
-        m_up(0.0f, 1.0f, 0.0f),
-        m_near_plane(0.1f),
-        m_far_plane(100.0f),
-		m_move_speed(default_move_speed)
+        m_position(default_camera_position),
+        m_forward(default_camera_forward),
+        m_up(default_camera_up),
+        m_near_plane(default_camera_near_plane),
+        m_far_plane(default_camera_far_plane),
+		m_move_speed(default_camera_move_speed)
     {
         UpdateViewMatrix();
     }
 
     RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type)
     :   m_camera_perspective_type(camera_perspective_type),
-        m_position(0.0f, 0.0f, 0.0f),
-        m_forward(0.0f, 0.0f, 1.0f),
-        m_up(0.0f, 1.0f, 0.0f),
-        m_near_plane(0.1f),
-        m_far_plane(100.0f),
-        m_move_speed(default_move_speed)
+        m_position(default_camera_position),
+        m_forward(default_camera_forward),
+        m_up(default_camera_up),
+        m_near_plane(default_camera_near_plane),
+        m_far_plane(default_camera_far_plane),
+        m_move_speed(default_camera_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -40,11 +45,11 @@ namespace Dolas
     RenderCamera::RenderCamera(CameraPerspectiveType camera_perspective_type, const Vector3& position)
     :   m_camera_perspective_type(camera_perspective_type),
         m_position(position),
-        m_forward(0.0f, 0.0f, 1.0f),
-        m_up(0.0f, 1.0f, 0.0f),
-        m_near_plane(0.1f),
-        m_far_plane(100.0f),
-        m_move_speed(default_move_speed)
+        m_forward(default_camera_forward),
+        m_up(default_camera_up),
+        m_near_plane(default_camera_near_plane),
+        m_far_plane(default_camera_far_plane),
+        m_move_speed(default_camera_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -54,9 +59,9 @@ namespace Dolas
         m_position(position),
         m_forward(forward),
         m_up(up),
-        m_near_plane(0.1f),
-        m_far_plane(100.0f),
-        m_move_speed(default_move_speed)
+        m_near_plane(default_camera_near_plane),
+        m_far_plane(default_camera_far_plane),
+        m_move_speed(default_camera_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -68,7 +73,7 @@ namespace Dolas
         m_up(up),
         m_near_plane(near_plane),
         m_far_plane(far_plane),
-        m_move_speed(0.01f)
+        m_move_speed(default_camera_move_speed)
     {
         UpdateViewMatrix();
     }
@@ -83,8 +88,8 @@ namespace Dolas
 		if (wheel_delta != 0.0f)
 		{
 			m_move_speed += wheel_delta * wheel_affect_scale;
-			if (m_move_speed < min_move_speed) m_move_speed = min_move_speed;
-			if (m_move_speed > max_move_speed) m_move_speed = max_move_speed;
+			if (m_move_speed < min_camera_move_speed) m_move_speed = min_camera_move_speed;
+			if (m_move_speed > max_camera_move_speed) m_move_speed = max_camera_move_speed;
 		}
     }
 

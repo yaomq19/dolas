@@ -1,5 +1,4 @@
 # To Do List
-- RHI 基建
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系
 - 显示世界坐标系
 - HR宏优化
@@ -22,9 +21,8 @@
 # 2025-11-29
 - RHI 基建: VertexBuffer, IndexBuffer, DrawIndexed
 - RHI 基建: VertexShader, Pixel Shader
-- TODO
-    - 补全 RenderScene::BuildFromAsset
-    - 补全 GBufferPass
+- 补全 RenderScene::BuildFromAsset
+- 补全 GBufferPass
 # 2025-11-24
 - RHI 基建: InputLayout, PrimitiveTopology
 # 2025-11-21

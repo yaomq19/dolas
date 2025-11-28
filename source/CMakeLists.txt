@@ -74,6 +74,8 @@ if(WIN32)
         d3dcompiler.lib
         # DirectX GUID 库（提供 IID 和其他标识符）
         dxguid.lib
+        # 输入法控制（ImmGetContext / ImmSetOpenStatus 等）
+        imm32.lib
     )
 endif()
 
