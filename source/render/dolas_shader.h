@@ -8,9 +8,16 @@
 #include "core/dolas_rhi.h"
 namespace Dolas
 {
+    struct ConstantBufferInfo
+    {
+		D3D11_SHADER_BUFFER_DESC constant_buffer_desc;
+		std::vector<D3D11_SHADER_VARIABLE_DESC> variable_descs;
+    };
+
     struct ShaderReflectionInfo
     {
         D3D11_SHADER_DESC shader_desc;
+		std::vector<ConstantBufferInfo> constant_buffer_descs;
     };
 
     class ShaderContext
@@ -29,7 +36,8 @@ namespace Dolas
         const std::unordered_map<size_t, ID3D11ShaderResourceView*>& GetShaderResourceViews() const {return m_shader_resource_views;};
 
     protected:
-        virtual void GenerateReflectionAndDesc();
+        void AnalyzeConstantBuffers(UINT constant_buffers_count);
+        void GenerateReflectionAndDesc();
 
     protected:
         std::string m_file_path;
