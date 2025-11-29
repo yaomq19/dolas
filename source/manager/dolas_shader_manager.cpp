@@ -96,6 +96,7 @@ namespace Dolas
             return nullptr;
         }
 
+        vertex_context->GenerateReflectionAndDesc();
         LOG_INFO("Successfully created shader from {0}", shader_path);
         return vertex_context;
     }
@@ -113,6 +114,7 @@ namespace Dolas
             return nullptr;
         }
 
+        pixel_context->GenerateReflectionAndDesc();
         LOG_INFO("Successfully created shader from {0}", shader_path);
         return pixel_context;
     }

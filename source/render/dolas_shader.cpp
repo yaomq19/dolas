@@ -12,16 +12,16 @@
 #include "manager/dolas_texture_manager.h"
 namespace Dolas
 {
-    Shader::Shader()
+    ShaderContext::ShaderContext()
     {
     }
 
-    Shader::~Shader()
+    ShaderContext::~ShaderContext()
     {
     
     }
 
-	void Shader::Release()
+	void ShaderContext::Release()
 	{
 		if (m_d3d_shader_blob)
 		{
@@ -35,29 +35,27 @@ namespace Dolas
 		}
 	}
 
-	ID3DBlob* Shader::GetD3DShaderBlob()
+	ID3DBlob* ShaderContext::GetD3DShaderBlob()
 	{
 		return m_d3d_shader_blob;
 	}
 
-	ID3D11ShaderReflection* Shader::GetD3DShaderReflection()
-	{
-		return m_d3d_shader_reflection;
-	}
-
-	void Shader::GenerateReflectionAndDesc()
+	void ShaderContext::GenerateReflectionAndDesc()
 	{
 		HR(D3DReflect(m_d3d_shader_blob->GetBufferPointer(), m_d3d_shader_blob->GetBufferSize(), IID_ID3D11ShaderReflection, (void**)&m_d3d_shader_reflection));
-		m_d3d_shader_reflection->GetDesc(&m_shader_desc);
+		
+		HR(m_d3d_shader_reflection->GetDesc(&m_shader_reflection_info.shader_desc));
+		// HR(m_d3d_shader_reflection->GetConstant(&m_shader_desc));
+		// HR(m_d3d_shader_reflection->GetDesc(&m_shader_desc));
 	}
 
-	void Shader::SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* srv)
+	void ShaderContext::SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* srv)
 	{
 		DOLAS_RETURN_IF_NULL(srv);
 		m_shader_resource_views[slot] = srv;
 	}
 
-	void Shader::SetShaderResourceView(size_t slot, TextureID texture_id)
+	void ShaderContext::SetShaderResourceView(size_t slot, TextureID texture_id)
 	{
 		Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
 		DOLAS_RETURN_IF_NULL(texture);
@@ -68,7 +66,7 @@ namespace Dolas
 		m_shader_resource_views[slot] = srv;
 	}
 
-	void Shader::SetShaderResourceView(size_t slot, Texture* texture)
+	void ShaderContext::SetShaderResourceView(size_t slot, Texture* texture)
 	{
 		DOLAS_RETURN_IF_NULL(texture);
 
@@ -76,15 +74,6 @@ namespace Dolas
 		DOLAS_RETURN_IF_NULL(srv);
 
 		m_shader_resource_views[slot] = srv;
-	}
-
-	ID3D11ShaderResourceView* Shader::GetShaderResourceView(size_t slot)
-	{
-		if (m_shader_resource_views.find(slot) == m_shader_resource_views.end())
-		{
-			return nullptr;
-		}
-		return m_shader_resource_views[slot];
 	}
 
 	VertexContext::VertexContext()
@@ -124,14 +113,12 @@ namespace Dolas
 		ID3D11Device* device = g_dolas_engine.m_rhi->GetD3D11Device();
 		HR(device->CreateVertexShader(m_d3d_shader_blob->GetBufferPointer(), m_d3d_shader_blob->GetBufferSize(), nullptr, &m_d3d_vertex_shader));
 
-		GenerateReflectionAndDesc();
-
 		return true;
 	}
 
 	void VertexContext::Release()
 	{
-		Shader::Release();
+		ShaderContext::Release();
 		if (m_d3d_vertex_shader)
 		{
 			m_d3d_vertex_shader->Release();
@@ -142,11 +129,6 @@ namespace Dolas
 	ID3D11VertexShader* VertexContext::GetD3DVertexShader()
 	{
 		return m_d3d_vertex_shader;
-	}
-
-	void VertexContext::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances, const std::unordered_map<int, TextureID>& temp_vertex_shader_textures)
-	{
-		
 	}
 
 	PixelContext::PixelContext()
@@ -186,24 +168,17 @@ namespace Dolas
 		ID3D11Device* device = g_dolas_engine.m_rhi->GetD3D11Device();
 		HR(device->CreatePixelShader(m_d3d_shader_blob->GetBufferPointer(), m_d3d_shader_blob->GetBufferSize(), nullptr, &m_d3d_pixel_shader));
 
-		GenerateReflectionAndDesc();
-
 		return true;
 	}
 
 	void PixelContext::Release()
 	{
-		Shader::Release();
+		ShaderContext::Release();
 		if (m_d3d_pixel_shader)
 		{
 			m_d3d_pixel_shader->Release();
 			m_d3d_pixel_shader = nullptr;
 		}
-	}
-
-	void PixelContext::Bind(DolasRHI* rhi, ID3D11ClassInstance* const* class_instances, UINT num_class_instances, const std::unordered_map<int, TextureID>& temp_pixel_shader_textures)
-	{
-		
 	}
 
 	ID3D11PixelShader* PixelContext::GetD3DPixelShader()

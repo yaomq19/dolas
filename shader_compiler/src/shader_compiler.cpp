@@ -17,7 +17,7 @@ using Microsoft::WRL::ComPtr;
 ShaderCompiler::ShaderCompiler() {
     // 初始化shader目标映射
     m_shader_targets[".vs.hlsl"] = "vs_5_0";      // Vertex Shader
-    m_shader_targets[".ps.hlsl"] = "ps_5_0";      // Pixel Shader  
+    m_shader_targets[".ps.hlsl"] = "ps_5_0";      // Pixel Shader
     m_shader_targets[".gs.hlsl"] = "gs_5_0";      // Geometry Shader
     m_shader_targets[".hs.hlsl"] = "hs_5_0";      // Hull Shader
     m_shader_targets[".ds.hlsl"] = "ds_5_0";      // Domain Shader
