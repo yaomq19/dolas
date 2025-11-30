@@ -1,0 +1,12 @@
+{
+    "vertex_shader" : "plain_color/plain_color_vs.hlsl",
+    "pixel_shader" : "plain_color/plain_color_ps.hlsl",
+
+    "vertex_shader_global_variables" : 
+    {},
+
+    "pixel_shader_global_variables" : 
+    {
+        "g_PlainColor" : [1.0, 0.0, 0.0, 1.0]
+    }
+}

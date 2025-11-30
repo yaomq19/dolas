@@ -8,6 +8,7 @@
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_timer_manager.h"
+#include "manager/dolas_shader_manager.h"
 namespace Dolas
 {
 	struct FontConfig
@@ -97,6 +98,11 @@ namespace Dolas
                 g_dolas_engine.m_render_camera_manager->DumpCameraInfo();
             }
             
+            if (ImGui::Button("Dump Shader Info"))
+            {
+                g_dolas_engine.m_shader_manager->dumpShaderReflectionInfos();
+            }
+
             // FPS 信息显示
             static Float fps = 0.0f;
             

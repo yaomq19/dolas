@@ -80,6 +80,33 @@ namespace Dolas
         return m_pixel_shaders[key];
     }
     
+    void ShaderManager::dumpShaderReflectionInfos() const
+    {
+        LOG_INFO("/*****************************************/");
+        LOG_INFO("Dump Vertex Shaders...");
+        for (auto vertex_shader_iter : m_vertex_shaders)
+        {
+            const std::string& shader_name = vertex_shader_iter.first;
+            const ShaderContext* shader_ptr = vertex_shader_iter.second;
+            LOG_INFO("-----------------------");
+            LOG_INFO("shader name: {0}", shader_name);
+            shader_ptr->dumpShaderReflectionInfo();
+            LOG_INFO("-----------------------");
+		}
+
+        LOG_INFO("Dump Pixel Shaders...");
+        for (auto pixel_shader_iter : m_pixel_shaders)
+        {
+            const std::string& shader_name = pixel_shader_iter.first;
+            const ShaderContext* shader_ptr = pixel_shader_iter.second;
+            LOG_INFO("-----------------------");
+            LOG_INFO("shader name: {0}", shader_name);
+            shader_ptr->dumpShaderReflectionInfo();
+            LOG_INFO("-----------------------");
+        }
+        LOG_INFO("/*****************************************/");
+    }
+
     VertexContext* ShaderManager::CreateVertexShader(const std::string& file_path, const std::string& entry_point)
     {
         std::string shader_path = PathUtils::GetShadersSourceDir() + file_path;
@@ -96,7 +123,7 @@ namespace Dolas
             return nullptr;
         }
 
-        vertex_context->GenerateReflectionAndDesc();
+        vertex_context->PostBuildFromFile();
         LOG_INFO("Successfully created shader from {0}", shader_path);
         return vertex_context;
     }
@@ -114,7 +141,7 @@ namespace Dolas
             return nullptr;
         }
 
-        pixel_context->GenerateReflectionAndDesc();
+        pixel_context->PostBuildFromFile();
         LOG_INFO("Successfully created shader from {0}", shader_path);
         return pixel_context;
     }

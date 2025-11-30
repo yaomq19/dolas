@@ -38,9 +38,6 @@ namespace Dolas
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
-		void SetVertexShader();
-		void SetPixelShader();
-
 		void VSSetConstantBuffers();
 		void PSSetConstantBuffers();
 		
@@ -77,9 +74,11 @@ namespace Dolas
 		void SetBlendState(BlendStateType type);
 		
 		// VertexContext
-		Bool BindVertexContext(class VertexContext* vertex_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindVertexContext(class VertexContext* vertex_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		
 		// PixelContext
-		Bool BindPixelContext(class PixelContext* pixel_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindPixelContext(class PixelContext* pixel_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		
 		// Buffer
 
 		// Texture

@@ -170,18 +170,17 @@ namespace Dolas
         Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
         DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexShader();
+        VertexContext* vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelShader();
+        PixelContext* pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
         pixel_context->SetShaderResourceView(0, render_resource->m_gbuffer_a_id);
         pixel_context->SetShaderResourceView(1, render_resource->m_gbuffer_b_id);
         pixel_context->SetShaderResourceView(2, render_resource->m_gbuffer_c_id);
 
-        if (rhi->BindVertexContext(vertex_context, material->GetVertexShaderTextures())
-            && rhi->BindPixelContext(pixel_context, material->GetPixelShaderTextures()))
+        if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
             RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_QUAD);
             rhi->DrawRenderPrimitive(quad_render_primitive_id);
@@ -220,17 +219,16 @@ namespace Dolas
         Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
         DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexShader();
+        VertexContext* vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelShader();
+        PixelContext* pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
         pixel_context->SetShaderResourceView(0, g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX));
 
 		// 绑定 Shader
-        if (rhi->BindVertexContext(vertex_context, material->GetVertexShaderTextures())
-            && rhi->BindPixelContext(pixel_context, material->GetPixelShaderTextures()))
+        if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
             RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
             rhi->DrawRenderPrimitive(sphere_render_primitive_id);

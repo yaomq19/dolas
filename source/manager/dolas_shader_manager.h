@@ -17,6 +17,7 @@ namespace Dolas
         bool Clear();
         VertexContext* GetOrCreateVertexShader(const std::string& file_path, const std::string& entry_point);
         PixelContext* GetOrCreatePixelShader(const std::string& file_path, const std::string& entry_point);
+        void dumpShaderReflectionInfos() const;
     private:
         VertexContext* CreateVertexShader(const std::string& file_path, const std::string& entry_point);
         PixelContext* CreatePixelShader(const std::string& file_path, const std::string& entry_point);

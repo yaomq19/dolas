@@ -33,12 +33,20 @@ namespace Dolas
         void SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* srv);
         void SetShaderResourceView(size_t slot, TextureID texture_id);
         void SetShaderResourceView(size_t slot, class Texture* texture);
-        const std::unordered_map<size_t, ID3D11ShaderResourceView*>& GetShaderResourceViews() const {return m_shader_resource_views;};
-
+        const std::unordered_map<size_t, ID3D11ShaderResourceView*>& GetSlotToSRVMap() const {return m_slot_to_srv_map;};
+        const ShaderReflectionInfo& GetShaderReflectionInfo() const {return m_shader_reflection_info;};
+        void dumpShaderReflectionInfo() const;
+		ID3D11Buffer* GetGlobalConstantBuffer() { return m_global_constant_buffer; };
+        void ConvertTextureIDMapToSRVMap();
+        // Global constant buffer data（已根据反射布局预打包好的原始字节）
+        const std::vector<uint8_t>& GetGlobalConstantBufferData() const { return m_global_cb_data; }
+        // 设置某个全局变量（按变量名写入 GlobalConstants cbuffer 对应区域）
+        void SetGlobalVariable(const std::string& name, const std::vector<float>& values);
     protected:
         void AnalyzeConstantBuffers(UINT constant_buffers_count);
         void GenerateReflectionAndDesc();
-
+        void CreateGlobalConstantBuffer();
+        void PostBuildFromFile();
     protected:
         std::string m_file_path;
         std::string m_entry_point;
@@ -48,7 +56,11 @@ namespace Dolas
 
 		ShaderReflectionInfo m_shader_reflection_info;
 
-        std::unordered_map<size_t, ID3D11ShaderResourceView*> m_shader_resource_views;
+        std::unordered_map<size_t, TextureID> m_slot_to_texture_map;
+        std::unordered_map<size_t, ID3D11ShaderResourceView*> m_slot_to_srv_map;
+
+		ID3D11Buffer* m_global_constant_buffer = nullptr;
+        std::vector<uint8_t> m_global_cb_data;
 
     }; // class ShaderContext
 

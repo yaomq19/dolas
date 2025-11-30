@@ -1,68 +1,87 @@
 #include "dolas_dx_trace.h"
 #include <windows.h>
-#include <strsafe.h>
+#include <cstdio>
 
 namespace Dolas
 {
-    HRESULT WINAPI DXTraceW(_In_z_ const WCHAR* strFile, _In_ DWORD dwLine, _In_ HRESULT hr, _In_opt_ const WCHAR* strMsg, _In_ bool bPopMsgBox)
+    // 更直观的 DX 错误输出：
+    // 1. 文本说明输出到标准错误（控制台），而不是 VS Output 窗口；
+    // 2. 无论能否通过 FormatMessageW 找到系统错误字符串，都会至少打印十六进制错误码；
+    // 3. 可选地弹出对话框并中断到调试器（保持原有行为）。
+    HRESULT WINAPI DXTraceW(_In_z_ const WCHAR* file_path,
+                            _In_ DWORD         line_number,
+                            _In_ HRESULT       hr,
+                            _In_opt_ const WCHAR* call_expr,
+                            _In_ bool          show_message_box)
     {
-        WCHAR strBufferFile[MAX_PATH];
-        WCHAR strBufferLine[128];
-        WCHAR strBufferError[300];
-        WCHAR strBufferMsg[1024];
-        WCHAR strBufferHR[40];
-        WCHAR strBuffer[3000];
+        WCHAR line_str[64]       = {};
+        WCHAR error_message[512] = {};
+        WCHAR full_message[2048] = {};
+        WCHAR call_message[512]  = {};
 
-        swprintf_s(strBufferLine, 128, L"%lu", dwLine);
-        if (strFile)
-        {
-            swprintf_s(strBuffer, 3000, L"%ls(%ls): ", strFile, strBufferLine);
-            OutputDebugStringW(strBuffer);
-        }
+        // 行号字符串
+        swprintf_s(line_str, L"%lu", line_number);
 
-        size_t nMsgLen = (strMsg) ? wcsnlen_s(strMsg, 1024) : 0;
-        if (nMsgLen > 0)
-        {
-            OutputDebugStringW(strMsg);
-            OutputDebugStringW(L" ");
-        }
-        // Windows SDK 8.0起DirectX的错误信息已经集成进错误码中，可以通过FormatMessageW获取错误信息字符串
-        // 不需要分配字符串内存
-        DWORD res = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            strBufferError, 256, nullptr);
+        // 尝试从系统获取错误码说明
+        DWORD res = FormatMessageW(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            nullptr,
+            hr,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            error_message,
+            static_cast<DWORD>(sizeof(error_message) / sizeof(error_message[0])),
+            nullptr);
+
         if (res == 0)
         {
-            swprintf_s(strBufferError, 256, L"FormatMessageW failed: %lu", hr);
-            return hr;
+            // 无法识别的错误码，给一个兜底描述
+            swprintf_s(error_message,
+                       sizeof(error_message) / sizeof(error_message[0]),
+                       L"Unknown error, HRESULT = 0x%0.8X",
+                       static_cast<unsigned int>(hr));
         }
-        WCHAR* errorStr = wcsrchr(strBufferError, L'\r');    
-        if (errorStr)
+        else
         {
-            errorStr[0] = L'\0';    // 擦除FormatMessageW带来的换行符(把\r\n的\r置换为\0即可)
+            // 去掉 FormatMessageW 附带的 \r\n
+            WCHAR* cr = wcsrchr(error_message, L'\r');
+            if (cr) *cr = L'\0';
+            WCHAR* lf = wcsrchr(error_message, L'\n');
+            if (lf) *lf = L'\0';
         }
 
-        swprintf_s(strBufferHR, 40, L" (0x%0.8x)", hr);
-        wcscat_s(strBufferError, strBufferHR);
-        swprintf_s(strBuffer, 3000, L"错误码含义：%ls", strBufferError);
-        OutputDebugStringW(strBuffer);
-
-        OutputDebugStringW(L"\n");
-
-        if (bPopMsgBox)
+        // 调用表达式信息
+        if (call_expr && call_expr[0] != L'\0')
         {
-            wcscpy_s(strBufferFile, MAX_PATH, L"");
-            if (strFile)
-                wcscpy_s(strBufferFile, MAX_PATH, strFile);
+            swprintf_s(call_message,
+                       sizeof(call_message) / sizeof(call_message[0]),
+                       L"调用表达式：%ls\n",
+                       call_expr);
+        }
 
-            wcscpy_s(strBufferMsg, 1024, L"");
-            if (nMsgLen > 0)
-                swprintf_s(strBufferMsg, 1024, L"当前调用：%ls\n", strMsg);
-			swprintf_s(strBuffer, 3000, L"文件名：%ls\n行号：%ls\n错误码含义：%ls\n%ls您需要调试当前应用程序吗?", strBufferFile, strBufferLine, strBufferError, strBufferMsg);
+        // 组合一条完整的错误消息
+        swprintf_s(full_message,
+                   sizeof(full_message) / sizeof(full_message[0]),
+                   L"[D3D Error]\n文件：%ls\n行号：%ls\nHRESULT：0x%0.8X\n含义：%ls\n%ls",
+                   file_path ? file_path : L"",
+                   line_str,
+                   static_cast<unsigned int>(hr),
+                   error_message,
+                   call_message);
 
-            int nResult = MessageBoxW(GetForegroundWindow(), strBuffer, L"错误", MB_YESNO | MB_ICONERROR);
+        // 输出到标准错误（控制台），方便在非 VS 环境下查看
+        fwprintf(stderr, L"%ls\n", full_message);
+        fflush(stderr);
+
+        if (show_message_box)
+        {
+            int nResult = MessageBoxW(GetForegroundWindow(),
+                                      full_message,
+                                      L"D3D 错误",
+                                      MB_YESNO | MB_ICONERROR);
             if (nResult == IDYES)
+            {
                 DebugBreak();
+            }
         }
 
         return hr;

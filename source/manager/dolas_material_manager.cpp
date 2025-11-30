@@ -40,15 +40,15 @@ namespace Dolas
             if (material)
             {
                 // 清理材质资源
-                if (material->m_vertex_shader)
+                if (material->m_vertex_context)
                 {
-                    material->m_vertex_shader->Release();
-                    material->m_vertex_shader = nullptr;
+                    material->m_vertex_context->Release();
+                    material->m_vertex_context = nullptr;
                 }
-                if (material->m_pixel_shader)
+                if (material->m_pixel_context)
                 {
-                    material->m_pixel_shader->Release();
-                    material->m_pixel_shader = nullptr;
+                    material->m_pixel_context->Release();
+                    material->m_pixel_context = nullptr;
                 }
                 // 释放Material对象本身
                 DOLAS_DELETE(material);
@@ -82,13 +82,13 @@ namespace Dolas
         // 顶点着色器
         if (json_data.contains("vertex_shader"))
         {
-            material->m_vertex_shader = g_dolas_engine.m_shader_manager->GetOrCreateVertexShader(json_data["vertex_shader"], "VS");
+            material->m_vertex_context = g_dolas_engine.m_shader_manager->GetOrCreateVertexShader(json_data["vertex_shader"], "VS");
         }
 
         // 像素着色器
         if (json_data.contains("pixel_shader"))
         {
-            material->m_pixel_shader = g_dolas_engine.m_shader_manager->GetOrCreatePixelShader(json_data["pixel_shader"], "PS");
+            material->m_pixel_context = g_dolas_engine.m_shader_manager->GetOrCreatePixelShader(json_data["pixel_shader"], "PS");
         }
 
         // 解析纹理信息
@@ -113,8 +113,7 @@ namespace Dolas
 				else if (texture_name == "roughness_map") slot = 2;
 				else if (texture_name == "metallic_map") slot = 3;
 				// 可以扩展更多纹理类型
-
-				material->m_vertex_shader_textures[slot] = texture_id;
+                material->m_vertex_context->SetShaderResourceView(slot, texture_id);
 			}
 		}
 
@@ -139,17 +138,62 @@ namespace Dolas
                 else if (texture_name == "roughness_map") slot = 2;
                 else if (texture_name == "metallic_map") slot = 3;
                 // 可以扩展更多纹理类型
-                
-                material->m_pixel_shader_textures[slot] = texture_id;
+                material->m_pixel_context->SetShaderResourceView(slot, texture_id);
             }
         }
 
-        // 解析参数信息
-        if (json_data.contains("parameter"))
+        // 解析全局常量缓冲（GlobalConstants）参数
+        // 约定：vertex_shader_global_variables / pixel_shader_global_variables 为
+        // { "变量名": [f0, f1, f2, f3 ...] } 形式的对象。
+        if (json_data.contains("vertex_shader_global_variables") && material->m_vertex_context)
         {
-            const auto& parameters = json_data["parameter"];
-            for (auto it = parameters.begin(); it != parameters.end(); ++it)
+            const auto& parameters = json_data["vertex_shader_global_variables"];
+            if (parameters.is_object())
             {
+                for (auto it = parameters.begin(); it != parameters.end(); ++it)
+                {
+                    const std::string var_name = it.key();
+                    const auto& value_array = it.value();
+                    if (!value_array.is_array())
+                    {
+                        continue;
+                    }
+
+                    std::vector<float> values;
+                    values.reserve(value_array.size());
+                    for (const auto& v : value_array)
+                    {
+                        values.push_back(v.get<float>());
+                    }
+
+                    material->m_vertex_context->SetGlobalVariable(var_name, values);
+                }
+            }
+        }
+
+        if (json_data.contains("pixel_shader_global_variables") && material->m_pixel_context)
+        {
+            const auto& parameters = json_data["pixel_shader_global_variables"];
+            if (parameters.is_object())
+            {
+                for (auto it = parameters.begin(); it != parameters.end(); ++it)
+                {
+                    const std::string var_name = it.key();
+                    const auto& value_array = it.value();
+                    if (!value_array.is_array())
+                    {
+                        continue;
+                    }
+
+                    std::vector<float> values;
+                    values.reserve(value_array.size());
+                    for (const auto& v : value_array)
+                    {
+                        values.push_back(v.get<float>());
+                    }
+
+                    material->m_pixel_context->SetGlobalVariable(var_name, values);
+                }
             }
         }
 

@@ -14,28 +14,13 @@ namespace Dolas
 
 	}
 
-	VertexContext* Material::GetVertexShader()
+	VertexContext* Material::GetVertexContext()
 	{
-		return m_vertex_shader;
+		return m_vertex_context;
 	}
 
-	PixelContext* Material::GetPixelShader()
+	PixelContext* Material::GetPixelContext()
 	{
-		return m_pixel_shader;
-	}
-
-
-	Bool Material::BindPixelShaderTextures()
-	{
-		for (auto tex_slot_id_pair : m_pixel_shader_textures)
-		{
-			int slot = tex_slot_id_pair.first;
-			TextureID texture_id = tex_slot_id_pair.second;
-			Texture* tex = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
-			DOLAS_CONTINUE_IF_NULL(tex);
-			m_pixel_shader->SetShaderResourceView(slot, tex->GetShaderResourceView());
-
-		}
-		return true;
+		return m_pixel_context;
 	}
 }

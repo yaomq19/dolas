@@ -39,15 +39,14 @@ namespace Dolas
 		Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexShader();
+        VertexContext* vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelShader();
+        PixelContext* pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
 		// 绑定 Shader
-        if (rhi->BindVertexContext(vertex_context, material->GetVertexShaderTextures())
-            && rhi->BindPixelContext(pixel_context, material->GetPixelShaderTextures()))
+        if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
             RenderPrimitiveID render_primitive_id = mesh->GetRenderPrimitiveID();
             g_dolas_engine.m_rhi->DrawRenderPrimitive(render_primitive_id);

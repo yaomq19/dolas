@@ -351,51 +351,86 @@ namespace Dolas
         m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
     }
 
-	Bool DolasRHI::BindVertexContext(VertexContext* vertex_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	Bool DolasRHI::BindVertexContext(VertexContext* vertex_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
+		/* 1. Set shader to context */
 		m_d3d_immediate_context->VSSetShader(vertex_context->GetD3DVertexShader(), class_instances, num_class_instances);
 
-		for (auto tex_slot_id_pair : materal_textures_map)
-		{
-			int slot = tex_slot_id_pair.first;
-			TextureID texture_id = tex_slot_id_pair.second;
-			Texture* tex = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
-			DOLAS_CONTINUE_IF_NULL(tex);
-			ID3D11ShaderResourceView* srv = tex->GetShaderResourceView();
-			DOLAS_CONTINUE_IF_NULL(srv);
-			vertex_context->SetShaderResourceView(slot, srv);
-		}
-
-		const std::unordered_map<size_t, ID3D11ShaderResourceView*>& srvs = vertex_context->GetShaderResourceViews();
+		/* 2. Set SRVs */
+		// Convert 'm_slot_to_texture_map' to 'm_slot_to_srv_map'
+		vertex_context->ConvertTextureIDMapToSRVMap();
+		// Bind the SRV to the corresponding slot based on the 'm_slot_to_srv_map'
+		const auto& srvs = vertex_context->GetSlotToSRVMap();
 		for (auto srv_iter : srvs)
 		{
 			m_d3d_immediate_context->VSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
 		}
 
+		/* 3. Set Samplers(TODO) */
+
+		/* 4. Set Constant Buffer */
+		// Bind Constant Buffer to context
+		ID3D11Buffer* global_constant_buffer = vertex_context->GetGlobalConstantBuffer();
+		m_d3d_immediate_context->VSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+
+		// Update Constant Buffer Data（将 ShaderContext 中预打包好的全局常量拷贝到 GPU CB）
+		const std::vector<uint8_t>& cb_data = vertex_context->GetGlobalConstantBufferData();
+		if (!cb_data.empty())
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedData;
+			HRESULT hr = m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+			if (FAILED(hr))
+			{
+				LOG_ERROR("Failed to map vertex global constant buffer!");
+				return false;
+			}
+
+			memcpy_s(mappedData.pData, cb_data.size(), cb_data.data(), cb_data.size());
+			m_d3d_immediate_context->Unmap(global_constant_buffer, 0);
+		}
+
+		/* 5. Cache vs blob for InputLayout creating later */
 		m_current_vs_blob = vertex_context->GetD3DShaderBlob();
 
 		return true;
 	}
 
 	// PixelContext
-	Bool DolasRHI::BindPixelContext(PixelContext* pixel_context, const std::unordered_map<int, TextureID>& materal_textures_map, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	Bool DolasRHI::BindPixelContext(PixelContext* pixel_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
+		/* 1. Set shader to context */ 
 		m_d3d_immediate_context->PSSetShader(pixel_context->GetD3DPixelShader(), class_instances, num_class_instances);
-
-		for (auto tex_slot_id_pair : materal_textures_map)
-		{
-			int slot = tex_slot_id_pair.first;
-			TextureID texture_id = tex_slot_id_pair.second;
-			Texture* tex = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_id);
-			DOLAS_CONTINUE_IF_NULL(tex);
-			ID3D11ShaderResourceView* srv = tex->GetShaderResourceView();
-			DOLAS_CONTINUE_IF_NULL(srv);
-			pixel_context->SetShaderResourceView(slot, srv);
-		}
-		const std::unordered_map<size_t, ID3D11ShaderResourceView*>& srvs = pixel_context->GetShaderResourceViews();
+		
+		/* 2. Set SRVs */
+		// Convert 'm_slot_to_texture_map' to 'm_slot_to_srv_map'
+		pixel_context->ConvertTextureIDMapToSRVMap();
+		// Bind the SRV to the corresponding slot based on the 'm_slot_to_srv_map'
+		const auto& srvs = pixel_context->GetSlotToSRVMap();
 		for (auto srv_iter : srvs)
 		{
 			m_d3d_immediate_context->PSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
+		}
+
+		/* 3. Set Samplers(TODO) */
+
+		/* 4. Set Constant Buffer */
+		// Bind Constant Buffer to context
+		ID3D11Buffer* global_constant_buffer = pixel_context->GetGlobalConstantBuffer();
+		m_d3d_immediate_context->PSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+		// Update Constant Buffer Data（将 ShaderContext 中预打包好的全局常量拷贝到 GPU CB）
+		const std::vector<uint8_t>& cb_data = pixel_context->GetGlobalConstantBufferData();
+		if (!cb_data.empty())
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedData;
+			HRESULT hr = m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+			if (FAILED(hr))
+			{
+				LOG_ERROR("Failed to map pixel global constant buffer!");
+				return false;
+			}
+
+			memcpy_s(mappedData.pData, cb_data.size(), cb_data.data(), cb_data.size());
+			m_d3d_immediate_context->Unmap(global_constant_buffer, 0);
 		}
 
 		return true;
@@ -451,23 +486,11 @@ namespace Dolas
 		DrawIndexed(render_primitive->m_index_count);
 	}
 
-	void DolasRHI::SetVertexShader()
-	{
-
-	}
-
-	void DolasRHI::SetPixelShader()
-	{
-
-	}
-
 	void DolasRHI::VSSetConstantBuffers()
 	{
 		m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
 		m_d3d_immediate_context->VSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
 		m_d3d_immediate_context->VSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
-
-		m_d3d_immediate_context->VSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, nullptr);
 	}
 
 	void DolasRHI::PSSetConstantBuffers()
@@ -475,8 +498,6 @@ namespace Dolas
 		m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
 		m_d3d_immediate_context->PSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
 		m_d3d_immediate_context->PSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
-
-		m_d3d_immediate_context->PSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, nullptr);
 	}
 
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)

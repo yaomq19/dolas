@@ -1,15 +1,8 @@
 {
     "entities": [
         {
-            "name": "ground_plane",
-            "entity_file": "plane.entity",
-            "position": [0.0, 0.0, 0.0],
-            "rotation": [0.0, 0.0, 0.0],
-            "scale": [1.0, 1.0, 1.0]
-        },
-        {
             "name": "default_cube",
-            "entity_file": "cube.entity", 
+            "entity_file": "plain_color_cube.entity", 
             "position": [0.0, 1.5, 0.0],
             "rotation": [0.0, 0.0, 0.0],
             "scale": [1.0, 1.0, 1.0]
