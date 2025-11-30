@@ -18,8 +18,6 @@ namespace Dolas
     class Vector2
     {
     public:
-        Float x, y;
-        
         Vector2();
         Vector2(Float x, Float y);
         Vector2(const Vector2& other);
@@ -44,10 +42,16 @@ namespace Dolas
         Vector2& operator*=(const Float& number);
         Vector2& operator/=(const Float& number);
         
-        static const Vector2& X();
-        static const Vector2& Y();
-        static const Vector2& Zero();
-        static const Vector2& One();
+    public:
+        Float x;
+        Float y;
+
+    public:
+        static const Vector2 ZERO;
+        static const Vector2 UNIT_X;
+        static const Vector2 UNIT_Y;
+        static const Vector2 UNIT_X_NEGATIVE;
+        static const Vector2 UNIT_Y_NEGATIVE;
     };
 
     class Vector3
@@ -81,19 +85,21 @@ namespace Dolas
         Vector3& operator/=(const Vector3& other);
         Vector3& operator*=(const Float& number);
         Vector3& operator/=(const Float& number);
-
 		Vector3 operator-() const;
 
-        static const Vector3& X();
-        static const Vector3& Y();
-        static const Vector3& Z();
-        static const Vector3& NegativeX();
-        static const Vector3& NegativeY();
-        static const Vector3& NegativeZ();
-
+    public:
         Float x;
         Float y;
         Float z;
+
+    public:
+        static const Vector3 ZERO;
+        static const Vector3 UNIT_X;
+        static const Vector3 UNIT_Y;
+        static const Vector3 UNIT_Z;
+        static const Vector3 UNIT_X_NEGATIVE;
+        static const Vector3 UNIT_Y_NEGATIVE;
+        static const Vector3 UNIT_Z_NEGATIVE;
     };
 
     class Vector4
@@ -127,10 +133,14 @@ namespace Dolas
         Vector4& operator*=(const Float& number);
         Vector4& operator/=(const Float& number);
 
+    public:
         Float x;
         Float y;
         Float z;
         Float w;
+
+    public:
+        static const Vector4 ZERO;
     };
 
     class Matrix3x3
@@ -140,9 +150,6 @@ namespace Dolas
         Matrix3x3(Float m00, Float m01, Float m02, Float m10, Float m11, Float m12, Float m20, Float m21, Float m22);
         Matrix3x3(const Matrix3x3& other);
         ~Matrix3x3();
-
-        static const Matrix3x3& Identity();
-        static const Matrix3x3& Zero();
 
         Matrix3x3 operator+(const Matrix3x3& other) const;
         Matrix3x3 operator*(const Matrix3x3& other) const;
@@ -172,7 +179,12 @@ namespace Dolas
 
         Matrix4x4 ExpandToMatrix4x4() const;
 
+    public:
         Float data[3][3];
+
+    public:
+        static const Matrix3x3 IDENTITY;
+        static const Matrix3x3 ZERO;
     };
 
     class Matrix4x4
@@ -182,9 +194,6 @@ namespace Dolas
         Matrix4x4(Float m00, Float m01, Float m02, Float m03, Float m10, Float m11, Float m12, Float m13, Float m20, Float m21, Float m22, Float m23, Float m30, Float m31, Float m32, Float m33);
         Matrix4x4(const Matrix4x4& other);
         ~Matrix4x4();
-
-        static const Matrix4x4 Identity();
-        static const Matrix4x4 Zero();
 
         Matrix4x4 operator*(const Matrix4x4& other) const;
         Matrix4x4 operator*(const Float& number) const;
@@ -219,8 +228,11 @@ namespace Dolas
         // f, n is Coordinate, so f = -far_plane, n = -near_plane
         // so Even though near_plane < far_plane but f < n
         static Matrix4x4 Perspective(Float fov, Float aspectRatio, Float f, Float n);
-
+    public:
         Float data[4][4];
+    public:
+        static const Matrix4x4 IDENTITY;
+        static const Matrix4x4 ZERO;
     };
 
     class MathUtil
@@ -242,28 +254,18 @@ namespace Dolas
         return m * scalar;
     }
 
-	struct Quaternion
+	class Quaternion
 	{
-		Quaternion()
-		{
-			w = 1.0f;
-			x = 0.0f;
-			y = 0.0f;
-			z = 0.0f;
-		}
-
-		Quaternion(Float w, Float x, Float y, Float z)
-		{
-			this->w = w;
-			this->x = x;
-			this->y = y;
-			this->z = z;
-		}
-
+    public:
+        Quaternion();
+        Quaternion(Float w, Float x, Float y, Float z);
 		Float w;
 		Float x;
 		Float y;
 		Float z;
+	    
+        // static const value
+        static const Quaternion IDENTITY;
 	};
 
 	struct Pose

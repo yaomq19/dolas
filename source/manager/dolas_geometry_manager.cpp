@@ -20,6 +20,7 @@ namespace Dolas
         Bool initialize_result = true;
         initialize_result &= InitializeSphereGeometry();
         initialize_result &= InitializeQuadGeometry();
+		initialize_result &= InitializeCylinderGeometry();
 
         return true;
     }
@@ -65,7 +66,7 @@ namespace Dolas
             return false;
         }
 
-        m_geometries[BaseGeometryType::_SPHERE] = sphere_render_primitive_string_id;
+        m_geometries[BaseGeometryType_SPHERE] = sphere_render_primitive_string_id;
     }
 
     Bool GeometryManager::InitializeQuadGeometry()
@@ -93,7 +94,35 @@ namespace Dolas
             return false;
         }
 
-        m_geometries[BaseGeometryType::_QUAD] = quad_render_primitive_id;
+        m_geometries[BaseGeometryType_QUAD] = quad_render_primitive_id;
+    }
+
+    Bool GeometryManager::InitializeCylinderGeometry()
+    {
+        RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+        DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+        std::vector<std::vector<Float>> vertices_data;
+        std::vector<UInt> indices_data;
+        if (!GenerateCylinderRawData(vertices_data, indices_data))
+        {
+            LOG_ERROR("Failed to generate quad Raw Data");
+            return false;
+        }
+        RenderPrimitiveID cylinder_render_primitive_id = STRING_ID(cylinder_render_primitive);
+        Bool success = render_primitive_manager->CreateRenderPrimitive(
+            cylinder_render_primitive_id,
+            PrimitiveTopology::PrimitiveTopology_TriangleList,
+            InputLayoutType::InputLayoutType_POS_3,
+            vertices_data,
+            indices_data);
+        if (!success)
+        {
+            LOG_ERROR("Failed to CreateRenderPrimitive");
+            return false;
+        }
+
+        m_geometries[BaseGeometryType_CYLINDER] = cylinder_render_primitive_id;
     }
 
     Bool GeometryManager::GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
@@ -233,4 +262,145 @@ namespace Dolas
         return true;
     }
 
+    Bool GeometryManager::GenerateCylinderRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+    {
+        vertices_data.clear();
+        indices.clear();
+
+        // 使用单一顶点流：positions（x, y, z），对应 InputLayoutType_POS_3
+        vertices_data.resize(1);
+        std::vector<Float>& positions = vertices_data[0];
+
+        const Float radius      = 1.0f;
+        const Float half_height = 1.0f;
+        const UInt  segments    = 32;   // 圆周分段数
+        const Float PI          = 3.14159265358979323846f;
+
+        // ---------- 1. 侧面顶点（上环 + 下环） ----------
+        // 顶环 [0 .. segments]
+        for (UInt i = 0; i <= segments; ++i)
+        {
+            Float theta   = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+            Float cosTheta = cos(theta);
+            Float sinTheta = sin(theta);
+
+            Float x = radius * cosTheta;
+            Float z = radius * sinTheta;
+            Float y = half_height;
+
+            positions.push_back(x);
+            positions.push_back(y);
+            positions.push_back(z);
+        }
+
+        // 底环 [segments+1 .. 2*segments+1]
+        const UInt bottom_ring_start = segments + 1;
+        for (UInt i = 0; i <= segments; ++i)
+        {
+            Float theta   = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+            Float cosTheta = cos(theta);
+            Float sinTheta = sin(theta);
+
+            Float x = radius * cosTheta;
+            Float z = radius * sinTheta;
+            Float y = -half_height;
+
+            positions.push_back(x);
+            positions.push_back(y);
+            positions.push_back(z);
+        }
+
+        // ---------- 2. 侧面索引（三角形列表） ----------
+        for (UInt i = 0; i < segments; ++i)
+        {
+            UInt top_curr    = i;
+            UInt top_next    = i + 1;
+            UInt bottom_curr = bottom_ring_start + i;
+            UInt bottom_next = bottom_ring_start + i + 1;
+
+            // 第一个三角形（逆时针，从外侧看）
+            indices.push_back(top_curr);
+            indices.push_back(bottom_curr);
+            indices.push_back(top_next);
+
+            // 第二个三角形
+            indices.push_back(top_next);
+            indices.push_back(bottom_curr);
+            indices.push_back(bottom_next);
+        }
+
+        // ---------- 3. 端盖顶点：顶端 + 底端 ----------
+        // 顶盖中心
+        const UInt top_center_index = static_cast<UInt>(positions.size() / 3);
+        positions.push_back(0.0f);
+        positions.push_back(half_height);
+        positions.push_back(0.0f);
+
+        // 顶盖环（重复一圈，以便索引逻辑和侧面一样简单）
+        const UInt top_cap_ring_start = static_cast<UInt>(positions.size() / 3);
+        for (UInt i = 0; i <= segments; ++i)
+        {
+            Float theta   = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+            Float cosTheta = cos(theta);
+            Float sinTheta = sin(theta);
+
+            Float x = radius * cosTheta;
+            Float z = radius * sinTheta;
+            Float y = half_height;
+
+            positions.push_back(x);
+            positions.push_back(y);
+            positions.push_back(z);
+        }
+
+        // 底盖中心
+        const UInt bottom_center_index = static_cast<UInt>(positions.size() / 3);
+        positions.push_back(0.0f);
+        positions.push_back(-half_height);
+        positions.push_back(0.0f);
+
+        // 底盖环
+        const UInt bottom_cap_ring_start = static_cast<UInt>(positions.size() / 3);
+        for (UInt i = 0; i <= segments; ++i)
+        {
+            Float theta   = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+            Float cosTheta = cos(theta);
+            Float sinTheta = sin(theta);
+
+            Float x = radius * cosTheta;
+            Float z = radius * sinTheta;
+            Float y = -half_height;
+
+            positions.push_back(x);
+            positions.push_back(y);
+            positions.push_back(z);
+        }
+
+        // ---------- 4. 端盖索引（顶盖朝 +Y，底盖朝 -Y） ----------
+        // 顶盖：从上往下看，逆时针
+        for (UInt i = 0; i < segments; ++i)
+        {
+            UInt v0 = top_center_index;
+            UInt v1 = top_cap_ring_start + i;
+            UInt v2 = top_cap_ring_start + i + 1;
+
+            indices.push_back(v0);
+            indices.push_back(v1);
+            indices.push_back(v2);
+        }
+
+        // 底盖：从上往下看，需要顺时针，等价于交换 v1/v2
+        for (UInt i = 0; i < segments; ++i)
+        {
+            UInt v0 = bottom_center_index;
+            UInt v1 = bottom_cap_ring_start + i + 1;
+            UInt v2 = bottom_cap_ring_start + i;
+
+            indices.push_back(v0);
+            indices.push_back(v1);
+            indices.push_back(v2);
+        }
+
+        return true;
+    }
 } // namespace Dolas

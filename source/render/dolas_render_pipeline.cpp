@@ -62,13 +62,21 @@ namespace Dolas
 		RenderCamera* render_camera = TryGetRenderCamera();
 		DOLAS_RETURN_IF_NULL(render_camera);
 		rhi->UpdatePerViewParameters(render_camera);
+
         ClearPass(rhi);
         GBufferPass(rhi);
         DeferredShadingPass(rhi);
         ForwardShadingPass(rhi);
         SkyboxPass(rhi);
         PostProcessPass(rhi);
+
+        if (true)
+        {
+            ShowWorldCoordinate();
+        }
+
         DebugPass(rhi);
+        
         PresentPass(rhi);
     }
 
@@ -182,7 +190,7 @@ namespace Dolas
 
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
-            RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_QUAD);
+            RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_QUAD);
             rhi->DrawRenderPrimitive(quad_render_primitive_id);
         }
     }
@@ -230,7 +238,7 @@ namespace Dolas
 		// 绑定 Shader
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
-            RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType::_SPHERE);
+            RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
             rhi->DrawRenderPrimitive(sphere_render_primitive_id);
         }
     }
@@ -238,6 +246,17 @@ namespace Dolas
     void RenderPipeline::PostProcessPass(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"PostProcessPass");
+    }
+
+    void RenderPipeline::ShowWorldCoordinate()
+    {
+        g_dolas_engine.m_debug_draw_manager->AddCylinder(
+            Vector3::ZERO,
+            0.1f,
+            5.0f,
+            Quaternion::IDENTITY,
+            Color::RED,
+			0.0f);
     }
 
     void RenderPipeline::DebugPass(DolasRHI* rhi)

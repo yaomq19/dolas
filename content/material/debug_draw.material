@@ -1,6 +1,6 @@
 {
-    "vertex_shader" : "debug_draw_vs.hlsl",
-    "pixel_shader" : "debug_draw_ps.hlsl",
+    "vertex_shader" : "debug_draw/debug_draw_vs.hlsl",
+    "pixel_shader" : "debug_draw/debug_draw_ps.hlsl",
 
     "parameter" : {
         "intensity" : 1

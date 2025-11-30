@@ -6,12 +6,12 @@
 
 enum BaseGeometryType : UInt
 {
-    _TRIANGLE,
-    _QUAD,
-    _CUBE,
-    _SPHERE,
-    _CYLINDER,
-    _CONE,
+    BaseGeometryType_TRIANGLE,
+    BaseGeometryType_QUAD,
+    BaseGeometryType_CUBE,
+    BaseGeometryType_SPHERE,
+    BaseGeometryType_CYLINDER,
+    BaseGeometryType_CONE,
 };
 
 namespace Dolas
@@ -27,9 +27,11 @@ namespace Dolas
     protected:
 		Bool InitializeSphereGeometry();
         Bool InitializeQuadGeometry();
+        Bool InitializeCylinderGeometry();
 
         Bool GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
         Bool GenerateQuadRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+        Bool GenerateCylinderRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
     protected:
         std::unordered_map<BaseGeometryType, RenderPrimitiveID> m_geometries;
     };// class GeometryManager

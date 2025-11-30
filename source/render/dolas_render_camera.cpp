@@ -194,7 +194,7 @@ namespace Dolas
         // 获取右向量
         
         // 绕世界Y轴旋转（偏航）
-        Matrix3x3 yaw_rotation = MathUtil::Rotate(Vector3::Z(), yaw_delta);
+        Matrix3x3 yaw_rotation = MathUtil::Rotate(Vector3::UNIT_Z, yaw_delta);
         m_forward = yaw_rotation * m_forward;
         m_up = yaw_rotation * m_up;
         m_forward.Normalize();
@@ -245,11 +245,11 @@ namespace Dolas
         // 上下移动
         if (move_up)
         {
-            movement += Vector3::Z() * m_move_speed * delta_time;
+            movement += Vector3::UNIT_Z * m_move_speed * delta_time;
         }
         if (move_down)
         {
-            movement -= Vector3::Z() * m_move_speed * delta_time;
+            movement -= Vector3::UNIT_Z * m_move_speed * delta_time;
         }
         
         // 应用移动
@@ -266,18 +266,18 @@ namespace Dolas
 
     void RenderCamera::UpdateViewMatrix()
     {
-        Matrix4x4 move_to_origin_matrix = Matrix4x4::Identity();
+        Matrix4x4 move_to_origin_matrix = Matrix4x4::IDENTITY;
         move_to_origin_matrix.data[0][3] = -m_position.x;
         move_to_origin_matrix.data[1][3] = -m_position.y;
         move_to_origin_matrix.data[2][3] = -m_position.z;
 
-        Vector3 n_axis = m_forward.Cross(Vector3::NegativeZ()).Normalized();
-        Float theta = std::acos(m_forward.Dot(Vector3::NegativeZ()));
+        Vector3 n_axis = m_forward.Cross(Vector3::UNIT_Z_NEGATIVE).Normalized();
+        Float theta = std::acos(m_forward.Dot(Vector3::UNIT_Z_NEGATIVE));
         Matrix3x3 forward_to_negative_z_matrix = MathUtil::Rotate(n_axis, theta);
 
         Vector3 up_prime = forward_to_negative_z_matrix * m_up;
-        n_axis = up_prime.Cross(Vector3::Y()).Normalized();
-        theta = std::acos(up_prime.Dot(Vector3::Y()));
+        n_axis = up_prime.Cross(Vector3::UNIT_Y).Normalized();
+        theta = std::acos(up_prime.Dot(Vector3::UNIT_Y));
         Matrix3x3 up_to_y_matrix = MathUtil::Rotate(n_axis, theta);
 
         Matrix3x3 rotate_camera_matrix = up_to_y_matrix * forward_to_negative_z_matrix;

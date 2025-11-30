@@ -41,7 +41,7 @@ namespace Dolas
         // Global constant buffer data（已根据反射布局预打包好的原始字节）
         const std::vector<uint8_t>& GetGlobalConstantBufferData() const { return m_global_cb_data; }
         // 设置某个全局变量（按变量名写入 GlobalConstants cbuffer 对应区域）
-        void SetGlobalVariable(const std::string& name, const std::vector<float>& values);
+        void SetGlobalVariable(const std::string& name, const Vector4& values);
     protected:
         void AnalyzeConstantBuffers(UINT constant_buffers_count);
         void GenerateReflectionAndDesc();

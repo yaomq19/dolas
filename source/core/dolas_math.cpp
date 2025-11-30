@@ -3,6 +3,17 @@
 
 namespace Dolas
 {
+    /* Quaternion */
+    Quaternion::Quaternion(): w(1.0f), x(0.0f), y(0.0f), z(0.0f)
+    {
+    }
+
+    Quaternion::Quaternion(Float w, Float x, Float y, Float z): w(w), x(x), y(y), z(z)
+    {
+    }
+
+    const Quaternion Quaternion::IDENTITY(1.0f, 0.0f, 0.0f, 0.0f);
+
     // Vector2 implementation
     Vector2::Vector2() : x(0.0f), y(0.0f) {}
     
@@ -104,39 +115,13 @@ namespace Dolas
         return *this;
     }
     
-    const Vector2& Vector2::X()
-    {
-        static Vector2 x_vector(1.0f, 0.0f);
-        return x_vector;
-    }
-    
-    const Vector2& Vector2::Y()
-    {
-        static Vector2 y_vector(0.0f, 1.0f);
-        return y_vector;
-    }
-    
-    const Vector2& Vector2::Zero()
-    {
-        static Vector2 zero_vector(0.0f, 0.0f);
-        return zero_vector;
-    }
-    
-    const Vector2& Vector2::One()
-    {
-        static Vector2 one_vector(1.0f, 1.0f);
-        return one_vector;
-    }
+    const Vector2 Vector2::ZERO(0.0f, 0.0f);
+    const Vector2 Vector2::UNIT_X(1.0f, 0.0f);
+    const Vector2 Vector2::UNIT_Y(0.0f, 1.0f);
+    const Vector2 Vector2::UNIT_X_NEGATIVE(-1.0f, 0.0f);
+    const Vector2 Vector2::UNIT_Y_NEGATIVE(0.0f, -1.0f);
     
     // Vector3 implementation
-    /* Vector3 */
-    static const Vector3 s_x(1.0f, 0.0f, 0.0f);
-    static const Vector3 s_y(0.0f, 1.0f, 0.0f);
-    static const Vector3 s_z(0.0f, 0.0f, 1.0f);
-    static const Vector3 s_negative_x(-1.0f, 0.0f, 0.0f);
-    static const Vector3 s_negative_y(0.0f, -1.0f, 0.0f);
-    static const Vector3 s_negative_z(0.0f, 0.0f, -1.0f);
-
     Vector3::Vector3() : x(0.0f), y(0.0f), z(0.0f)
     {
 
@@ -280,35 +265,14 @@ namespace Dolas
 		return Vector3(-x, -y, -z);
     }
 
-    const Vector3& Vector3::X()
-    {
-        return s_x;
-    }
-    
-    const Vector3& Vector3::Y()
-    {
-        return s_y;
-    }
-    
-    const Vector3& Vector3::Z()
-    {
-        return s_z;
-    }
-    
-    const Vector3& Vector3::NegativeX()
-    {
-        return s_negative_x;
-    }
-    
-    const Vector3& Vector3::NegativeY()
-    {
-        return s_negative_y;
-    }
-    
-    const Vector3& Vector3::NegativeZ()
-    {
-        return s_negative_z;
-    }
+    const Vector3 Vector3::ZERO(0.0f, 0.0f, 0.0f);
+    const Vector3 Vector3::UNIT_X(1.0f, 0.0f, 0.0f);
+    const Vector3 Vector3::UNIT_Y(0.0f, 1.0f, 0.0f);
+    const Vector3 Vector3::UNIT_Z(0.0f, 0.0f, 1.0f);
+    const Vector3 Vector3::UNIT_X_NEGATIVE(-1.0f, 0.0f, 0.0f);
+    const Vector3 Vector3::UNIT_Y_NEGATIVE(0.0f, -1.0f, 0.0f);
+    const Vector3 Vector3::UNIT_Z_NEGATIVE(0.0f, 0.0f, -1.0f);
+
     /* Vector4 */
     Vector4::Vector4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f)
     {
@@ -456,17 +420,8 @@ namespace Dolas
         return *this;
     }
     
+    const Vector4 Vector4::ZERO(0.0f, 0.0f, 0.0f, 0.0f);
     /* Matrix3x3 */
-    static const Matrix3x3 s_3x3_identity_matrix(
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f);
-
-    static const Matrix3x3 s_3x3_zero_matrix(
-        0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f);
-    
     Matrix3x3::Matrix3x3()
     {
         SetZero();
@@ -500,16 +455,6 @@ namespace Dolas
 
     Matrix3x3::~Matrix3x3()
     {
-    }
-
-    const Matrix3x3& Matrix3x3::Identity()
-    {
-        return s_3x3_identity_matrix;
-    }
-
-    const Matrix3x3& Matrix3x3::Zero()
-    {
-        return s_3x3_zero_matrix;
     }
 
     Matrix3x3 Matrix3x3::operator+(const Matrix3x3& other) const
@@ -698,19 +643,14 @@ namespace Dolas
             data[2][0], data[2][1], data[2][2], 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f);
     }
-    /* Matrix4x4 */
-    static const Matrix4x4 s_4x4_identity_matrix(
-        1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f);
 
-    static const Matrix4x4 s_4x4_zero_matrix(
-        0.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f);
-    
+    const Matrix3x3 Matrix3x3::IDENTITY(
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f);
+    const Matrix3x3 Matrix3x3::ZERO(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+    /* Matrix4x4 */
     Matrix4x4::Matrix4x4()
     {
         SetZero();
@@ -758,16 +698,6 @@ namespace Dolas
 
     Matrix4x4::~Matrix4x4()
     {
-    }
-
-    const Matrix4x4 Matrix4x4::Identity()
-    {
-        return s_4x4_identity_matrix;
-    }
-
-    const Matrix4x4 Matrix4x4::Zero()
-    {
-        return s_4x4_zero_matrix;
     }
 
     Matrix4x4 Matrix4x4::operator*(const Matrix4x4& other) const
@@ -1073,6 +1003,12 @@ namespace Dolas
         return adjust_w_matrix * ortho_matrix * persp_to_ortho_matrix;
     }
     
+    const Matrix4x4 Matrix4x4::IDENTITY(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
+    const Matrix4x4 Matrix4x4::ZERO(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* MathUtil */
     // angle is radian
     Matrix3x3 MathUtil::Rotate(const Vector3& axis, Float angle)
@@ -1080,7 +1016,7 @@ namespace Dolas
         // Rodrigues' rotation formula: R = cosθ I + (1-cosθ) kk^T + sinθ [k]_x
         Vector3 n = axis.Normalized();
 
-        Matrix3x3 M1 = std::cos(angle) * Matrix3x3::Identity();
+        Matrix3x3 M1 = std::cos(angle) * Matrix3x3::IDENTITY;
 
         Matrix3x3 nnT(
             n.x * n.x, n.x * n.y, n.x * n.z,

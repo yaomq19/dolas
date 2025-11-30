@@ -9,15 +9,17 @@ namespace Dolas
         Float g;
         Float b;
         Float a;
+
+        const static Color WHITE;
+        const static Color BLACK;
+        const static Color RED;
+        const static Color GREEN;
+        const static Color BLUE;
+        const static Color YELLOW;
+        const static Color CYAN;
+        const static Color MAGENTA;
     };
 
-    const static Color COLOR_WHITE = { 1.0f, 1.0f, 1.0f, 1.0f };
-    const static Color COLOR_BLACK = { 0.0f, 0.0f, 0.0f, 1.0f };
-    const static Color COLOR_RED = { 1.0f, 0.0f, 0.0f, 1.0f };
-    const static Color COLOR_GREEN = { 0.0f, 1.0f, 0.0f, 1.0f };
-    const static Color COLOR_BLUE = { 0.0f, 0.0f, 1.0f, 1.0f };
-    const static Color COLOR_YELLOW = { 1.0f, 1.0f, 0.0f, 1.0f };
-    const static Color COLOR_CYAN = { 0.0f, 1.0f, 1.0f, 1.0f };
-    const static Color COLOR_MAGENTA = { 1.0f, 0.0f, 1.0f, 1.0f };
+    
 }// namespace Dolas
 #endif // DOLAS_COLOR_H

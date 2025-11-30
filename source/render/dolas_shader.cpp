@@ -241,7 +241,7 @@ namespace Dolas
         }
 	}
 
-    void ShaderContext::SetGlobalVariable(const std::string& name, const std::vector<float>& values)
+    void ShaderContext::SetGlobalVariable(const std::string& name, const Vector4& values)
     {
         if (m_global_cb_data.empty())
         {
@@ -276,7 +276,7 @@ namespace Dolas
             }
 
             // 计算要拷贝的字节数（不超过变量大小）
-            size_t src_bytes = values.size() * sizeof(float);
+            size_t src_bytes = sizeof(Vector4);
             size_t copy_bytes = std::min<size_t>(src_bytes, var_desc.Size);
 
             if (copy_bytes == 0)
@@ -286,7 +286,7 @@ namespace Dolas
 
             // 写入到 CPU 端 Global CB 缓冲区中相应的偏移位置
             uint8_t* dst = m_global_cb_data.data() + var_desc.StartOffset;
-            std::memcpy(dst, values.data(), copy_bytes);
+            std::memcpy(dst, &values, copy_bytes);
             return;
         }
 	}

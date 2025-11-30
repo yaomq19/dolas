@@ -24,6 +24,7 @@ namespace Dolas
         void SkyboxPass(DolasRHI* rhi);
         void DebugPass(DolasRHI* rhi);
         void PostProcessPass(DolasRHI* rhi);
+        void ShowWorldCoordinate();
         void PresentPass(DolasRHI* rhi);
 
         class RenderScene* TryGetRenderScene() const;

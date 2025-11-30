@@ -360,13 +360,7 @@ namespace Dolas
 		if (!cb_data.empty())
 		{
 			D3D11_MAPPED_SUBRESOURCE mappedData;
-			HRESULT hr = m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-			if (FAILED(hr))
-			{
-				LOG_ERROR("Failed to map vertex global constant buffer!");
-				return false;
-			}
-
+			HR(m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 			memcpy_s(mappedData.pData, cb_data.size(), cb_data.data(), cb_data.size());
 			m_d3d_immediate_context->Unmap(global_constant_buffer, 0);
 		}
@@ -404,13 +398,7 @@ namespace Dolas
 		if (!cb_data.empty())
 		{
 			D3D11_MAPPED_SUBRESOURCE mappedData;
-			HRESULT hr = m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-			if (FAILED(hr))
-			{
-				LOG_ERROR("Failed to map pixel global constant buffer!");
-				return false;
-			}
-
+			HR(m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 			memcpy_s(mappedData.pData, cb_data.size(), cb_data.data(), cb_data.size());
 			m_d3d_immediate_context->Unmap(global_constant_buffer, 0);
 		}

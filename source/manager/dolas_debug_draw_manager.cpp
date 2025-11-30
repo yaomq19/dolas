@@ -5,6 +5,8 @@
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
+#include "render/dolas_shader.h"
+#include "manager/dolas_geometry_manager.h"
 namespace Dolas
 {
     DebugDrawManager::DebugDrawManager()
@@ -33,21 +35,23 @@ namespace Dolas
         Material* debug_draw_material = g_dolas_engine.m_material_manager->GetDebugDrawMaterial();
 		DOLAS_RETURN_IF_NULL(debug_draw_material);
 
-        /*VertexContext* vertex_context = debug_draw_material->GetVertexContext();
+        VertexContext* vertex_context = debug_draw_material->GetVertexContext();
         PixelContext* pixel_context = debug_draw_material->GetPixelContext();
 
         for (const DebugDrawObject& debug_draw_object : m_render_objects)
         {
-            RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(debug_draw_object.m_render_primitive_id);
-            DOLAS_CONTINUE_IF_NULL(render_primitive);
+            Vector4 color_value(
+                debug_draw_object.m_color.r,
+                debug_draw_object.m_color.g,
+                debug_draw_object.m_color.b,
+				debug_draw_object.m_color.a);
 
-            pixel_context->SetNamedData(STRING_ID(color), debug_draw_object.m_color);
-            
-            if (rhi->BindVertexContext() && rhi->BindPixelContext())
+			pixel_context->SetGlobalVariable("g_DebugDrawColor", color_value);
+            if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
             {
-                rhi->DrawRenderPrimitive(render_primitive);
+                rhi->DrawRenderPrimitive(debug_draw_object.m_render_primitive_id);
             }
-        }*/
+        }
     }
 
     void DebugDrawManager::Tick(Float delta_time)
@@ -57,11 +61,6 @@ namespace Dolas
             iter->m_life_time -= delta_time;
             if (iter->m_life_time <= 0.0f)
             {
-                Bool delete_success = g_dolas_engine.m_render_primitive_manager->DeleteRenderPrimitiveByID(iter->m_render_primitive_id);
-                if (!delete_success)
-                {
-                    LOG_ERROR("Failed to delete render primitive : {0}", iter->m_render_primitive_id);
-                }
                 iter = m_render_objects.erase(iter);
             }
             else
@@ -73,6 +72,12 @@ namespace Dolas
 
     void DebugDrawManager::AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time)
     {
-        // todo
+		auto* geometry_manager = g_dolas_engine.m_geometry_manager;
+        DOLAS_RETURN_IF_NULL(geometry_manager);
+		DebugDrawObject cylinder;
+        cylinder.m_render_primitive_id = geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CYLINDER);
+        cylinder.m_color = color;
+        cylinder.m_life_time = life_time;
+		m_render_objects.push_back(cylinder);
     }
 }// namespace Dolas

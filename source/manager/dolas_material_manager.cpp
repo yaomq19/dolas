@@ -11,7 +11,7 @@
 #include "base/dolas_dx_trace.h"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
-
+#include "manager/dolas_log_system_manager.h"
 using json = nlohmann::json;
 
 namespace Dolas
@@ -62,7 +62,7 @@ namespace Dolas
     {
         m_global_materials.m_deferred_shading = CreateMaterial("deferred_shading.material");
         m_global_materials.m_sky_box_material_id = CreateMaterial("sky_box.material");
-        // m_global_materials.m_debug_draw_material_id = CreateMaterial("debug_draw.material");
+        m_global_materials.m_debug_draw_material_id = CreateMaterial("debug_draw.material");
     }
 
     MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
@@ -154,16 +154,17 @@ namespace Dolas
                 {
                     const std::string var_name = it.key();
                     const auto& value_array = it.value();
-                    if (!value_array.is_array())
+                    if (!value_array.is_array() || value_array.size() != 4)
                     {
+                        LOG_ERROR("!value_array.is_array() || value_array.size() != 4");
                         continue;
                     }
 
-                    std::vector<float> values;
-                    values.reserve(value_array.size());
+                    Int idx = 0;
+					Vector4 values;
                     for (const auto& v : value_array)
                     {
-                        values.push_back(v.get<float>());
+                        values[idx++] = v.get<float>();
                     }
 
                     material->m_vertex_context->SetGlobalVariable(var_name, values);
@@ -180,16 +181,17 @@ namespace Dolas
                 {
                     const std::string var_name = it.key();
                     const auto& value_array = it.value();
-                    if (!value_array.is_array())
+                    if (!value_array.is_array() || value_array.size() != 4)
                     {
+                        LOG_ERROR("!value_array.is_array() || value_array.size() != 4");
                         continue;
                     }
 
-                    std::vector<float> values;
-                    values.reserve(value_array.size());
+                    Int idx = 0;
+                    Vector4 values;
                     for (const auto& v : value_array)
                     {
-                        values.push_back(v.get<float>());
+                        values[idx++] = v.get<float>();
                     }
 
                     material->m_pixel_context->SetGlobalVariable(var_name, values);

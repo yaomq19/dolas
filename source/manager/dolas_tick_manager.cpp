@@ -55,7 +55,6 @@ namespace Dolas
     void TickManager::TickPreRender(Float delta_time)
     {
         g_dolas_engine.m_imgui_manager->Tick();
-        g_dolas_engine.m_debug_draw_manager->Tick(delta_time);
     }
 
     void TickManager::TickRender(Float delta_time)
@@ -67,6 +66,7 @@ namespace Dolas
 
     void TickManager::TickPostRender(Float delta_time)
     {
+        g_dolas_engine.m_debug_draw_manager->Tick(delta_time);
     }
 
     void TickManager::TickPreLogic(Float delta_time)

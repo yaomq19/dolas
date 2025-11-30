@@ -25,7 +25,7 @@ namespace Dolas
         void Render();
         void Tick(Float delta_time);
 
-        void AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time = DOLAS_FLOAT_MAX);
+        void AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time = -1.0f);
     protected:
         std::vector<DebugDrawObject> m_render_objects;
     };
