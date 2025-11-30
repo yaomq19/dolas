@@ -3,6 +3,7 @@
 #include "core/dolas_rhi.h"
 #include <iostream>
 #include "manager/dolas_log_system_manager.h"
+#include "base/dolas_dx_trace.h"
 namespace Dolas
 {
     Buffer::Buffer()
@@ -73,12 +74,7 @@ namespace Dolas
             p_init_data = &init_data;
         }
 
-        HRESULT hr = device->CreateBuffer(&desc, p_init_data, &m_d3d_buffer);
-        if (FAILED(hr))
-        {
-            LOG_ERROR("Buffer::CreateBuffer: Failed to create buffer");
-            return false;
-        }
+        HR(device->CreateBuffer(&desc, p_init_data, &m_d3d_buffer));
 
         // 为结构化缓冲区创建Shader Resource View
         if (type == BufferType::STRUCTURED_BUFFER && (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE))
@@ -89,11 +85,7 @@ namespace Dolas
             srv_desc.Buffer.FirstElement = 0;
             srv_desc.Buffer.NumElements = m_element_count;
 
-            hr = device->CreateShaderResourceView(m_d3d_buffer, &srv_desc, &m_shader_resource_view);
-            if (FAILED(hr))
-            {
-                LOG_ERROR("Buffer::CreateBuffer: Failed to create shader resource view");
-            }
+            HR(device->CreateShaderResourceView(m_d3d_buffer, &srv_desc, &m_shader_resource_view));
         }
 
         // 为结构化缓冲区创建Unordered Access View（如果需要）
@@ -111,11 +103,7 @@ namespace Dolas
                 uav_desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
             }
 
-            hr = device->CreateUnorderedAccessView(m_d3d_buffer, &uav_desc, &m_unordered_access_view);
-            if (FAILED(hr))
-            {
-                LOG_ERROR("Buffer::CreateBuffer: Failed to create unordered access view");
-            }
+            HR(device->CreateUnorderedAccessView(m_d3d_buffer, &uav_desc, &m_unordered_access_view));
         }
 
         LOG_INFO("Buffer::CreateBuffer: Successfully created buffer of size {0} bytes", size);
@@ -170,13 +158,7 @@ namespace Dolas
         {
             // 对于动态缓冲区，使用Map/Unmap
             D3D11_MAPPED_SUBRESOURCE mapped_resource;
-            HRESULT hr = context->Map(m_d3d_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource);
-            if (FAILED(hr))
-            {
-                LOG_ERROR("Buffer::UpdateData: Failed to map buffer");
-                return false;
-            }
-
+            HR(context->Map(m_d3d_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_resource));
             memcpy(static_cast<char*>(mapped_resource.pData) + offset, data, size);
             context->Unmap(m_d3d_buffer, 0);
         }
@@ -226,12 +208,7 @@ namespace Dolas
         D3D11_MAPPED_SUBRESOURCE mapped_resource;
         D3D11_MAP map_type = ConvertToD3DMapType(access);
 
-        HRESULT hr = context->Map(m_d3d_buffer, 0, map_type, 0, &mapped_resource);
-        if (FAILED(hr))
-        {
-            LOG_ERROR("Buffer::Map: Failed to map buffer");
-            return false;
-        }
+        HR(context->Map(m_d3d_buffer, 0, map_type, 0, &mapped_resource));
 
         *mapped_data = mapped_resource.pData;
         m_is_mapped = true;

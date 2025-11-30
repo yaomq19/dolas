@@ -11,7 +11,7 @@ namespace Dolas
             HRESULT hr = (x);                                        \
             if(FAILED(hr))                                            \
             {                                                        \
-                DXTraceW(__FILEW__, (DWORD)__LINE__, hr, L#x, true);\
+                DXTraceW(__FILEW__, (DWORD)__LINE__, hr, L#x);\
             }                                                        \
         }
     #endif
@@ -29,9 +29,8 @@ namespace Dolas
     // [In]hlslFileName     当前行号，通常传递宏__LINE__
     // [In]hr                函数执行出现问题时返回的HRESULT值
     // [In]strMsg            用于帮助调试定位的字符串，通常传递L#x(可能为NULL)
-    // [In]bPopMsgBox       如果为TRUE，则弹出一个消息弹窗告知错误信息
     // 返回值: 形参hr
-    HRESULT WINAPI DXTraceW(_In_z_ const WCHAR* strFile, _In_ DWORD dwLine, _In_ HRESULT hr, _In_opt_ const WCHAR* strMsg, _In_ bool bPopMsgBox);
+    HRESULT WINAPI DXTraceW(_In_z_ const WCHAR* strFile, _In_ DWORD dwLine, _In_ HRESULT hr, _In_opt_ const WCHAR* strMsg);
 }
 
 #endif // DOLAS_DX_TRACE_H

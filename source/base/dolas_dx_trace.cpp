@@ -1,88 +1,89 @@
 #include "dolas_dx_trace.h"
 #include <windows.h>
 #include <cstdio>
+#include <cstring>
+#include <string>
+#include "base/dolas_log.h"
 
 namespace Dolas
 {
-    // 更直观的 DX 错误输出：
-    // 1. 文本说明输出到标准错误（控制台），而不是 VS Output 窗口；
-    // 2. 无论能否通过 FormatMessageW 找到系统错误字符串，都会至少打印十六进制错误码；
-    // 3. 可选地弹出对话框并中断到调试器（保持原有行为）。
+    // Direct3D error helper (ASCII / UTF-8):
+    //  - Logs an English message to stderr and to the engine logger (LOG_ERROR)
+    //  - Uses FormatMessageA with LANG_ENGLISH to avoid localized messages
+    //  - Still breaks into the debugger in Debug builds when HR(x) fails
     HRESULT WINAPI DXTraceW(_In_z_ const WCHAR* file_path,
                             _In_ DWORD         line_number,
                             _In_ HRESULT       hr,
-                            _In_opt_ const WCHAR* call_expr,
-                            _In_ bool          show_message_box)
+                            _In_opt_ const WCHAR* call_expr)
     {
-        WCHAR line_str[64]       = {};
-        WCHAR error_message[512] = {};
-        WCHAR full_message[2048] = {};
-        WCHAR call_message[512]  = {};
+        char file_utf8[512]        = {};
+        char call_utf8[512]        = {};
+        char error_message[512]    = {};
+        char call_message[512]     = {};
+        char full_message[2048]    = {};
 
-        // 行号字符串
-        swprintf_s(line_str, L"%lu", line_number);
+        // Convert file path to UTF-8 (or empty string)
+        if (file_path && file_path[0] != L'\0')
+        {
+            WideCharToMultiByte(CP_UTF8, 0, file_path, -1, file_utf8, sizeof(file_utf8), nullptr, nullptr);
+        }
+        else
+        {
+            file_utf8[0] = '\0';
+        }
 
-        // 尝试从系统获取错误码说明
-        DWORD res = FormatMessageW(
+        // Convert call expression to UTF-8
+        if (call_expr && call_expr[0] != L'\0')
+        {
+            WideCharToMultiByte(CP_UTF8, 0, call_expr, -1, call_utf8, sizeof(call_utf8), nullptr, nullptr);
+            std::snprintf(call_message, sizeof(call_message), "Call expression: %s\n", call_utf8);
+        }
+        else
+        {
+            call_message[0] = '\0';
+        }
+
+        // Try to get a human readable error message in EN-US
+        DWORD res = FormatMessageA(
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
             nullptr,
             hr,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
             error_message,
             static_cast<DWORD>(sizeof(error_message) / sizeof(error_message[0])),
             nullptr);
 
         if (res == 0)
         {
-            // 无法识别的错误码，给一个兜底描述
-            swprintf_s(error_message,
-                       sizeof(error_message) / sizeof(error_message[0]),
-                       L"Unknown error, HRESULT = 0x%0.8X",
-                       static_cast<unsigned int>(hr));
+            // Fallback description if FormatMessageA fails
+            std::snprintf(error_message,
+                          sizeof(error_message),
+                          "Unknown error. HRESULT = 0x%0.8X",
+                          static_cast<unsigned int>(hr));
         }
         else
         {
-            // 去掉 FormatMessageW 附带的 \r\n
-            WCHAR* cr = wcsrchr(error_message, L'\r');
-            if (cr) *cr = L'\0';
-            WCHAR* lf = wcsrchr(error_message, L'\n');
-            if (lf) *lf = L'\0';
+            // Strip trailing CR/LF from FormatMessageA
+            char* cr = std::strrchr(error_message, '\r');
+            if (cr) *cr = '\0';
+            char* lf = std::strrchr(error_message, '\n');
+            if (lf) *lf = '\0';
         }
 
-        // 调用表达式信息
-        if (call_expr && call_expr[0] != L'\0')
-        {
-            swprintf_s(call_message,
-                       sizeof(call_message) / sizeof(call_message[0]),
-                       L"调用表达式：%ls\n",
-                       call_expr);
-        }
+        // Compose final message (ASCII / UTF-8)
+        std::snprintf(full_message,
+                      sizeof(full_message),
+                      "[D3D Error]\nFile: %s\nLine: %lu\nHRESULT: 0x%0.8X\nMessage: %s\n%s",
+                      file_utf8,
+                      line_number,
+                      static_cast<unsigned int>(hr),
+                      error_message,
+                      call_message);
 
-        // 组合一条完整的错误消息
-        swprintf_s(full_message,
-                   sizeof(full_message) / sizeof(full_message[0]),
-                   L"[D3D Error]\n文件：%ls\n行号：%ls\nHRESULT：0x%0.8X\n含义：%ls\n%ls",
-                   file_path ? file_path : L"",
-                   line_str,
-                   static_cast<unsigned int>(hr),
-                   error_message,
-                   call_message);
+        // Also log via engine logger (LOG_ERROR uses UTF-8)
+        LOG_ERROR("{}", full_message);
 
-        // 输出到标准错误（控制台），方便在非 VS 环境下查看
-        fwprintf(stderr, L"%ls\n", full_message);
-        fflush(stderr);
-
-        if (show_message_box)
-        {
-            int nResult = MessageBoxW(GetForegroundWindow(),
-                                      full_message,
-                                      L"D3D 错误",
-                                      MB_YESNO | MB_ICONERROR);
-            if (nResult == IDYES)
-            {
-                DebugBreak();
-            }
-        }
+        DebugBreak();
 
         return hr;
     }

@@ -3,6 +3,7 @@
 #include "dxgi_helper.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_input_manager.h"
+#include "base/dolas_dx_trace.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #include <d3d11sdklayers.h>  // For D3D11 debug interfaces
 #endif
@@ -156,12 +157,7 @@ namespace Dolas
 		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		// 新建常量缓冲区，不使用初始数据
-		HRESULT hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create per view constant buffer!");
-			return false;
-		}
+		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer));
 
 		ZeroMemory(&cbd, sizeof(cbd));
 		cbd.Usage = D3D11_USAGE_DYNAMIC;
@@ -169,12 +165,7 @@ namespace Dolas
 		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		// 新建常量缓冲区，不使用初始数据
-		hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create per frame constant buffer!");
-			return false;
-		}
+		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer));
 
 		// Per object
 		ZeroMemory(&cbd, sizeof(cbd));
@@ -183,12 +174,8 @@ namespace Dolas
 		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		// 新建常量缓冲区，不使用初始数据
-		hr = m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_object_parameters_buffer);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create per frame constant buffer!");
-			return false;
-		}
+		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_object_parameters_buffer));
+
 		return true;
 	}
 
@@ -285,12 +272,7 @@ namespace Dolas
 		dsv_desc.Texture2D.MipSlice = 0;
 
 		std::shared_ptr<DepthStencilView> depth_stencil_view = std::make_shared<DepthStencilView>();
-		HRESULT hr = g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(d3d_texture_2d, &dsv_desc, &depth_stencil_view->m_d3d_depth_stencil_view);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create depth stencil view!");
-			return nullptr;
-		}
+		HR(g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(d3d_texture_2d, &dsv_desc, &depth_stencil_view->m_d3d_depth_stencil_view));
 
 		return depth_stencil_view;
 	}
@@ -503,12 +485,8 @@ namespace Dolas
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
 	{
 		ID3D11ShaderResourceView* shader_resource_view = nullptr;
-		HRESULT hr = m_d3d_device->CreateShaderResourceView(resource, nullptr, &shader_resource_view);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create shader resource view!");
-			return nullptr;
-		}
+		HR(m_d3d_device->CreateShaderResourceView(resource, nullptr, &shader_resource_view));
+
 		return shader_resource_view;
 	}
 	
@@ -519,12 +497,8 @@ namespace Dolas
 		per_frame_constant_buffer.light_color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to map per view constant buffer!");
-			return;
-		}
+		HR(m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+
 		memcpy_s(mappedData.pData, sizeof(per_frame_constant_buffer), &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
 		m_d3d_immediate_context->Unmap(m_d3d_per_frame_parameters_buffer, 0);
 	}
@@ -537,12 +511,7 @@ namespace Dolas
 		per_view_constant_buffer.camera_position = Vector4(render_camera->GetPosition(), 1.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to map per view constant buffer!");
-			return;
-		}
+		HR(m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 		memcpy_s(mappedData.pData, sizeof(per_view_constant_buffer), &per_view_constant_buffer, sizeof(per_view_constant_buffer));
 		m_d3d_immediate_context->Unmap(m_d3d_per_view_parameters_buffer, 0);
 	}
@@ -604,12 +573,8 @@ namespace Dolas
 		per_object_constant_buffer.world = trans_mat * scale_mat * ratation_mat;
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HRESULT hr = m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to map per object constant buffer!");
-			return;
-		}
+		HR(m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+
 		memcpy_s(mappedData.pData, sizeof(per_object_constant_buffer), &per_object_constant_buffer, sizeof(per_object_constant_buffer));
 		m_d3d_immediate_context->Unmap(m_d3d_per_object_parameters_buffer, 0);
 	}
@@ -702,7 +667,7 @@ namespace Dolas
 		LOG_INFO("D3D11 Debug Layer enabled!");
 #endif
 
-		HRESULT hr = D3D11CreateDeviceAndSwapChain(
+		HR(D3D11CreateDeviceAndSwapChain(
 			best_adapter,                    // pAdapter
 			D3D_DRIVER_TYPE_UNKNOWN,         // DriverType (使用指定适配器时必须是UNKNOWN)
 			NULL,                            // Software
@@ -715,54 +680,24 @@ namespace Dolas
 			&m_d3d_device,                   // ppDevice
 			&feature_level,                  // pFeatureLevel
 			&m_d3d_immediate_context         // ppImmediateContext
-		);
+		));
 
 		// 释放适配器
 		best_adapter->Release();
 
-		if (FAILED(hr)) {
-			LOG_ERROR("Failed to create D3D11 device and swap chain! HRESULT: {0}", hr);
-			return false;
-		}
 
 		// 查询 GPU 事件注解接口（RenderDoc/PIX 标记）
-		hr = m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation));
-		if (SUCCEEDED(hr) && m_d3d_user_annotation)
-		{
-			LOG_INFO("ID3DUserDefinedAnnotation acquired.");
-		}
-		else
-		{
-			m_d3d_user_annotation = nullptr;
-		}
+		HR(m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation)));
 
-        hr = m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_swap_chain_back_texture));
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to get back buffer! HRESULT: {0}", hr);
-            return false;
-        }
+        HR(m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_swap_chain_back_texture)));
+
 
 		m_back_buffer_render_target_view = CreateRenderTargetViewByD3D11Texture(m_swap_chain_back_texture);
 
 #if defined(DEBUG) || defined(_DEBUG)
 		// 启用D3D11 debug layer的额外配置
 		ID3D11Debug* d3d_debug = nullptr;
-		hr = m_d3d_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&d3d_debug));
-		if (SUCCEEDED(hr)) {
-			ID3D11InfoQueue* d3d_info_queue = nullptr;
-			hr = d3d_debug->QueryInterface(__uuidof(ID3D11InfoQueue), reinterpret_cast<void**>(&d3d_info_queue));
-			if (SUCCEEDED(hr)) {
-				// 设置断点在错误和警告时
-				d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-				d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
-				// 可选：在警告时也断点（可能会比较频繁）
-				// d3d_info_queue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
-				
-				LOG_INFO("D3D11 Debug Info Queue configured!");
-				d3d_info_queue->Release();
-			}
-			d3d_debug->Release();
-		}
+		HR(m_d3d_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&d3d_debug)));
 #endif
 
 		LOG_INFO("Successfully created D3D11 device and swap chain!");
@@ -1033,12 +968,7 @@ namespace Dolas
 
 		std::shared_ptr<RenderTargetView> render_target_view = std::make_shared<RenderTargetView>();
 
-		HRESULT hr = m_d3d_device->CreateRenderTargetView(d3d_texture, &rtv_desc, &render_target_view->m_d3d_render_target_view);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create render target view!");
-			return nullptr;
-		}
+		HR(m_d3d_device->CreateRenderTargetView(d3d_texture, &rtv_desc, &render_target_view->m_d3d_render_target_view));
 
 		return render_target_view;
 	}
@@ -1048,12 +978,8 @@ namespace Dolas
 		D3D11_RASTERIZER_DESC desc = m_rasterizer_state_create_desc[type];
 
 		ID3D11RasterizerState* rasterizer_state = nullptr;
-		HRESULT hr = m_d3d_device->CreateRasterizerState(&desc, &rasterizer_state);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create rasterizer state!");
-			return nullptr;
-		}
+		HR(m_d3d_device->CreateRasterizerState(&desc, &rasterizer_state));
+
 		return rasterizer_state;
 	}
 
@@ -1063,12 +989,7 @@ namespace Dolas
 		UInt stencil_ref_value = m_depth_stencil_state_create_desc[type].second;
 
 		ID3D11DepthStencilState* d3d_depth_stencil_state = nullptr;
-		HRESULT hr = m_d3d_device->CreateDepthStencilState(&desc, &d3d_depth_stencil_state);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create depth stencil state!");
-			return false;
-		}
+		HR(m_d3d_device->CreateDepthStencilState(&desc, &d3d_depth_stencil_state));
 
 		m_depth_stencil_states[type].m_d3d_depth_stencil_state = d3d_depth_stencil_state;
 		m_depth_stencil_states[type].m_stencil_ref_value = stencil_ref_value;
@@ -1079,12 +1000,8 @@ namespace Dolas
 	{
 		D3D11_BLEND_DESC desc = m_blend_state_create_desc[type];
 		ID3D11BlendState* blend_state = nullptr;
-		HRESULT hr = m_d3d_device->CreateBlendState(&desc, &blend_state);
-		if (FAILED(hr))
-		{
-			LOG_ERROR("Failed to create blend state!");
-			return nullptr;
-		}
+		HR(m_d3d_device->CreateBlendState(&desc, &blend_state));
+
 		return blend_state;
 	}
 

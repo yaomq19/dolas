@@ -140,15 +140,8 @@ namespace Dolas
 		D3D11_SUBRESOURCE_DATA init_data = {};
 		init_data.pSysMem = nullptr; // 先不填初始值，后面通过 Map/Unmap 更新
 
-		HRESULT hr = device->CreateBuffer(&cbd, nullptr, &m_global_constant_buffer);
-		if (FAILED(hr) || !m_global_constant_buffer)
-		{
-			LOG_ERROR("Failed to create GlobalConstants constant buffer for shader {0}", m_file_path);
-			m_global_constant_buffer = nullptr;
-			return;
-		}
+		HR(device->CreateBuffer(&cbd, nullptr, &m_global_constant_buffer));
 
-		// 打个日志方便调试
 		LOG_INFO("Created GlobalConstants CB for shader {0}, size = {1} bytes", m_file_path, cb_desc.Size);
 	}
 
@@ -326,7 +319,7 @@ namespace Dolas
 
 		if (error_blob)
 		{
-			OutputDebugStringA(static_cast<char*>(error_blob->GetBufferPointer()));
+			LOG_ERROR(static_cast<char*>(error_blob->GetBufferPointer()));
 			error_blob->Release();
 			error_blob = nullptr;
 			return false;
@@ -381,7 +374,7 @@ namespace Dolas
 
 		if (error_blob)
 		{
-			OutputDebugStringA(static_cast<char*>(error_blob->GetBufferPointer()));
+			LOG_ERROR(static_cast<char*>(error_blob->GetBufferPointer()));
 			error_blob->Release();
 			error_blob = nullptr;
 			return false;

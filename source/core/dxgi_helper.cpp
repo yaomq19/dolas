@@ -1,46 +1,35 @@
 #include "dxgi_helper.h"
 #include "manager/dolas_log_system_manager.h"
 #include "base/dolas_string_util.h"
+#include "base/dolas_dx_trace.h"
 namespace Dolas
 {
     // Select the best performing adapter
     IDXGIAdapter* DXGIHelper::SelectBestAdapter()
     {
         IDXGIFactory* pFactory = nullptr;
-        HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create DXGI Factory!");
-            return nullptr;
-        }
+        HR(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory));
         
         IDXGIAdapter* bestAdapter = nullptr;
-        IDXGIAdapter* currentAdapter = nullptr;
+		DXGI_ADAPTER_DESC best_adpater_desc;
         int bestScore = -1;
-        int bestIndex = -1;
         
         // Loop through all adapters
         LOG_INFO("Auto choose a graphics processor adapter:");
+        IDXGIAdapter* currentAdapter = nullptr;
         for (int i = 0; pFactory->EnumAdapters(i, &currentAdapter) != DXGI_ERROR_NOT_FOUND; i++) {
             DXGI_ADAPTER_DESC desc;
-            hr = currentAdapter->GetDesc(&desc);
-            
-            if (SUCCEEDED(hr)) {
-                int score = GetAdapterPerformanceScore(desc);
-				std::wstring descs(desc.Description);
-                LOG_INFO("Graphics Processor Adapter index: {0} score : {1}, description : {2}", i, score, StringUtil::WStringToString(descs));
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestIndex = i;
-                    
-                    // Release previous best adapter
-                    if (bestAdapter) {
-                        bestAdapter->Release();
-                    }
-                    
-                    // Store current adapter as best (add reference)
-                    bestAdapter = currentAdapter;
-                    bestAdapter->AddRef();
+            HR(currentAdapter->GetDesc(&desc));
+			int current_score = GetAdapterPerformanceScore(desc);
+            if (current_score > bestScore)
+            {
+				bestScore = current_score;
+                if (bestAdapter) {
+                    bestAdapter->Release();
                 }
+                bestAdapter = currentAdapter;
+				bestAdapter->AddRef();
+				best_adpater_desc = desc;
             }
             
             currentAdapter->Release();
@@ -49,7 +38,7 @@ namespace Dolas
         pFactory->Release();
         
         if (bestAdapter) {
-            LOG_INFO("Selected Best Adapter {0} with score: {1}", bestIndex, bestScore);
+            LOG_INFO("Selected Best Adapter Name:{0} with score: {1}", StringUtil::WStringToString(best_adpater_desc.Description).c_str(), bestScore);
         } else {
             LOG_ERROR("No suitable adapter found!");
         }
@@ -65,12 +54,8 @@ namespace Dolas
             return;
         }
         DXGI_ADAPTER_DESC desc;
-        HRESULT hr = pAdapter->GetDesc(&desc);
-        
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to get adapter description!");
-            return;
-        }
+        HR(pAdapter->GetDesc(&desc));
+
         // Output basic information
         LOG_INFO("======Adapter Info======");
         LOG_INFO("Description: {0}", StringUtil::WStringToString(desc.Description));

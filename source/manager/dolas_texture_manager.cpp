@@ -11,6 +11,7 @@
 #include "base/dolas_paths.h"
 #include "DirectXTex.h"
 #include "manager/dolas_log_system_manager.h"
+#include "base/dolas_dx_trace.h"
 namespace Dolas
 {
     // Helper: set D3D11 debug name for RenderDoc and debug layer
@@ -84,57 +85,35 @@ namespace Dolas
         DirectX::ScratchImage image;
         
         // 从 DDS 文件加载
-        HRESULT hr = DirectX::LoadFromDDSFile(
+        HR(DirectX::LoadFromDDSFile(
             texture_file_path_w.c_str(),
             DirectX::DDS_FLAGS_NONE,
             &metadata,
-            image);
-
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to load DDS file: {0} ", texture_file_path);
-            return TEXTURE_ID_EMPTY;
-        }
+            image));
 
         // 创建纹理和 Shader Resource View
-        hr = DirectX::CreateTexture(
+        HR(DirectX::CreateTexture(
             g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
-            &d3d_resource);
+            &d3d_resource));
 
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create texture: {0} ", texture_file_path);
-            return TEXTURE_ID_EMPTY;
-        }
 
         // 创建 Shader Resource View
-        hr = DirectX::CreateShaderResourceView(
+        HR(DirectX::CreateShaderResourceView(
             g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
-            &d3d_shader_resource_view);
+            &d3d_shader_resource_view));
 
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create shader resource view: {0}", texture_file_path);
-            if (d3d_resource) {
-                d3d_resource->Release();
-            }
-            return TEXTURE_ID_EMPTY;
-        }
 
         // 获取ID3D11Texture2D接口
         ID3D11Texture2D* d3d_texture_2d = nullptr;
-        hr = d3d_resource->QueryInterface(__uuidof(ID3D11Texture2D), 
-                                         reinterpret_cast<void**>(&d3d_texture_2d));
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to query ID3D11Texture2D interface!");
-            d3d_resource->Release();
-            if (d3d_shader_resource_view) d3d_shader_resource_view->Release();
-            return TEXTURE_ID_EMPTY;
-        }
-
+        HR(d3d_resource->QueryInterface(
+            __uuidof(ID3D11Texture2D),
+            reinterpret_cast<void**>(&d3d_texture_2d)));
         // 释放原始资源引用（已经通过QueryInterface获得了新的引用）
         d3d_resource->Release();
 
@@ -169,55 +148,35 @@ namespace Dolas
         DirectX::ScratchImage image;
         
         // 从 HDR 文件加载
-        HRESULT hr = DirectX::LoadFromHDRFile(
+        HR(DirectX::LoadFromHDRFile(
             texture_file_path_w.c_str(),
             &metadata,
-            image);
+            image));
 
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to load HDR file: {0}", texture_file_path);
-            return TEXTURE_ID_EMPTY;
-        }
 
         // 创建纹理
-        hr = DirectX::CreateTexture(
+        HR(DirectX::CreateTexture(
             g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
-            &d3d_resource);
+            &d3d_resource));
 
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create texture from HDR: {0}", texture_file_path);
-            return TEXTURE_ID_EMPTY;
-        }
 
         // 创建 Shader Resource View
-        hr = DirectX::CreateShaderResourceView(
+        HR(DirectX::CreateShaderResourceView(
             g_dolas_engine.m_rhi->GetD3D11Device(),
             image.GetImages(),
             image.GetImageCount(),
             metadata,
-            &d3d_shader_resource_view);
+            &d3d_shader_resource_view));
 
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to create shader resource view from HDR: {0}", texture_file_path);
-            if (d3d_resource) {
-                d3d_resource->Release();
-            }
-            return TEXTURE_ID_EMPTY;
-        }
 
         // 获取ID3D11Texture2D接口
         ID3D11Texture2D* d3d_texture_2d = nullptr;
-        hr = d3d_resource->QueryInterface(__uuidof(ID3D11Texture2D), 
-                                         reinterpret_cast<void**>(&d3d_texture_2d));
-        if (FAILED(hr)) {
-            LOG_ERROR("Failed to query ID3D11Texture2D interface from HDR!");
-            d3d_resource->Release();
-            if (d3d_shader_resource_view) d3d_shader_resource_view->Release();
-            return TEXTURE_ID_EMPTY;
-        }
+        HR(d3d_resource->QueryInterface(
+            __uuidof(ID3D11Texture2D),
+            reinterpret_cast<void**>(&d3d_texture_2d)));
 
         // 释放原始资源引用（已经通过QueryInterface获得了新的引用）
         d3d_resource->Release();

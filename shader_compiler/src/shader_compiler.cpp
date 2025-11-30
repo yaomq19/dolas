@@ -143,42 +143,30 @@ CompilationResult ShaderCompiler::CompileHLSLShader(const std::string& filepath,
     ComPtr<ID3DBlob> error_blob;
     
     // 编译shader
-    HRESULT hr = D3DCompile(
-        source_code.c_str(),           // 源代码
-        source_code.length(),          // 源代码长度
-        filepath.c_str(),              // 文件名（用于错误报告）
-        nullptr,                       // 宏定义
-        include_handler,               // include handler
-        entry_point.c_str(),           // 入口点函数名
-        target.c_str(),                // 目标profile
-        compile_flags,                 // 编译标志
-        0,                            // 效果标志
-        &shader_blob,                 // 编译结果
-        &error_blob                   // 错误信息
-    );
+    //HR(D3DCompile(
+    //    source_code.c_str(),           // 源代码
+    //    source_code.length(),          // 源代码长度
+    //    filepath.c_str(),              // 文件名（用于错误报告）
+    //    nullptr,                       // 宏定义
+    //    include_handler,               // include handler
+    //    entry_point.c_str(),           // 入口点函数名
+    //    target.c_str(),                // 目标profile
+    //    compile_flags,                 // 编译标志
+    //    0,                            // 效果标志
+    //    &shader_blob,                 // 编译结果
+    //    &error_blob                   // 错误信息
+    //));
     
-    if (SUCCEEDED(hr) && shader_blob) {
-        result.success = true;
-        result.bytecode_size = std::to_string(shader_blob->GetBufferSize()) + " bytes";
-        
-        LOG_DEBUG("Compilation successful, bytecode size: " + result.bytecode_size);
-        
-    } else {
-        // 编译失败，提取错误信息
-        if (error_blob) {
-            const char* error_str = static_cast<const char*>(error_blob->GetBufferPointer());
-            result.error_message = std::string(error_str, error_blob->GetBufferSize());
+
+    // 编译失败，提取错误信息
+    if (error_blob) {
+        const char* error_str = static_cast<const char*>(error_blob->GetBufferPointer());
+        result.error_message = std::string(error_str, error_blob->GetBufferSize());
             
-            // 清理错误信息中的路径
-            size_t pos = result.error_message.find(filepath);
-            if (pos != std::string::npos) {
-                result.error_message.replace(pos, filepath.length(), FileUtils::GetFilename(filepath));
-            }
-        } else {
-            // 没有详细错误信息，使用HRESULT
-            std::ostringstream oss;
-            oss << "D3DCompile failed, HRESULT: 0x" << std::hex << hr;
-            result.error_message = oss.str();
+        // 清理错误信息中的路径
+        size_t pos = result.error_message.find(filepath);
+        if (pos != std::string::npos) {
+            result.error_message.replace(pos, filepath.length(), FileUtils::GetFilename(filepath));
         }
     }
     
