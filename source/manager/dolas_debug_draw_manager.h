@@ -8,9 +8,10 @@ namespace Dolas
 {
     struct DebugDrawObject
     {
-        RenderPrimitiveID m_render_primitive_id;
-        Color m_color;
-        Float m_life_time;
+		RenderPrimitiveID m_render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
+		Pose m_pose;
+        Color m_color = Color::WHITE;
+		Float m_life_time = -1.0f; // -1 means split-second life time
     };
 
     class DebugDrawManager
@@ -21,11 +22,10 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-
-        void Render();
         void Tick(Float delta_time);
-
+		const std::vector<DebugDrawObject>& GetDebugObjects() const { return m_render_objects; }
         void AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time = -1.0f);
+        void AddSphere(const Vector3& center, const Float radius, const Color& color, Float life_time = -1.0f);
     protected:
         std::vector<DebugDrawObject> m_render_objects;
     };

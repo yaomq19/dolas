@@ -274,7 +274,7 @@ namespace Dolas
         const Float radius      = 1.0f;
         const Float half_height = 1.0f;
         const UInt  segments    = 32;   // 圆周分段数
-        const Float PI          = 3.14159265358979323846f;
+        const Float PI          = MathUtil::PI;
 
         // ---------- 1. 侧面顶点（上环 + 下环） ----------
         // 顶环 [0 .. segments]

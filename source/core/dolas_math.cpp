@@ -1042,4 +1042,6 @@ namespace Dolas
     {
         return radians * (180.0f / DOLAS_PI);
     }
+
+	const Float MathUtil::PI = 3.14159265358979323846f;
 }

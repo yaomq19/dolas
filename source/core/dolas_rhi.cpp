@@ -200,7 +200,15 @@ namespace Dolas
 		m_d3d_immediate_context->CopyResource(m_swap_chain_back_texture, scene_result_texture->GetD3DTexture2D());
 		m_swap_chain->Present(0, 0);
 	}
-    
+
+	void DolasRHI::SetRenderTargetViewAndDepthStencilView(std::shared_ptr<RenderTargetView> d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view)
+	{
+		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
+		ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
+		d3d11_render_target_view_array[0] = d3d11_render_target_view->m_d3d_render_target_view;
+		m_d3d_immediate_context->OMSetRenderTargets(1, d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
+	}
+
 	void DolasRHI::SetRenderTargetViewAndDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view)
 	{
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标

@@ -250,18 +250,70 @@ namespace Dolas
 
     void RenderPipeline::ShowWorldCoordinate()
     {
-        g_dolas_engine.m_debug_draw_manager->AddCylinder(
+        /*g_dolas_engine.m_debug_draw_manager->AddCylinder(
             Vector3::ZERO,
             0.1f,
             5.0f,
             Quaternion::IDENTITY,
-            Color::RED,
-			0.0f);
+            Color::RED);*/
+
+		g_dolas_engine.m_debug_draw_manager->AddSphere(
+			Vector3::ZERO,
+			0.1f,
+			Color::RED);
+
+		g_dolas_engine.m_debug_draw_manager->AddSphere(
+			Vector3(1.0, 0.0, 0.0),
+			0.1f,
+			Color::GREEN);
+
+		g_dolas_engine.m_debug_draw_manager->AddSphere(
+			Vector3(2.0, 0.0, 0.0),
+			0.1f,
+			Color::BLUE);
     }
 
     void RenderPipeline::DebugPass(DolasRHI* rhi)
     {
-        g_dolas_engine.m_debug_draw_manager->Render();
+		UserAnnotationScope scope(rhi, L"DebugPass");
+        const auto& debug_objects = g_dolas_engine.m_debug_draw_manager->GetDebugObjects();
+        DOLAS_RETURN_IF_FALSE(debug_objects.size() != 0);
+        
+		Material* debug_draw_material = g_dolas_engine.m_material_manager->GetDebugDrawMaterial();
+		DOLAS_RETURN_IF_NULL(debug_draw_material);
+
+		VertexContext* vertex_context = debug_draw_material->GetVertexContext();
+		DOLAS_RETURN_IF_NULL(vertex_context);
+
+		PixelContext* pixel_context = debug_draw_material->GetPixelContext();
+		DOLAS_RETURN_IF_NULL(pixel_context);
+
+        auto render_resouce = TryGetRenderResource();
+        
+        auto rtv = g_dolas_engine.m_rhi->CreateRenderTargetView(render_resouce->m_scene_result_id);
+        auto dsv = g_dolas_engine.m_rhi->CreateDepthStencilView(render_resouce->m_depth_stencil_id);
+        g_dolas_engine.m_rhi->SetRenderTargetViewAndDepthStencilView(rtv, dsv);
+
+        g_dolas_engine.m_rhi->SetRasterizerState(RasterizerStateType_Wireframe);
+        g_dolas_engine.m_rhi->SetDepthStencilState(DepthStencilStateType_DepthReadOnly);
+        g_dolas_engine.m_rhi->SetBlendState(BlendStateType_Opaque);
+
+		for (const DebugDrawObject& debug_draw_object : debug_objects)
+		{
+			Vector4 color_value(
+				debug_draw_object.m_color.r,
+				debug_draw_object.m_color.g,
+				debug_draw_object.m_color.b,
+				debug_draw_object.m_color.a);
+
+			pixel_context->SetGlobalVariable("g_DebugDrawColor", color_value);
+			rhi->UpdatePerObjectParameters(debug_draw_object.m_pose);
+			if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
+			{
+				rhi->DrawRenderPrimitive(debug_draw_object.m_render_primitive_id);
+			}
+		}
+
         g_dolas_engine.m_imgui_manager->Render();
     }
 

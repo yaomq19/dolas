@@ -241,6 +241,7 @@ namespace Dolas
         static Matrix3x3 Rotate(const Vector3& axis, Float angle);
         static Float DegreesToRadians(Float degrees);
         static Float RadiansToDegrees(Float radians);
+        static const Float PI;
     };
     
     // scalar * matrix helpers

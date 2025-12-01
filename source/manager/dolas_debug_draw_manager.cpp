@@ -27,33 +27,6 @@ namespace Dolas
         return true;
     }
 
-    void DebugDrawManager::Render()
-    {
-        DolasRHI* rhi = g_dolas_engine.m_rhi;
-		DOLAS_RETURN_IF_NULL(rhi);
-
-        Material* debug_draw_material = g_dolas_engine.m_material_manager->GetDebugDrawMaterial();
-		DOLAS_RETURN_IF_NULL(debug_draw_material);
-
-        VertexContext* vertex_context = debug_draw_material->GetVertexContext();
-        PixelContext* pixel_context = debug_draw_material->GetPixelContext();
-
-        for (const DebugDrawObject& debug_draw_object : m_render_objects)
-        {
-            Vector4 color_value(
-                debug_draw_object.m_color.r,
-                debug_draw_object.m_color.g,
-                debug_draw_object.m_color.b,
-				debug_draw_object.m_color.a);
-
-			pixel_context->SetGlobalVariable("g_DebugDrawColor", color_value);
-            if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
-            {
-                rhi->DrawRenderPrimitive(debug_draw_object.m_render_primitive_id);
-            }
-        }
-    }
-
     void DebugDrawManager::Tick(Float delta_time)
     {
 		for (auto iter = m_render_objects.begin(); iter != m_render_objects.end();)
@@ -76,8 +49,25 @@ namespace Dolas
         DOLAS_RETURN_IF_NULL(geometry_manager);
 		DebugDrawObject cylinder;
         cylinder.m_render_primitive_id = geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CYLINDER);
+		cylinder.m_pose.m_postion = center;
+		cylinder.m_pose.m_rotation = rotation;
+		cylinder.m_pose.m_scale = Vector3(radius, height, radius);
         cylinder.m_color = color;
         cylinder.m_life_time = life_time;
 		m_render_objects.push_back(cylinder);
+    }
+
+    void DebugDrawManager::AddSphere(const Vector3& center, const Float radius, const Color& color, Float life_time)
+    {
+		auto* geometry_manager = g_dolas_engine.m_geometry_manager;
+		DOLAS_RETURN_IF_NULL(geometry_manager);
+		DebugDrawObject sphere;
+        sphere.m_render_primitive_id = geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
+		sphere.m_pose.m_postion = center;
+		sphere.m_pose.m_rotation = Quaternion::IDENTITY;
+		sphere.m_pose.m_scale = Vector3(radius, radius, radius);
+        sphere.m_color = color;
+        sphere.m_life_time = life_time;
+		m_render_objects.push_back(sphere);
     }
 }// namespace Dolas

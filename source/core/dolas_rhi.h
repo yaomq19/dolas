@@ -52,6 +52,7 @@ namespace Dolas
 
 		// RenderTargetView
 		std::shared_ptr<RenderTargetView> CreateRenderTargetView(TextureID texture_id);
+		void SetRenderTargetViewAndDepthStencilView(std::shared_ptr<RenderTargetView> d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view);
 		void SetRenderTargetViewAndDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view);
 		void SetRenderTargetViewWithoutDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view);
 		void ClearRenderTargetView(std::shared_ptr<RenderTargetView> rtv, const Float clear_color[4]);
