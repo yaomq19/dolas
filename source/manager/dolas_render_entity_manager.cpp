@@ -42,75 +42,108 @@ namespace Dolas
 #pragma optimize("", off)
     RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const SceneEntity& scene_entity)
     {
+        RenderEntityID result_id = RENDER_ENTITY_ID_EMPTY;
+		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
+		MaterialID material_id = MATERIAL_ID_EMPTY;
+
         std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
         
         json json_data;
         Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(render_entity_file_path, json_data);
         if (!ret)
         {
-            return RENDER_ENTITY_ID_EMPTY;
+            goto CreateRenderEntity_Failed;
         }
 
-        RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
         if (json_data.contains("type"))
         {
             std::string type_name = json_data["type"];
             
-			if (json_data.contains("mesh"))
-			{
-				RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
-				if (primitive_manager == nullptr)
+            if (type_name == "base_geometry")
+            {
+				if (json_data.contains("base_geometry"))
 				{
-					return RENDER_ENTITY_ID_EMPTY;
+                    std::string base_geometry_name = json_data["base_geometry"];
+                    if (base_geometry_name == "cube")
+                    {
+                        render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
+                    }
+                    else
+                    {
+                        goto CreateRenderEntity_Failed;
+                    }
 				}
-				std::string mesh_file_name = json_data["mesh"];
-                render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
-				if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
+				else
 				{
-					return RENDER_ENTITY_ID_EMPTY;
+					goto CreateRenderEntity_Failed;
 				}
-			}
+            }
+            else if (type_name == "mesh")
+            {
+				if (json_data.contains("mesh"))
+				{
+					RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
+					if (primitive_manager == nullptr)
+					{
+						goto CreateRenderEntity_Failed;
+					}
+					std::string mesh_file_name = json_data["mesh"];
+					render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
+					if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
+					{
+						goto CreateRenderEntity_Failed;
+					}
+				}
+				else
+				{
+					goto CreateRenderEntity_Failed;
+				}
+            }
 			else
 			{
-				return RENDER_ENTITY_ID_EMPTY;
+				goto CreateRenderEntity_Failed;
 			}
         }
 		else
 		{
-			return RENDER_ENTITY_ID_EMPTY;
+			goto CreateRenderEntity_Failed;
 		}
 
-        
-        MaterialID material_id = MATERIAL_ID_EMPTY;
         if (json_data.contains("material"))
         {
             MaterialManager* material_manager = g_dolas_engine.m_material_manager;
             if (material_manager == nullptr)
             {
-                return RENDER_ENTITY_ID_EMPTY;
+                goto CreateRenderEntity_Failed;
             }
             std::string material_file_name = json_data["material"];
             material_id = material_manager->CreateMaterial(material_file_name);
             if (material_id == MATERIAL_ID_EMPTY)
             {
-                return RENDER_ENTITY_ID_EMPTY;
+                goto CreateRenderEntity_Failed;
             }
         }
         else
         {
-            return RENDER_ENTITY_ID_EMPTY;
+            goto CreateRenderEntity_Failed;
         }
 
-        RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
-        render_entity->m_file_id = STRING_ID(render_entity_file_path);
-        render_entity->m_render_primitive_id = render_primitive_id;
-        render_entity->m_material_id = material_id;
-        render_entity->m_pose.m_postion = scene_entity.position;
-        render_entity->m_pose.m_rotation = scene_entity.rotation;
-        render_entity->m_pose.m_scale = scene_entity.scale;
+        // 成功路径：创建 RenderEntity 并返回有效 ID
+        {
+            RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
+            render_entity->m_file_id = STRING_ID(render_entity_file_path);
+            render_entity->m_render_primitive_id = render_primitive_id;
+            render_entity->m_material_id = material_id;
+            render_entity->m_pose.m_postion = scene_entity.position;
+            render_entity->m_pose.m_rotation = scene_entity.rotation;
+            render_entity->m_pose.m_scale = scene_entity.scale;
 
-        m_render_entities[render_entity->m_file_id] = render_entity;
-        return render_entity->m_file_id;
+            m_render_entities[render_entity->m_file_id] = render_entity;
+            result_id = render_entity->m_file_id;
+        }
+
+    CreateRenderEntity_Failed:
+        return result_id;
     }
 
     RenderEntity* RenderEntityManager::GetRenderEntityByID(RenderEntityID render_entity_id)

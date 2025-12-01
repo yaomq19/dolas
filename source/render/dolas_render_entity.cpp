@@ -40,13 +40,7 @@ namespace Dolas
 
         PixelContext* pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
-
-        // RenderEntity 现在直接持有 RenderPrimitiveID
-        if (m_render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
-        {
-            return;
-        }
-
+        
         rhi->UpdatePerObjectParameters(m_pose);
 		// 绑定 Shader 并绘制对应的 RenderPrimitive
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))

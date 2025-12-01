@@ -10,7 +10,5 @@ VS_OUTPUT VS(VS_INPUT input)
     float4 proj_position = mul(view_position, g_ProjectionMatrix);
     
     output.position = proj_position;
-    output.normal = input.normal;
-    output.texcoord = input.texcoord;
     return output;
 }

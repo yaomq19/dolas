@@ -1,6 +1,6 @@
 {
     "camera_perspective_type": "perspective",
-    "position": [0, 0, 0],
+    "position": [0, -3, 0],
     "forward": [0, 1, 0],
     "up": [0, 0, 1],
     "near_plane" : 0.1,
