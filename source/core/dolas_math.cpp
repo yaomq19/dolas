@@ -12,6 +12,41 @@ namespace Dolas
     {
     }
 
+    Quaternion::Quaternion(const Vector3& axis, Float angle)
+    {
+        // axis 为旋转轴，angle 为角度（单位：度）
+        // 约定：从原点沿着 axis 方向看过去，顺时针为正角度。
+        // 而四元数的标准右手系约定是“逆时针为正角度”，
+        // 因此这里需要把角度取反，再生成标准右手系四元数。
+
+        // 1. 归一化旋转轴
+        Float len = std::sqrt(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z);
+        if (len <= 0.0f)
+        {
+            // 退化情况：轴长度为 0，则使用单位四元数
+            w = 1.0f;
+            x = y = z = 0.0f;
+            return;
+        }
+
+        Float nx = axis.x / len;
+        Float ny = axis.y / len;
+        Float nz = axis.z / len;
+
+        // 2. 角度（度）转成弧度，并取反实现“从轴方向看去顺时针为正”
+        Float radians    = MathUtil::DegreesToRadians(angle);
+        Float half_angle = -0.5f * radians; // 负号实现顺时针为正
+
+        Float s = std::sin(half_angle);
+        Float c = std::cos(half_angle);
+
+        // 3. 标准四元数形式：q = [cos(θ/2), sin(θ/2) * n]
+        w = c;
+        x = nx * s;
+        y = ny * s;
+        z = nz * s;
+    }
+
     const Quaternion Quaternion::IDENTITY(1.0f, 0.0f, 0.0f, 0.0f);
 
     // Vector2 implementation
@@ -38,39 +73,39 @@ namespace Dolas
         Float length = Length();
         if (length > 0.0f)
         {
-            return Vector2(x / length, y / length);
+            return {x / length, y / length};
         }
-        return Vector2(0.0f, 0.0f);
+        return {0.0f, 0.0f};
     }
     
     Vector2 Vector2::operator+(const Vector2& other) const
     {
-        return Vector2(x + other.x, y + other.y);
+        return {x + other.x, y + other.y};
     }
     
     Vector2 Vector2::operator-(const Vector2& other) const
     {
-        return Vector2(x - other.x, y - other.y);
+        return {x - other.x, y - other.y};
     }
     
     Vector2 Vector2::operator*(const Vector2& other) const
     {
-        return Vector2(x * other.x, y * other.y);
+        return {x * other.x, y * other.y};
     }
     
     Vector2 Vector2::operator/(const Vector2& other) const
     {
-        return Vector2(x / other.x, y / other.y);
+        return {x / other.x, y / other.y};
     }
     
     Vector2 Vector2::operator*(const Float& number) const
     {
-        return Vector2(x * number, y * number);
+        return {x * number, y * number};
     }
     
     Vector2 Vector2::operator/(const Float& number) const
     {
-        return Vector2(x / number, y / number);
+        return {x / number, y / number};
     }
     
     Vector2& Vector2::operator+=(const Vector2& other)

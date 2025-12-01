@@ -61,7 +61,7 @@ namespace Dolas
 
 		for (const SceneEntity& scene_entity : scene_asset->entities)
 		{
-			RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(scene_entity.entity_file);
+			RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(scene_entity);
 			if (render_entity_id != RENDER_ENTITY_ID_EMPTY)
 			{
 				m_render_entities.push_back(render_entity_id);

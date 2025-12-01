@@ -79,25 +79,25 @@ namespace Dolas
                                                                    const Vector3& scale)
     {
         // Create or get the render entity
-        RenderEntityID entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file_name);
-        if (entity_id == RENDER_ENTITY_ID_EMPTY)
-        {
-            LOG_ERROR("Failed to create render entity from file: {0}", entity_file_name);
-            return RENDER_OBJECT_ID_EMPTY;
-        }
+        //RenderEntityID entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file_name);
+        //if (entity_id == RENDER_ENTITY_ID_EMPTY)
+        //{
+        //    LOG_ERROR("Failed to create render entity from file: {0}", entity_file_name);
+        //    return RENDER_OBJECT_ID_EMPTY;
+        //}
 
-        // Create the render object
-        std::string object_name = "Object_" + entity_file_name + "_" + std::to_string(m_next_object_id);
-        RenderObjectID object_id = CreateRenderObject(object_name);
-        if (object_id == RENDER_OBJECT_ID_EMPTY)
-        {
-            return RENDER_OBJECT_ID_EMPTY;
-        }
+        //// Create the render object
+        //std::string object_name = "Object_" + entity_file_name + "_" + std::to_string(m_next_object_id);
+        //RenderObjectID object_id = CreateRenderObject(object_name);
+        //if (object_id == RENDER_OBJECT_ID_EMPTY)
+        //{
+        //    return RENDER_OBJECT_ID_EMPTY;
+        //}
 
-        // Configure the render object
-        RenderObject* render_object = GetRenderObjectByID(object_id);
+        //// Configure the render object
+        //RenderObject* render_object = GetRenderObjectByID(object_id);
 
-        return object_id;
+        return 0;
     }
 
     bool RenderObjectManager::DestroyRenderObject(RenderObjectID object_id)

@@ -17,16 +17,509 @@ namespace Dolas
     {
     }
 
-    bool RenderPrimitiveManager::Initialize()
+    Bool RenderPrimitiveManager::Initialize()
     {
-        return true;
+		Bool initialize_result = true;
+		initialize_result &= InitializeSphereGeometry();
+		initialize_result &= InitializeQuadGeometry();
+		initialize_result &= InitializeCylinderGeometry();
+		initialize_result &= InitializeCubeGeometry();
+
+        return initialize_result;
     }
 
-    bool RenderPrimitiveManager::Clear()
+    Bool RenderPrimitiveManager::Clear()
     {
+		m_base_geometries.clear();
         m_render_primitives.clear();
         return true;
     }
+
+	RenderPrimitiveID RenderPrimitiveManager::GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type)
+	{
+		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
+		auto iter = m_base_geometries.find(geometry_type);
+		if (iter != m_base_geometries.end())
+		{
+			render_primitive_id = iter->second;
+		}
+		return render_primitive_id;
+	}
+
+	Bool RenderPrimitiveManager::InitializeSphereGeometry()
+	{
+		RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+		DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+		std::vector<std::vector<Float>> vertices_data;
+		std::vector<UInt> indices_data;
+		if (!GenerateSphereRawData(10, vertices_data, indices_data))
+		{
+			LOG_ERROR("Failed to generate sphere Raw Data");
+			return false;
+		}
+		RenderPrimitiveID sphere_render_primitive_string_id = STRING_ID(sphere_render_primitive);
+		Bool success = render_primitive_manager->CreateRenderPrimitive(
+			sphere_render_primitive_string_id,
+			PrimitiveTopology::PrimitiveTopology_TriangleList,
+			InputLayoutType::InputLayoutType_POS_3,
+			vertices_data,
+			indices_data);
+		if (!success)
+		{
+			LOG_ERROR("Failed to CreateRenderPrimitive");
+			return false;
+		}
+
+		m_base_geometries[BaseGeometryType_SPHERE] = sphere_render_primitive_string_id;
+	}
+
+	Bool RenderPrimitiveManager::InitializeQuadGeometry()
+	{
+		RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+		DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+		std::vector<std::vector<Float>> vertices_data;
+		std::vector<UInt> indices_data;
+		if (!GenerateQuadRawData(vertices_data, indices_data))
+		{
+			LOG_ERROR("Failed to generate quad Raw Data");
+			return false;
+		}
+		RenderPrimitiveID quad_render_primitive_id = STRING_ID(quad_render_primitive);
+		Bool success = render_primitive_manager->CreateRenderPrimitive(
+			quad_render_primitive_id,
+			PrimitiveTopology::PrimitiveTopology_TriangleList,
+			InputLayoutType::InputLayoutType_POS_3_UV_2,
+			vertices_data,
+			indices_data);
+		if (!success)
+		{
+			LOG_ERROR("Failed to CreateRenderPrimitive");
+			return false;
+		}
+
+		m_base_geometries[BaseGeometryType_QUAD] = quad_render_primitive_id;
+	}
+
+	Bool RenderPrimitiveManager::InitializeCylinderGeometry()
+	{
+		RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+		DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+		std::vector<std::vector<Float>> vertices_data;
+		std::vector<UInt> indices_data;
+		if (!GenerateCylinderRawData(vertices_data, indices_data))
+		{
+			LOG_ERROR("Failed to generate quad Raw Data");
+			return false;
+		}
+		RenderPrimitiveID cylinder_render_primitive_id = STRING_ID(cylinder_render_primitive);
+		Bool success = render_primitive_manager->CreateRenderPrimitive(
+			cylinder_render_primitive_id,
+			PrimitiveTopology::PrimitiveTopology_TriangleList,
+			InputLayoutType::InputLayoutType_POS_3,
+			vertices_data,
+			indices_data);
+		if (!success)
+		{
+			LOG_ERROR("Failed to CreateRenderPrimitive");
+			return false;
+		}
+
+		m_base_geometries[BaseGeometryType_CYLINDER] = cylinder_render_primitive_id;
+	}
+
+	Bool RenderPrimitiveManager::InitializeCubeGeometry()
+	{
+		RenderPrimitiveManager* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+		DOLAS_RETURN_FALSE_IF_NULL(render_primitive_manager);
+
+		std::vector<std::vector<Float>> vertices_data;
+		std::vector<UInt> indices_data;
+
+		if (!GenerateCubeRawData(vertices_data, indices_data))
+		{
+			LOG_ERROR("Failed to generate cube Raw Data");
+			return false;
+		}
+
+		RenderPrimitiveID cube_render_primitive_id = STRING_ID(cube_render_primitive);
+		Bool success = render_primitive_manager->CreateRenderPrimitive(
+			cube_render_primitive_id,
+			PrimitiveTopology::PrimitiveTopology_TriangleList,
+			InputLayoutType::InputLayoutType_POS_3,
+			vertices_data,
+			indices_data);
+
+		if (!success)
+		{
+			LOG_ERROR("Failed to CreateRenderPrimitive");
+			return false;
+		}
+
+		m_base_geometries[BaseGeometryType_CUBE] = cube_render_primitive_id;
+	}
+
+	Bool RenderPrimitiveManager::GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+	{
+		// ��֤ segments ������Χ
+		if (segments < 1 || segments > 100)
+		{
+			LOG_ERROR("Invalid segments value: {}, valid range is [1, 100]", segments);
+			return false;
+		}
+
+		vertices_data.clear();
+		indices.clear();
+
+		vertices_data.resize(1); // ֻʹ��һ�ֶ����ʽ������ʹ�õ�һ��Ԫ�ش洢λ������
+		const Float PI = 3.14159265358979323846f;
+		const Float radius = 1.0f;
+
+		// ����ֶ���
+		// latitudeSegments: γ�ȷ���ķֶ������ӱ������ϼ���
+		// longitudeSegments: ���ȷ���ķֶ������������壩
+		UInt latitudeSegments = segments;
+		UInt longitudeSegments = segments * 2; // ���ȷֶ���ͨ����γ�ȵ�2����ʹ�����θ��ӽ�������
+
+		// ���ɶ���
+		// �������� = (latitudeSegments + 1) * (longitudeSegments + 1)
+		for (UInt lat = 0; lat <= latitudeSegments; ++lat)
+		{
+			// phi: γ�Ƚǣ���Χ [0, PI]���ӱ��� (0) ���ϼ� (PI)
+			Float phi = static_cast<Float>(lat) / static_cast<Float>(latitudeSegments) * PI;
+			Float sinPhi = sin(phi);
+			Float cosPhi = cos(phi);
+
+			for (UInt lon = 0; lon <= longitudeSegments; ++lon)
+			{
+				// theta: ���Ƚǣ���Χ [0, 2*PI]
+				Float theta = static_cast<Float>(lon) / static_cast<Float>(longitudeSegments) * 2.0f * PI;
+				Float sinTheta = sin(theta);
+				Float cosTheta = cos(theta);
+
+				// ������ת�ѿ�������
+				// x = r * sin(phi) * cos(theta)
+				// y = r * cos(phi)
+				// z = r * sin(phi) * sin(theta)
+				Float x = radius * sinPhi * cosTheta;
+				Float y = radius * cosPhi;
+				Float z = radius * sinPhi * sinTheta;
+
+				vertices_data[0].push_back(x);
+				vertices_data[0].push_back(y);
+				vertices_data[0].push_back(z);
+			}
+		}
+
+		// �����������������б���
+		for (UInt lat = 0; lat < latitudeSegments; ++lat)
+		{
+			for (UInt lon = 0; lon < longitudeSegments; ++lon)
+			{
+				// ��ǰ�ı��ε��ĸ���������
+				UInt first = lat * (longitudeSegments + 1) + lon;
+				UInt second = first + longitudeSegments + 1;
+
+				// ��һ�������� (��ʱ�뷽��)
+				indices.push_back(first);
+				indices.push_back(second);
+				indices.push_back(first + 1);
+
+				// �ڶ��������� (��ʱ�뷽��)
+				indices.push_back(second);
+				indices.push_back(second + 1);
+				indices.push_back(first + 1);
+			}
+		}
+
+		return true;
+	}
+
+	Bool RenderPrimitiveManager::GenerateQuadRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+	{
+		vertices_data.clear();
+		indices.clear();
+
+		// ��Ӧ InputLayoutType_POS_3_UV_2��
+		// stream 0: position (x, y, z)
+		// stream 1: uv       (u, v)
+		vertices_data.resize(2);
+
+		// �� XY ƽ���ϵĵ�λ�ı��Σ�������ԭ�㣬�泯 +Z ����
+		// ����˳��
+		// 0: (-1, -1, 0)  uv (0, 1)
+		// 1: (-1,  1, 0)  uv (0, 0)
+		// 2: ( 1, -1, 0)  uv (1, 1)
+		// 3: ( 1,  1, 0)  uv (1, 0)
+
+		// positions (stream 0)
+		vertices_data[0].push_back(-1.0f); // v0
+		vertices_data[0].push_back(-1.0f);
+		vertices_data[0].push_back(0.5f);
+
+		vertices_data[0].push_back(-1.0f); // v1
+		vertices_data[0].push_back(1.0f);
+		vertices_data[0].push_back(0.5f);
+
+		vertices_data[0].push_back(1.0f); // v2
+		vertices_data[0].push_back(-1.0f);
+		vertices_data[0].push_back(0.5f);
+
+		vertices_data[0].push_back(1.0f); // v3
+		vertices_data[0].push_back(1.0f);
+		vertices_data[0].push_back(0.5f);
+
+		// uvs (stream 1)
+		vertices_data[1].push_back(0.0f); // v0
+		vertices_data[1].push_back(1.0f);
+
+		vertices_data[1].push_back(0.0f); // v1
+		vertices_data[1].push_back(0.0f);
+
+		vertices_data[1].push_back(1.0f); // v2
+		vertices_data[1].push_back(1.0f);
+
+		vertices_data[1].push_back(1.0f); // v3
+		vertices_data[1].push_back(0.0f);
+
+		// ������TriangleList����ʱ�룬�泯 +Z��
+		// ������ 1: v0, v2, v1
+		// ������ 2: v2, v3, v1
+		indices.push_back(0);
+		indices.push_back(2);
+		indices.push_back(1);
+
+		indices.push_back(2);
+		indices.push_back(3);
+		indices.push_back(1);
+
+		return true;
+	}
+
+	Bool RenderPrimitiveManager::GenerateCylinderRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+	{
+		vertices_data.clear();
+		indices.clear();
+
+		// ʹ�õ�һ��������positions��x, y, z������Ӧ InputLayoutType_POS_3
+		vertices_data.resize(1);
+		std::vector<Float>& positions = vertices_data[0];
+
+		const Float radius = 1.0f;
+		const Float half_height = 0.5f;
+		const UInt  segments = 32;   // Բ�ֶܷ���
+		const Float PI = MathUtil::PI;
+
+		// ---------- 1. ���涥�㣨�ϻ� + �»��� ----------
+		// ���� [0 .. segments]
+		for (UInt i = 0; i <= segments; ++i)
+		{
+			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float cosTheta = cos(theta);
+			Float sinTheta = sin(theta);
+
+			Float x = radius * cosTheta;
+			Float z = radius * sinTheta;
+			Float y = half_height;
+
+			positions.push_back(x);
+			positions.push_back(y);
+			positions.push_back(z);
+		}
+
+		// �׻� [segments+1 .. 2*segments+1]
+		const UInt bottom_ring_start = segments + 1;
+		for (UInt i = 0; i <= segments; ++i)
+		{
+			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float cosTheta = cos(theta);
+			Float sinTheta = sin(theta);
+
+			Float x = radius * cosTheta;
+			Float z = radius * sinTheta;
+			Float y = -half_height;
+
+			positions.push_back(x);
+			positions.push_back(y);
+			positions.push_back(z);
+		}
+
+		// ---------- 2. �����������������б��� ----------
+		for (UInt i = 0; i < segments; ++i)
+		{
+			UInt top_curr = i;
+			UInt top_next = i + 1;
+			UInt bottom_curr = bottom_ring_start + i;
+			UInt bottom_next = bottom_ring_start + i + 1;
+
+			// ��һ�������Σ���ʱ�룬����࿴��
+			indices.push_back(top_curr);
+			indices.push_back(bottom_curr);
+			indices.push_back(top_next);
+
+			// �ڶ���������
+			indices.push_back(top_next);
+			indices.push_back(bottom_curr);
+			indices.push_back(bottom_next);
+		}
+
+		// ---------- 3. �˸Ƕ��㣺���� + �׶� ----------
+		// ��������
+		const UInt top_center_index = static_cast<UInt>(positions.size() / 3);
+		positions.push_back(0.0f);
+		positions.push_back(half_height);
+		positions.push_back(0.0f);
+
+		// ���ǻ����ظ�һȦ���Ա������߼��Ͳ���һ���򵥣�
+		const UInt top_cap_ring_start = static_cast<UInt>(positions.size() / 3);
+		for (UInt i = 0; i <= segments; ++i)
+		{
+			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float cosTheta = cos(theta);
+			Float sinTheta = sin(theta);
+
+			Float x = radius * cosTheta;
+			Float z = radius * sinTheta;
+			Float y = half_height;
+
+			positions.push_back(x);
+			positions.push_back(y);
+			positions.push_back(z);
+		}
+
+		// �׸�����
+		const UInt bottom_center_index = static_cast<UInt>(positions.size() / 3);
+		positions.push_back(0.0f);
+		positions.push_back(-half_height);
+		positions.push_back(0.0f);
+
+		// �׸ǻ�
+		const UInt bottom_cap_ring_start = static_cast<UInt>(positions.size() / 3);
+		for (UInt i = 0; i <= segments; ++i)
+		{
+			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float cosTheta = cos(theta);
+			Float sinTheta = sin(theta);
+
+			Float x = radius * cosTheta;
+			Float z = radius * sinTheta;
+			Float y = -half_height;
+
+			positions.push_back(x);
+			positions.push_back(y);
+			positions.push_back(z);
+		}
+
+		// ---------- 4. �˸����������ǳ� +Y���׸ǳ� -Y�� ----------
+		// ���ǣ��������¿�����ʱ��
+		for (UInt i = 0; i < segments; ++i)
+		{
+			UInt v0 = top_center_index;
+			UInt v1 = top_cap_ring_start + i;
+			UInt v2 = top_cap_ring_start + i + 1;
+
+			indices.push_back(v0);
+			indices.push_back(v1);
+			indices.push_back(v2);
+		}
+
+		// �׸ǣ��������¿�����Ҫ˳ʱ�룬�ȼ��ڽ��� v1/v2
+		for (UInt i = 0; i < segments; ++i)
+		{
+			UInt v0 = bottom_center_index;
+			UInt v1 = bottom_cap_ring_start + i + 1;
+			UInt v2 = bottom_cap_ring_start + i;
+
+			indices.push_back(v0);
+			indices.push_back(v1);
+			indices.push_back(v2);
+		}
+
+		return true;
+	}
+
+	Bool RenderPrimitiveManager::GenerateCubeRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
+	{
+		vertices_data.clear();
+		indices.clear();
+
+		// 使用单一顶点流：positions（x, y, z），对应 InputLayoutType_POS_3
+		vertices_data.resize(1);
+		std::vector<Float>& positions = vertices_data[0];
+
+		const Float half_extent = 0.5f;
+
+		// 8 个顶点，立方体中心在原点，边长为 1（范围 [-0.5, 0.5]）
+		// v0: (-x, -y, -z)
+		positions.push_back(-half_extent);
+		positions.push_back(-half_extent);
+		positions.push_back(-half_extent);
+
+		// v1: (-x, +y, -z)
+		positions.push_back(-half_extent);
+		positions.push_back(half_extent);
+		positions.push_back(-half_extent);
+
+		// v2: (+x, +y, -z)
+		positions.push_back(half_extent);
+		positions.push_back(half_extent);
+		positions.push_back(-half_extent);
+
+		// v3: (+x, -y, -z)
+		positions.push_back(half_extent);
+		positions.push_back(-half_extent);
+		positions.push_back(-half_extent);
+
+		// v4: (-x, -y, +z)
+		positions.push_back(-half_extent);
+		positions.push_back(-half_extent);
+		positions.push_back(half_extent);
+
+		// v5: (-x, +y, +z)
+		positions.push_back(-half_extent);
+		positions.push_back(half_extent);
+		positions.push_back(half_extent);
+
+		// v6: (+x, +y, +z)
+		positions.push_back(half_extent);
+		positions.push_back(half_extent);
+		positions.push_back(half_extent);
+
+		// v7: (+x, -y, +z)
+		positions.push_back(half_extent);
+		positions.push_back(-half_extent);
+		positions.push_back(half_extent);
+
+		// 6 个面，每个面 2 个三角形，共 12 个三角形（36 个索引）
+
+		// 前面 (+Z)：v4, v5, v6, v7
+		indices.push_back(4); indices.push_back(5); indices.push_back(6);
+		indices.push_back(4); indices.push_back(6); indices.push_back(7);
+
+		// 后面 (-Z)：v0, v1, v2, v3
+		indices.push_back(3); indices.push_back(2); indices.push_back(1);
+		indices.push_back(3); indices.push_back(1); indices.push_back(0);
+
+		// 左面 (-X)：v0, v1, v5, v4
+		indices.push_back(0); indices.push_back(1); indices.push_back(5);
+		indices.push_back(0); indices.push_back(5); indices.push_back(4);
+
+		// 右面 (+X)：v3, v2, v6, v7
+		indices.push_back(7); indices.push_back(6); indices.push_back(2);
+		indices.push_back(7); indices.push_back(2); indices.push_back(3);
+
+		// 顶面 (+Y)：v1, v2, v6, v5
+		indices.push_back(1); indices.push_back(2); indices.push_back(6);
+		indices.push_back(1); indices.push_back(6); indices.push_back(5);
+
+		// 底面 (-Y)：v0, v4, v7, v3
+		indices.push_back(0); indices.push_back(4); indices.push_back(7);
+		indices.push_back(0); indices.push_back(7); indices.push_back(3);
+
+		return true;
+	}
 
     RenderPrimitive* RenderPrimitiveManager::BuildFromRawData(
 		const PrimitiveTopology& render_primitive_type,
@@ -165,25 +658,6 @@ namespace Dolas
             return m_render_primitives.at(render_primitive_id);
         }
         return nullptr;
-    }
-
-    Bool RenderPrimitiveManager::DeleteRenderPrimitiveByID(RenderPrimitiveID render_primitive_id)
-    {
-        auto finder = m_render_primitives.find(render_primitive_id);
-		if (finder == m_render_primitives.end())
-		{
-			return false;
-		}
-
-        if (finder->second == nullptr)
-        {
-            return false;
-        }
-
-        finder->second->Clear();
-        m_render_primitives.erase(finder);
-
-        return true;
     }
 }
 

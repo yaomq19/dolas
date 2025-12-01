@@ -29,6 +29,7 @@ namespace Dolas
         RenderEntityID m_file_id = RENDER_ENTITY_ID_EMPTY;
         MeshID m_mesh_id = MESH_ID_EMPTY;
         MaterialID m_material_id = MATERIAL_ID_EMPTY;
+		Pose m_pose = Pose();
     };
 } // namespace Dolas
 

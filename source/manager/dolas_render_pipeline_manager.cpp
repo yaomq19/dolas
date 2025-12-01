@@ -1,7 +1,9 @@
 #include "base/dolas_base.h"
 #include "manager/dolas_render_pipeline_manager.h"
 #include "render/dolas_render_pipeline.h"
-
+#include "manager/dolas_render_view_manager.h"
+#include "core/dolas_engine.h"
+#include "render/dolas_render_view.h"
 namespace Dolas
 {
     RenderPipelineManager::RenderPipelineManager()
@@ -48,4 +50,14 @@ namespace Dolas
         m_render_pipelines[id] = render_pipeline;
 		return true;
     }
+
+    void RenderPipelineManager::DisplayWorldCoordinateSystem()
+    {
+		RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
+        RenderView* main_render_view = render_view_manager->GetMainRenderView();
+        RenderPipelineID render_pipeline_id = main_render_view->GetRenderPipelineID();
+        RenderPipeline* render_pipeline = GetRenderPipelineByID(render_pipeline_id);
+        render_pipeline->DisplayWorldCoordinateSystem();
+    }
+
 } // namespace Dolas

@@ -24,15 +24,12 @@
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_log_system_manager.h"
-#include "manager/dolas_geometry_manager.h"
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_tick_manager.h"
 #include "manager/dolas_imgui_manager.h"
 #include "manager/dolas_debug_draw_manager.h"
 namespace Dolas
 {
-	const UInt k_print_debug_info_every_n_frames = 20;
-
     RenderPipeline::RenderPipeline() : m_viewport(0.0f, 0.0f, DEFAULT_CLIENT_WIDTH, DEFAULT_CLIENT_HEIGHT, 0.0f, 1.0f)
     {
 
@@ -70,13 +67,13 @@ namespace Dolas
         SkyboxPass(rhi);
         PostProcessPass(rhi);
 
-        if (true)
+        if (m_display_world_coordinate)
         {
-            ShowWorldCoordinate();
+            DisplayWorldCoordinate();
         }
 
         DebugPass(rhi);
-        
+        ImGUIPass();
         PresentPass(rhi);
     }
 
@@ -84,6 +81,11 @@ namespace Dolas
     {
         m_render_view_id = id;
     }
+
+	void RenderPipeline::DisplayWorldCoordinateSystem()
+    {
+		m_display_world_coordinate = !m_display_world_coordinate;
+	}
 
     void RenderPipeline::ClearPass(DolasRHI* rhi)
     {
@@ -190,7 +192,7 @@ namespace Dolas
 
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
-            RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_QUAD);
+            RenderPrimitiveID quad_render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_QUAD);
             rhi->DrawRenderPrimitive(quad_render_primitive_id);
         }
     }
@@ -238,7 +240,7 @@ namespace Dolas
 		// 绑定 Shader
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {
-            RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
+            RenderPrimitiveID sphere_render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
             rhi->DrawRenderPrimitive(sphere_render_primitive_id);
         }
     }
@@ -248,28 +250,27 @@ namespace Dolas
         UserAnnotationScope scope(rhi, L"PostProcessPass");
     }
 
-    void RenderPipeline::ShowWorldCoordinate()
+    void RenderPipeline::DisplayWorldCoordinate()
     {
-        /*g_dolas_engine.m_debug_draw_manager->AddCylinder(
-            Vector3::ZERO,
+        g_dolas_engine.m_debug_draw_manager->AddCylinder(
+            Vector3(0.5, 0.0, 0.0),
             0.1f,
-            5.0f,
-            Quaternion::IDENTITY,
-            Color::RED);*/
+            1.0f,
+            Quaternion(Vector3::UNIT_Z, 90),
+            Color::RED);
 
-		g_dolas_engine.m_debug_draw_manager->AddSphere(
-			Vector3::ZERO,
+		g_dolas_engine.m_debug_draw_manager->AddCylinder(
+			Vector3(0.0, 0.5, 0.0),
 			0.1f,
-			Color::RED);
-
-		g_dolas_engine.m_debug_draw_manager->AddSphere(
-			Vector3(1.0, 0.0, 0.0),
-			0.1f,
+			1.0f,
+			Quaternion::IDENTITY,
 			Color::GREEN);
 
-		g_dolas_engine.m_debug_draw_manager->AddSphere(
-			Vector3(2.0, 0.0, 0.0),
+		g_dolas_engine.m_debug_draw_manager->AddCylinder(
+			Vector3(0.0, 0.0, 0.5),
 			0.1f,
+			1.0f,
+            Quaternion(Vector3::UNIT_X, 90),
 			Color::BLUE);
     }
 
@@ -313,7 +314,10 @@ namespace Dolas
 				rhi->DrawRenderPrimitive(debug_draw_object.m_render_primitive_id);
 			}
 		}
+    }
 
+    void RenderPipeline::ImGUIPass()
+    {
         g_dolas_engine.m_imgui_manager->Render();
     }
 

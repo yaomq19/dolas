@@ -162,7 +162,7 @@ namespace Dolas
 					scene_entity.name = entity_json["name"];
 					scene_entity.entity_file = entity_json["entity_file"];
 					scene_entity.position = Vector3(entity_json["position"][0], entity_json["position"][1], entity_json["position"][2]);
-					scene_entity.rotation = Vector3(entity_json["rotation"][0], entity_json["rotation"][1], entity_json["rotation"][2]);
+					scene_entity.rotation = Quaternion(entity_json["rotation"][0], entity_json["rotation"][1], entity_json["rotation"][2], entity_json["rotation"][3]);
 					scene_entity.scale = Vector3(entity_json["scale"][0], entity_json["scale"][1], entity_json["scale"][2]);
 					scene_asset->entities.push_back(scene_entity);
 				}

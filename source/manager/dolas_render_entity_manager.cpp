@@ -46,9 +46,9 @@ namespace Dolas
         return true;
     }
 #pragma optimize("", off)
-    RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const std::string& render_entity_file_name)
+    RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const SceneEntity& scene_entity)
     {
-        std::string render_entity_file_path = PathUtils::GetEntityDir() + render_entity_file_name;
+        std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
         
         json json_data;
         Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(render_entity_file_path, json_data);
@@ -57,26 +57,35 @@ namespace Dolas
             return RENDER_ENTITY_ID_EMPTY;
         }
 
-        MeshID mesh_id = MESH_ID_EMPTY;
-        if (json_data.contains("mesh"))
+        if (json_data.contains("type"))
         {
-            MeshManager* mesh_manager = g_dolas_engine.m_mesh_manager;
-            if (mesh_manager == nullptr)
-            {
-                return RENDER_ENTITY_ID_EMPTY;
-            }
-            std::string mesh_file_name = json_data["mesh"];
-            mesh_id = mesh_manager->CreateMesh(mesh_file_name);
-            if (mesh_id == MESH_ID_EMPTY)
-            {
-                return RENDER_ENTITY_ID_EMPTY;
-            }
+            std::string type_name = json_data["type"];
+            MeshID mesh_id = MESH_ID_EMPTY;
+			if (json_data.contains("mesh"))
+			{
+				MeshManager* mesh_manager = g_dolas_engine.m_mesh_manager;
+				if (mesh_manager == nullptr)
+				{
+					return RENDER_ENTITY_ID_EMPTY;
+				}
+				std::string mesh_file_name = json_data["mesh"];
+				mesh_id = mesh_manager->CreateMesh(mesh_file_name);
+				if (mesh_id == MESH_ID_EMPTY)
+				{
+					return RENDER_ENTITY_ID_EMPTY;
+				}
+			}
+			else
+			{
+				return RENDER_ENTITY_ID_EMPTY;
+			}
         }
-        else
-        {
-            return RENDER_ENTITY_ID_EMPTY;
-        }
+		else
+		{
+			return RENDER_ENTITY_ID_EMPTY;
+		}
 
+        
         MaterialID material_id = MATERIAL_ID_EMPTY;
         if (json_data.contains("material"))
         {
@@ -101,6 +110,10 @@ namespace Dolas
         render_entity->m_file_id = STRING_ID(render_entity_file_path);
         render_entity->m_mesh_id = mesh_id;
         render_entity->m_material_id = material_id;
+        render_entity->m_pose.m_postion = scene_entity.position;
+        render_entity->m_pose.m_rotation = scene_entity.rotation;
+        render_entity->m_pose.m_scale = scene_entity.scale;
+
         m_render_entities[render_entity->m_file_id] = render_entity;
         return render_entity->m_file_id;
     }

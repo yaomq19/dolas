@@ -1,4 +1,5 @@
 {
+    "type" : "mesh",
     "mesh" : "triangle.mesh",
     "material" : "solid.material"
 }

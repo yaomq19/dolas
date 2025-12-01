@@ -6,7 +6,6 @@
 #include "manager/dolas_material_manager.h"
 #include "render/dolas_material.h"
 #include "render/dolas_shader.h"
-#include "manager/dolas_geometry_manager.h"
 namespace Dolas
 {
     DebugDrawManager::DebugDrawManager()
@@ -45,10 +44,10 @@ namespace Dolas
 
     void DebugDrawManager::AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time)
     {
-		auto* geometry_manager = g_dolas_engine.m_geometry_manager;
-        DOLAS_RETURN_IF_NULL(geometry_manager);
+		auto* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+        DOLAS_RETURN_IF_NULL(render_primitive_manager);
 		DebugDrawObject cylinder;
-        cylinder.m_render_primitive_id = geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CYLINDER);
+        cylinder.m_render_primitive_id = render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CYLINDER);
 		cylinder.m_pose.m_postion = center;
 		cylinder.m_pose.m_rotation = rotation;
 		cylinder.m_pose.m_scale = Vector3(radius, height, radius);
@@ -59,10 +58,10 @@ namespace Dolas
 
     void DebugDrawManager::AddSphere(const Vector3& center, const Float radius, const Color& color, Float life_time)
     {
-		auto* geometry_manager = g_dolas_engine.m_geometry_manager;
-		DOLAS_RETURN_IF_NULL(geometry_manager);
+		auto* render_primitive_manager = g_dolas_engine.m_render_primitive_manager;
+		DOLAS_RETURN_IF_NULL(render_primitive_manager);
 		DebugDrawObject sphere;
-        sphere.m_render_primitive_id = geometry_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
+        sphere.m_render_primitive_id = render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
 		sphere.m_pose.m_postion = center;
 		sphere.m_pose.m_rotation = Quaternion::IDENTITY;
 		sphere.m_pose.m_scale = Vector3(radius, radius, radius);

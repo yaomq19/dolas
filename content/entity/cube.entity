@@ -1,4 +1,5 @@
 {
+    "type" : "mesh",
     "mesh" : "cube.mesh",
     "material" : "solid.material"
 }

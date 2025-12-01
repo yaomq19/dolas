@@ -30,7 +30,7 @@ namespace Dolas
 		std::string name;
 		std::string entity_file;
 		Vector3 position;
-		Vector3 rotation; // in degree
+        Quaternion rotation;
 		Vector3 scale;
 	};
 
@@ -56,7 +56,7 @@ namespace Dolas
     protected:
         json LoadJsonFile(const std::string& file_path);
         CameraAsset* parseJsonToCameraAsset(const json& json_data);
-        SceneAsset* parseJsonToSceneAsset(const json& json_data);
+		SceneAsset* parseJsonToSceneAsset(const json& json_data);
 
 		std::unordered_map<std::string, CameraAsset*> m_camera_asset_map;
 		std::unordered_map<std::string, SceneAsset*> m_scene_asset_map;

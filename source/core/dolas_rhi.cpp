@@ -566,7 +566,7 @@ namespace Dolas
 			0.0f, 0.0f, 0.0f, 1.0f
 		};
 
-		per_object_constant_buffer.world = trans_mat * scale_mat * ratation_mat;
+		per_object_constant_buffer.world = trans_mat * ratation_mat * scale_mat;
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
 		HR(m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));

@@ -3,8 +3,8 @@
 
 #include <string>
 #include <unordered_map>
-#include <memory>
 #include "common/dolas_hash.h"
+#include "manager/dolas_asset_manager.h"
 namespace Dolas
 {
     class RenderEntity;
@@ -16,8 +16,8 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-        RenderEntityID CreateRenderEntityFromFile(const std::string& render_entity_file_name);
-        RenderEntity* GetRenderEntityByID(RenderEntityID render_entity_id);
+		RenderEntityID CreateRenderEntityFromFile(const SceneEntity& scene_entity);
+		RenderEntity* GetRenderEntityByID(RenderEntityID render_entity_id);
         RenderEntity* GetRenderEntityByFileName(const std::string& render_entity_file_name);
     protected:
         std::unordered_map<RenderEntityID, RenderEntity*> m_render_entities;

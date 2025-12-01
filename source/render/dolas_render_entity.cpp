@@ -45,6 +45,7 @@ namespace Dolas
         PixelContext* pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
+        rhi->UpdatePerObjectParameters(m_pose);
 		// 绑定 Shader
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {

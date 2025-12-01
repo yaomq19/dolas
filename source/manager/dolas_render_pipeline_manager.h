@@ -15,6 +15,8 @@ namespace Dolas
         bool Clear();
         RenderPipeline* GetRenderPipelineByID(RenderPipelineID id);
 		Bool CreateRenderPipelineByID(RenderPipelineID id);
+
+		void DisplayWorldCoordinateSystem();
     private:
         std::unordered_map<RenderPipelineID, RenderPipeline*> m_render_pipelines;
     };// class RenderPipelineManager

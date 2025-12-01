@@ -16,6 +16,7 @@ namespace Dolas
         bool Clear();
         void Render(DolasRHI* rhi);
         void SetRenderViewID(RenderViewID id);
+        void DisplayWorldCoordinateSystem();
     private:
         void ClearPass(DolasRHI* rhi);
         void GBufferPass(DolasRHI* rhi);
@@ -23,8 +24,9 @@ namespace Dolas
         void ForwardShadingPass(DolasRHI* rhi);
         void SkyboxPass(DolasRHI* rhi);
         void DebugPass(DolasRHI* rhi);
+        void ImGUIPass();
         void PostProcessPass(DolasRHI* rhi);
-        void ShowWorldCoordinate();
+        void DisplayWorldCoordinate();
         void PresentPass(DolasRHI* rhi);
 
         class RenderScene* TryGetRenderScene() const;
@@ -32,6 +34,8 @@ namespace Dolas
         class RenderCamera* TryGetRenderCamera() const;
         ViewPort m_viewport;
         RenderViewID m_render_view_id;
+
+		Bool m_display_world_coordinate = false;
     };// class RenderPipeline
 }
 

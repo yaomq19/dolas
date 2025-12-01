@@ -1,7 +1,5 @@
 # To Do List
-
 - Shader 反射系统
-- 实现 SetNamedData, SetNamedTexture, SetNamedSampler 接口
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系
 - 显示世界坐标系
 - Asset系统优化
@@ -19,6 +17,8 @@
         - 能实现网格共享，后面可以在网格共享的基础上进一步实现 BatchDraw 系统
         - RHI 资源的生命周期的管理要正确，避免出现显存泄露
 
+# 2025-12-01
+- 实现 SetNamedSampler 接口
 # 2025-11-30
 - HR宏优化
 # 2025-11-29

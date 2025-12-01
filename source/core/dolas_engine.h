@@ -34,7 +34,6 @@ namespace Dolas
 		class RenderSceneManager* m_render_scene_manager;
 		class InputManager* m_input_manager;
 		class TaskManager* m_task_manager;
-		class GeometryManager* m_geometry_manager;
 		class TickManager* m_tick_manager;
 		class ImGuiManager* m_imgui_manager;
 		class DebugDrawManager* m_debug_draw_manager;

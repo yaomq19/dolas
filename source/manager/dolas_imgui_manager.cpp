@@ -9,6 +9,7 @@
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_timer_manager.h"
 #include "manager/dolas_shader_manager.h"
+#include "manager/dolas_render_pipeline_manager.h"
 namespace Dolas
 {
 	struct FontConfig
@@ -102,6 +103,11 @@ namespace Dolas
             {
                 g_dolas_engine.m_shader_manager->dumpShaderReflectionInfos();
             }
+
+			if (ImGui::Button("Display World Coordinate System"))
+			{
+				g_dolas_engine.m_render_pipeline_manager->DisplayWorldCoordinateSystem();
+			}
 
             // FPS 信息显示
             static Float fps = 0.0f;

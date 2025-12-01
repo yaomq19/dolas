@@ -7,6 +7,6 @@
 
     "pixel_shader_global_variables" : 
     {
-        "g_PlainColor" : [1.0, 0.0, 0.0, 1.0]
+        "g_PlainColor" : [0.2, 0.54, 0.76, 1.0]
     }
 }

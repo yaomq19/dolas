@@ -12,14 +12,24 @@ namespace Dolas
 {
     class RenderPrimitive;
 
+	enum BaseGeometryType : UInt
+	{
+		BaseGeometryType_TRIANGLE,
+		BaseGeometryType_QUAD,
+		BaseGeometryType_CUBE,
+		BaseGeometryType_SPHERE,
+		BaseGeometryType_CYLINDER,
+		BaseGeometryType_CONE,
+	};
+
     class RenderPrimitiveManager
     {
     public:
         RenderPrimitiveManager();
         ~RenderPrimitiveManager();
 
-        bool Initialize();
-        bool Clear();
+        Bool Initialize();
+        Bool Clear();
 
         // Create RenderPrimitive
 		// @param id: Specifies the ID of the RenderPrimitive to be created
@@ -34,9 +44,18 @@ namespace Dolas
             const std::vector<std::vector<Float>>& vertices,
             const std::vector<UInt>& indices);
 
+		RenderPrimitiveID GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type);
         RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const;
-        Bool DeleteRenderPrimitiveByID(RenderPrimitiveID render_primitive_id);
     private:
+		Bool InitializeSphereGeometry();
+		Bool InitializeQuadGeometry();
+		Bool InitializeCylinderGeometry();
+		Bool InitializeCubeGeometry();
+
+		Bool GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+		Bool GenerateQuadRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+		Bool GenerateCylinderRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
+		Bool GenerateCubeRawData(std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices);
 
         RenderPrimitive* BuildFromRawData(
 			const PrimitiveTopology& render_primitive_type,
@@ -45,6 +64,7 @@ namespace Dolas
 			const std::vector<UInt>& indices);
 
         std::unordered_map<RenderPrimitiveID, RenderPrimitive*> m_render_primitives;
+        std::unordered_map<BaseGeometryType, RenderPrimitiveID> m_base_geometries;
     }; // class RenderPrimitiveManager
 }
 

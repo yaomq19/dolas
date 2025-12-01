@@ -260,6 +260,8 @@ namespace Dolas
     public:
         Quaternion();
         Quaternion(Float w, Float x, Float y, Float z);
+        Quaternion(const Vector3& axis, Float angle);
+    public:
 		Float w;
 		Float x;
 		Float y;
