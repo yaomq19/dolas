@@ -17,7 +17,6 @@ namespace Dolas
 		class LogSystemManager* m_log_system_manager;
 		class DolasRHI* m_rhi;
 		class RenderPipelineManager* m_render_pipeline_manager;
-		class MeshManager* m_mesh_manager;
 		class MaterialManager* m_material_manager;
 		class RenderEntityManager* m_render_entity_manager;
 		class RenderObjectManager* m_render_object_manager;

@@ -6,25 +6,18 @@
 #include <memory>
 #include "base/dolas_base.h"
 #include "common/dolas_hash.h"
+
 namespace Dolas
 {
-    class Mesh;
+    // MeshManager 已废弃，仅保留空壳以兼容旧的包含路径
     class MeshManager
     {
     public:
-        MeshManager();
-        ~MeshManager();
-        bool Initialize();
-        bool Clear();
+        MeshManager() = default;
+        ~MeshManager() = default;
 
-        MeshID CreateMesh(const std::string& mesh_file_name);
-        Mesh* GetMesh(MeshID mesh_id);
-
-        MeshID GetQuadMeshID() const { return m_quad_mesh_id; }
-    private:
-        std::unordered_map<MeshID, Mesh*> m_meshes;
-
-        MeshID m_quad_mesh_id = MESH_ID_EMPTY;
-    };// class MeshManager
+        bool Initialize() { return true; }
+        bool Clear() { return true; }
+    };
 }// namespace Dolas
 #endif // DOLAS_MESH_MANAGER_H

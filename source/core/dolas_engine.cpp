@@ -10,7 +10,6 @@
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_render_pipeline_manager.h"
 #include "manager/dolas_render_object_manager.h"
-#include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "manager/dolas_render_resource_manager.h"
@@ -40,7 +39,6 @@ namespace Dolas
 		m_log_system_manager = DOLAS_NEW(LogSystemManager);
 		m_rhi = DOLAS_NEW(DolasRHI);
 		m_render_pipeline_manager = DOLAS_NEW(RenderPipelineManager);
-		m_mesh_manager = DOLAS_NEW(MeshManager);
 		m_material_manager = DOLAS_NEW(MaterialManager);
 		m_render_entity_manager = DOLAS_NEW(RenderEntityManager);
 		m_render_object_manager = DOLAS_NEW(RenderObjectManager);
@@ -66,7 +64,6 @@ namespace Dolas
 	{
 		DOLAS_DELETE(m_rhi);
 		DOLAS_DELETE(m_render_pipeline_manager);
-		DOLAS_DELETE(m_mesh_manager);
 		DOLAS_DELETE(m_material_manager);
 		DOLAS_DELETE(m_render_entity_manager);
 		DOLAS_DELETE(m_render_object_manager);
@@ -96,7 +93,6 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_mesh_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_object_manager->Initialize());
@@ -125,7 +121,6 @@ namespace Dolas
 	{
 		m_rhi->Clear();
 		m_render_pipeline_manager->Clear();
-		m_mesh_manager->Clear();
 		m_material_manager->Clear();
 		m_render_entity_manager->Clear();
 		m_render_object_manager->Clear();

@@ -12,7 +12,6 @@
 
 namespace Dolas
 {
-    class Mesh;
     class Material;
     class RenderEntity
     {
@@ -23,11 +22,11 @@ namespace Dolas
         bool Clear();
         void Draw(DolasRHI* rhi);
 
-        void SetMeshID(MeshID mesh_id);
+        void SetMeshID(RenderPrimitiveID mesh_id);
         void SetMaterialID(MaterialID material_id);
     protected:
         RenderEntityID m_file_id = RENDER_ENTITY_ID_EMPTY;
-        MeshID m_mesh_id = MESH_ID_EMPTY;
+        RenderPrimitiveID m_render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
         MaterialID m_material_id = MATERIAL_ID_EMPTY;
 		Pose m_pose = Pose();
     };

@@ -1,18 +1,12 @@
-#include <iostream>
-#include <fstream>
 #include "base/dolas_base.h"
 #include "base/dolas_paths.h"
 #include "core/dolas_engine.h"
-#include "manager/dolas_mesh_manager.h"
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_entity.h"
 #include "nlohmann/json.hpp"
-#include <d3d11shader.h>
-#include <d3dcompiler.h>
-#include "render/dolas_material.h"
-#include "base/dolas_dx_trace.h"
 #include "manager/dolas_asset_manager.h"
+#include "manager/dolas_render_primitive_manager.h"
 using json = nlohmann::json;
 namespace Dolas
 {
@@ -57,20 +51,21 @@ namespace Dolas
             return RENDER_ENTITY_ID_EMPTY;
         }
 
+        RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
         if (json_data.contains("type"))
         {
             std::string type_name = json_data["type"];
-            MeshID mesh_id = MESH_ID_EMPTY;
+            
 			if (json_data.contains("mesh"))
 			{
-				MeshManager* mesh_manager = g_dolas_engine.m_mesh_manager;
-				if (mesh_manager == nullptr)
+				RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
+				if (primitive_manager == nullptr)
 				{
 					return RENDER_ENTITY_ID_EMPTY;
 				}
 				std::string mesh_file_name = json_data["mesh"];
-				mesh_id = mesh_manager->CreateMesh(mesh_file_name);
-				if (mesh_id == MESH_ID_EMPTY)
+                render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
+				if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
 				{
 					return RENDER_ENTITY_ID_EMPTY;
 				}
@@ -108,7 +103,7 @@ namespace Dolas
 
         RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
         render_entity->m_file_id = STRING_ID(render_entity_file_path);
-        render_entity->m_mesh_id = mesh_id;
+        render_entity->m_render_primitive_id = render_primitive_id;
         render_entity->m_material_id = material_id;
         render_entity->m_pose.m_postion = scene_entity.position;
         render_entity->m_pose.m_rotation = scene_entity.rotation;

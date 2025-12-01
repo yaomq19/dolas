@@ -4,10 +4,8 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-
+#include "core/dolas_rhi_common.h"
 #include "common/dolas_hash.h"
-#include "manager/dolas_mesh_manager.h"
-#include "render/dolas_mesh.h"
 namespace Dolas
 {
     class RenderPrimitive;
@@ -46,6 +44,9 @@ namespace Dolas
 
 		RenderPrimitiveID GetGeometryRenderPrimitiveID(BaseGeometryType geometry_type);
         RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const;
+
+        // 从 .mesh 文件创建 RenderPrimitive，返回对应的 RenderPrimitiveID
+        RenderPrimitiveID CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name);
     private:
 		Bool InitializeSphereGeometry();
 		Bool InitializeQuadGeometry();
