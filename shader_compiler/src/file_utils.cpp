@@ -25,7 +25,9 @@ std::vector<std::string> FileUtils::GetFilesWithExtension(const std::string& dir
         
         for (const auto& entry : fs::recursive_directory_iterator(dir_path)) {
             if (entry.is_regular_file()) {
-                std::string filepath = entry.path().string();
+                // 使用绝对路径，便于在日志和工具中查看
+                fs::path abs_path = fs::absolute(entry.path());
+                std::string filepath = abs_path.string();
                 std::string file_ext = GetFileExtension(filepath);
                 
                 // 转换为小写进行比较

@@ -1,6 +1,6 @@
 {
-    "vertex_shader" : "solid_vs.hlsl",
-    "pixel_shader" : "solid_ps.hlsl",
+    "vertex_shader" : "solid/solid_vs.hlsl",
+    "pixel_shader" : "solid/solid_ps.hlsl",
 
     "pixel_shader_texture" : {
         "albedo_map" : "albedo.dds"

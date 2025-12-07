@@ -1,6 +1,8 @@
 # To Do List
+- 实现除了 D3D_COMPILE_STANDARD_FILE_INCLUDE 以外的新的include配置
 - 实现 blinn phong shade mode
 - 实现 pbr brdf standard shade mode
+- 定义 Dolas 的网格格式，并根据这个网格格式制作导入器
 - 实现 SetNamedSampler 接口
 - Shader 反射系统
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系

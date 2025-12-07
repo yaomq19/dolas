@@ -1,4 +1,4 @@
-#include "deferred_shading_common.hlsli"
+#include "deferred_shading/deferred_shading_common.hlsli"
 #include "global_constants.hlsli"
 
 // Basic vertex shader

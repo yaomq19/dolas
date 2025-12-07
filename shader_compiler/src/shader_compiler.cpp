@@ -6,12 +6,89 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 
 #ifdef _WIN32
 #include <d3dcompiler.h>
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 #pragma comment(lib, "d3dcompiler.lib")
+
+// Custom include handler that prefixes include paths with a given root directory
+class DirectoryIncludeHandler : public ID3DInclude
+{
+public:
+    explicit DirectoryIncludeHandler(const std::string& root_dir)
+        : m_root_dir(root_dir)
+    {
+        if (!m_root_dir.empty())
+        {
+            char last = m_root_dir.back();
+            if (last != '/' && last != '\\')
+            {
+                m_root_dir.push_back('/');
+            }
+        }
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE Open(
+        D3D_INCLUDE_TYPE /*IncludeType*/,
+        LPCSTR pFileName,
+        LPCVOID /*pParentData*/,
+        LPCVOID* ppData,
+        UINT* pBytes) override
+    {
+        if (!pFileName || !ppData || !pBytes)
+        {
+            return E_INVALIDARG;
+        }
+
+        // If root dir is set, always resolve includes relative to it
+        std::string full_path;
+        if (!m_root_dir.empty())
+        {
+            full_path = m_root_dir + pFileName;
+        }
+        else
+        {
+            full_path = pFileName;
+        }
+
+        std::ifstream file(full_path, std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+        {
+            return E_FAIL;
+        }
+
+        std::streamsize size = file.tellg();
+        if (size <= 0)
+        {
+            return E_FAIL;
+        }
+        file.seekg(0, std::ios::beg);
+
+        char* buffer = new char[static_cast<size_t>(size)];
+        if (!file.read(buffer, size))
+        {
+            delete[] buffer;
+            return E_FAIL;
+        }
+
+        *ppData = buffer;
+        *pBytes = static_cast<UINT>(size);
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE Close(LPCVOID pData) override
+    {
+        const char* buffer = static_cast<const char*>(pData);
+        delete[] buffer;
+        return S_OK;
+    }
+
+private:
+    std::string m_root_dir;
+};
 #endif
 
 ShaderCompiler::ShaderCompiler() {
@@ -132,44 +209,56 @@ CompilationResult ShaderCompiler::CompileHLSLShader(const std::string& filepath,
     compile_flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
     
-    // 设置包含目录
+    // 设置包含目录：如果指定了 include 目录，则使用自定义 include handler
     ID3DInclude* include_handler = nullptr;
+    DirectoryIncludeHandler include_handler_impl(m_include_directory);
     if (!m_include_directory.empty()) {
-        // 使用默认的include handler，它会搜索文件系统
-        include_handler = D3D_COMPILE_STANDARD_FILE_INCLUDE;
+        include_handler = &include_handler_impl;
     }
-    
+
     ComPtr<ID3DBlob> shader_blob;
     ComPtr<ID3DBlob> error_blob;
     
     // 编译shader
-    //HR(D3DCompile(
-    //    source_code.c_str(),           // 源代码
-    //    source_code.length(),          // 源代码长度
-    //    filepath.c_str(),              // 文件名（用于错误报告）
-    //    nullptr,                       // 宏定义
-    //    include_handler,               // include handler
-    //    entry_point.c_str(),           // 入口点函数名
-    //    target.c_str(),                // 目标profile
-    //    compile_flags,                 // 编译标志
-    //    0,                            // 效果标志
-    //    &shader_blob,                 // 编译结果
-    //    &error_blob                   // 错误信息
-    //));
-    
+    HRESULT hr = D3DCompile(
+        source_code.c_str(),           // 源代码
+        source_code.length(),          // 源代码长度
+        filepath.c_str(),              // 文件名（用于错误报告）
+        nullptr,                       // 宏定义
+        include_handler,               // include handler
+        entry_point.c_str(),           // 入口点函数名
+        target.c_str(),                // 目标profile
+        compile_flags,                 // 编译标志
+        0,                             // 效果标志
+        &shader_blob,                  // 编译结果
+        &error_blob                    // 错误信息（错误或警告）
+    );
 
-    // 编译失败，提取错误信息
-    if (error_blob) {
-        const char* error_str = static_cast<const char*>(error_blob->GetBufferPointer());
-        result.error_message = std::string(error_str, error_blob->GetBufferSize());
-            
-        // 清理错误信息中的路径
-        size_t pos = result.error_message.find(filepath);
-        if (pos != std::string::npos) {
-            result.error_message.replace(pos, filepath.length(), FileUtils::GetFilename(filepath));
+    if (FAILED(hr)) {
+        // 编译失败，提取错误信息
+        if (error_blob) {
+            const char* error_str = static_cast<const char*>(error_blob->GetBufferPointer());
+            result.error_message = std::string(error_str, error_blob->GetBufferSize());
+
+            // 清理错误信息中的路径
+            size_t pos = result.error_message.find(filepath);
+            if (pos != std::string::npos) {
+                result.error_message.replace(pos, filepath.length(), FileUtils::GetFilename(filepath));
+            }
+        } else {
+            result.error_message = "Unknown compilation error. HRESULT = " + std::to_string(static_cast<long long>(hr));
         }
+        result.success = false;
+        return result;
     }
-    
+
+    // 编译成功
+    result.success = true;
+    result.error_message.clear();
+    if (shader_blob) {
+        result.bytecode_size = std::to_string(shader_blob->GetBufferSize()) + " bytes";
+    }
+
     return result;
 }
 #endif

@@ -1,6 +1,6 @@
-#include "debug_draw_common.hlsli"
-#include "../global_constants.hlsli"
-#include "../dolas_hlsl_support.hlsli"
+#include "debug_draw/debug_draw_common.hlsli"
+#include "global_constants.hlsli"
+#include "dolas_hlsl_support.hlsli"
 DOLAS_GLOBAL_CONSTANTS
 {
     float4 g_DebugDrawColor;

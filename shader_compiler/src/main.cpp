@@ -2,7 +2,8 @@
 #include <vector>
 #include <string>
 #include <chrono>
-#include <filesystem>
+#include <algorithm>
+#include <cctype>
 #include "shader_compiler.h"
 #include "logger.h"
 #include "file_utils.h"
@@ -29,16 +30,8 @@ void PrintHeader() {
     std::cout << std::endl;
 }
 
-int main(int argc, char* argv[]) {
-    PrintHeader();
-    
-    // 检查帮助参数
-    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
-        PrintUsage(argv[0]);
-        return 0;
-    }
-    
-    // 初始化日志系统
+void InitializeLogger() {
+    // Initialize logging system
     try {
         auto current_time = std::chrono::system_clock::now();
         auto time_t = std::chrono::system_clock::to_time_t(current_time);
@@ -61,131 +54,227 @@ int main(int argc, char* argv[]) {
         
     } catch (const std::exception& e) {
         std::cerr << "Error: Unable to initialize log system: " << e.what() << std::endl;
-        return 1;
     }
-    
-    // 设置shader目录
+}
+
+std::string GetShaderDir() {
+    // Set shader directory
 #ifdef SHADER_CONTENT_DIR
-    std::string shader_dir = SHADER_CONTENT_DIR;
+    std::string raw_shader_dir = SHADER_CONTENT_DIR;
 #else
-    std::string shader_dir = "content/shader";
+    std::string raw_shader_dir = "content/shader";
 #endif
-    
-    // 规范化路径
-    shader_dir = FileUtils::NormalizePath(shader_dir);
-    
-    std::string raw_shader_dir;
-#ifdef SHADER_CONTENT_DIR
-    raw_shader_dir = SHADER_CONTENT_DIR;
-#else
-    raw_shader_dir = "content/shader";
-#endif
+
+    // Normalize path
+    std::string shader_dir = FileUtils::NormalizePath(raw_shader_dir);
+
     LOG_DEBUG("Raw shader directory: " + raw_shader_dir);
     LOG_DEBUG("Normalized shader directory: " + shader_dir);
-    
+
     if (!FileUtils::DirectoryExists(shader_dir)) {
         LOG_ERROR("Shader directory does not exist: " + shader_dir);
         std::cerr << "Error: Shader directory does not exist: " << shader_dir << std::endl;
+        return "";
+    }
+
+    LOG_INFO("Shader search directory: " + shader_dir);
+    std::cout << "Shader search directory: " << shader_dir << std::endl;
+
+    return shader_dir;
+}
+
+int main(int argc, char* argv[]) {
+    PrintHeader();
+    
+    // Check help arguments
+    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+        PrintUsage(argv[0]);
+        return 0;
+    }
+    
+    std::string shader_dir = GetShaderDir();
+    if (shader_dir.empty()) {
         return 1;
     }
     
-    LOG_INFO("Shader search directory: " + shader_dir);
-    std::cout << "Shader search directory: " << shader_dir << std::endl;
-    
-    // 初始化编译器
+    // Initialize compiler
     ShaderCompiler compiler;
     compiler.SetIncludeDirectory(shader_dir);
-    
-    std::vector<CompilationResult> results;
-    auto start_time = std::chrono::high_resolution_clock::now();
-    
-    try {
-        if (argc == 1) {
-            // 没有参数，编译所有shader文件
-            LOG_INFO("Starting to compile all shader files...");
-            std::cout << "Scanning and compiling all .hlsl files..." << std::endl;
-            
-            results = compiler.CompileAllShaders(shader_dir);
-            
-        } else {
-            // 有参数，编译指定文件
-            std::vector<std::string> files_to_compile;
-            
-            for (int i = 1; i < argc; ++i) {
-                std::string filepath = argv[i];
-                
-                // 如果是相对路径，添加shader目录前缀
+
+    int command_index = 0;
+
+    while (true) {
+        ++command_index;
+
+        std::cout << std::endl;
+        std::cout << "=====================================================" << std::endl;
+        std::cout << "                    Command " << command_index << std::endl;
+        std::cout << "=====================================================" << std::endl;
+        std::cout << "-----------------------------------------------------" << std::endl;
+        std::cout << "Enter shader file name to compile (relative to directory: " << shader_dir << ")" << std::endl;
+        std::cout << "  - Type 'all'   : Compile all .hlsl files in this directory" << std::endl;
+        std::cout << "  - Type 'list'  : List all *_vs.hlsl and *_ps.hlsl files (absolute paths)" << std::endl;
+        std::cout << "  - Type 'quit'  : Exit program" << std::endl;
+        std::cout << "Input: " << std::flush;
+
+        std::string input;
+        if (!std::getline(std::cin, input)) {
+            // EOF or input error: exit loop
+            break;
+        }
+
+        // Trim whitespace
+        auto trim = [](std::string& s) {
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+            s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+        };
+        trim(input);
+
+        if (input.empty()) {
+            continue;
+        }
+
+        if (input == "quit" || input == "exit") {
+            std::cout << "Exiting Shader Compiler." << std::endl;
+            break;
+        }
+
+        if (input == "list") {
+            std::cout << std::endl;
+            std::cout << "Listing all *_vs.hlsl and *_ps.hlsl files under: " << shader_dir << std::endl;
+
+            // 先递归拿到所有 .hlsl，再用文件名后缀过滤 *_vs.hlsl / *_ps.hlsl
+            auto all_hlsl_files = FileUtils::GetFilesWithExtension(shader_dir, ".hlsl");
+            std::vector<std::string> vs_files;
+            std::vector<std::string> ps_files;
+
+            for (const auto& path : all_hlsl_files) {
+                std::string filename = FileUtils::GetFilename(path);
+                if (filename.size() >= 8 &&
+                    filename.compare(filename.size() - 8, 8, "_vs.hlsl") == 0) {
+                    vs_files.push_back(path);
+                } else if (filename.size() >= 8 &&
+                           filename.compare(filename.size() - 8, 8, "_ps.hlsl") == 0) {
+                    ps_files.push_back(path);
+                }
+            }
+
+            auto print_files = [&](const std::vector<std::string>& files, const char* label) {
+                std::cout << std::endl;
+                std::cout << "  [" << label << "]" << std::endl;
+                if (files.empty()) {
+                    std::cout << "    (None)" << std::endl;
+                    return;
+                }
+                for (const auto& path : files) {
+                    // FileUtils::GetFilesWithExtension 已经返回规范化的绝对路径
+                    std::cout << "    " << path << std::endl;
+                }
+            };
+
+            print_files(vs_files, "Vertex Shaders (*_vs.hlsl)");
+            print_files(ps_files, "Pixel Shaders (*_ps.hlsl)");
+
+            std::cout << std::endl;
+            std::cout << "Total vertex shaders: " << vs_files.size() << std::endl;
+            std::cout << "Total pixel shaders : " << ps_files.size() << std::endl;
+            std::cout << std::endl;
+
+            // Skip compilation part for this command
+            continue;
+        }
+
+        std::vector<CompilationResult> results;
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        try {
+            if (input == "all") {
+                // Compile all shader files
+                LOG_INFO("Starting to compile all shader files (interactive)...");
+                std::cout << "Scanning and compiling all .hlsl files..." << std::endl;
+
+                results = compiler.CompileAllShaders(shader_dir);
+            } else {
+                // Compile a single specified file (or relative path)
+                std::string filepath = input;
+
+                // If it is a relative path, prepend shader directory
                 if (filepath.find('/') == std::string::npos && filepath.find('\\') == std::string::npos) {
                     filepath = FileUtils::JoinPath(shader_dir, filepath);
                 }
-                
-                if (FileUtils::FileExists(filepath)) {
-                    files_to_compile.push_back(filepath);
-                    LOG_INFO("Adding file for compilation: " + filepath);
-                } else {
+
+                if (!FileUtils::FileExists(filepath)) {
                     LOG_WARNING("File does not exist: " + filepath);
                     std::cout << "Warning: File does not exist: " << filepath << std::endl;
+                    continue;
+                }
+
+                LOG_INFO("Starting to compile single file: " + filepath);
+                std::cout << "Compiling file: " << filepath << std::endl;
+
+                std::vector<std::string> files_to_compile{ filepath };
+                results = compiler.CompileShaderList(files_to_compile);
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception occurred during compilation: " + std::string(e.what()));
+            std::cerr << "Error: Exception occurred during compilation: " << e.what() << std::endl;
+            continue;
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+        // Print compilation summary
+        std::cout << std::endl;
+        std::cout << "=====================================================" << std::endl;
+        std::cout << "               Compilation Summary" << std::endl;
+        std::cout << "=====================================================" << std::endl;
+
+        compiler.PrintCompilationSummary(results);
+
+        // Statistics
+        int successful = 0;
+        int failed = 0;
+        for (const auto& result : results) {
+            if (result.success) {
+                successful++;
+            } else {
+                failed++;
+            }
+        }
+
+        std::cout << std::endl;
+        std::cout << "Total: " << results.size() << " files" << std::endl;
+        std::cout << "Success: " << successful << " files" << std::endl;
+        std::cout << "Failed: " << failed << " files" << std::endl;
+        std::cout << "Total time: " << duration.count() << " ms" << std::endl;
+
+        LOG_INFO("Compilation completed - Success: " + std::to_string(successful) + ", Failed: " + std::to_string(failed));
+        LOG_INFO("Total time: " + std::to_string(duration.count()) + " ms");
+
+        // If there are failures, print detailed error information
+        if (failed > 0) {
+            std::cout << std::endl;
+            std::cout << "================ Failed Details ================" << std::endl;
+            for (const auto& result : results) {
+                if (!result.success) {
+                    std::cout << "File: " << result.filename << std::endl;
+                    std::cout << "Shader Model: " << result.shader_model << "  Entry: " << result.entry_point << std::endl;
+                    std::cout << "Error Message:" << std::endl;
+                    std::cout << result.error_message << std::endl;
+                    std::cout << "-----------------------------------------------" << std::endl;
                 }
             }
-            
-            if (!files_to_compile.empty()) {
-                LOG_INFO("Starting to compile " + std::to_string(files_to_compile.size()) + " specified files...");
-                std::cout << "Compiling " << files_to_compile.size() << " specified files..." << std::endl;
-                
-                results = compiler.CompileShaderList(files_to_compile);
-            } else {
-                LOG_ERROR("No valid files to compile");
-                std::cerr << "Error: No valid files to compile" << std::endl;
-                return 1;
-            }
-        }
-        
-    } catch (const std::exception& e) {
-        LOG_ERROR("Exception occurred during compilation: " + std::string(e.what()));
-        std::cerr << "Error: Exception occurred during compilation: " << e.what() << std::endl;
-        return 1;
-    }
-    
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    
-    // 输出编译结果摘要
-    std::cout << std::endl;
-    std::cout << "=====================================================" << std::endl;
-    std::cout << "               Compilation Summary" << std::endl;
-    std::cout << "=====================================================" << std::endl;
-    
-    compiler.PrintCompilationSummary(results);
-    
-    // 统计信息
-    int successful = 0;
-    int failed = 0;
-    for (const auto& result : results) {
-        if (result.success) {
-            successful++;
+            std::cout << "Detailed error logs have also been written to logs/compilation_errors.log" << std::endl;
         } else {
-            failed++;
+            std::cout << "All shader files compiled successfully!" << std::endl;
         }
+
+        // Flush logs
+        Logger::Instance().Flush();
+
+        std::cout << std::endl;
     }
-    
-    std::cout << std::endl;
-    std::cout << "Total: " << results.size() << " files" << std::endl;
-    std::cout << "Success: " << successful << " files" << std::endl;
-    std::cout << "Failed: " << failed << " files" << std::endl;
-    std::cout << "Total time: " << duration.count() << " ms" << std::endl;
-    
-    LOG_INFO("Compilation completed - Success: " + std::to_string(successful) + ", Failed: " + std::to_string(failed));
-    LOG_INFO("Total time: " + std::to_string(duration.count()) + " ms");
-    
-    // 刷新日志
-    Logger::Instance().Flush();
-    
-    std::cout << std::endl;
-    if (failed > 0) {
-        std::cout << "Note: Check logs/compilation_errors.log for detailed error information" << std::endl;
-        return 1;
-    } else {
-        std::cout << "All shader files compiled successfully! yes" << std::endl;
-        return 0;
-    }
+
+    return 0;
 }

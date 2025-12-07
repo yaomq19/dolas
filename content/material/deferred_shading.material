@@ -1,6 +1,6 @@
 {
-    "vertex_shader" : "deferred_shading_vs.hlsl",
-    "pixel_shader" : "deferred_shading_ps.hlsl",
+    "vertex_shader" : "deferred_shading/deferred_shading_vs.hlsl",
+    "pixel_shader" : "deferred_shading/deferred_shading_ps.hlsl",
 
     "parameter" : {
         "intensity" : 1

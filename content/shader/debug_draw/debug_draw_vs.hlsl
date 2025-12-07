@@ -1,5 +1,5 @@
-#include "debug_draw_common.hlsli"
-#include "../global_constants.hlsli"
+#include "debug_draw/debug_draw_common.hlsli"
+#include "global_constants.hlsli"
 
 // Basic vertex shader
 VS_OUTPUT VS(VS_INPUT input)

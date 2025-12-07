@@ -1,6 +1,6 @@
 // 参考 deferred_shading_ps.hlsl
 #include "global_constants.hlsli"
-#include "sky_box_common.hlsli"
+#include "sky_box/sky_box_common.hlsli"
 Texture2D sky_box_map : register(t0);
 SamplerState sky_box_map_sampler : register(s0);
 

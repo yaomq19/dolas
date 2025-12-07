@@ -1,5 +1,5 @@
-#include "plain_color_common.hlsli"
-#include "../global_constants.hlsli"
+#include "plain_color/plain_color_common.hlsli"
+#include "global_constants.hlsli"
 
 // Basic vertex shader
 VS_OUTPUT VS(VS_INPUT input)

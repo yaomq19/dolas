@@ -1,6 +1,6 @@
 // 参考 deferred_shading_vs.hlsl
 #include "global_constants.hlsli"
-#include "sky_box_common.hlsli"
+#include "sky_box/sky_box_common.hlsli"
 // Basic vertex shader
 VS_OUTPUT VS(VS_INPUT input)
 {

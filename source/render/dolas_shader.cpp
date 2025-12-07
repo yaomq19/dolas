@@ -9,10 +9,80 @@
 #include "base/dolas_dx_trace.h"
 #include "base/dolas_string_util.h"
 #include "base/dolas_dx_trace.h"
+#include "base/dolas_paths.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
+
+    // Custom include handler to search files under PathUtils::GetShadersSourceDir()
+    class DolasShaderInclude : public ID3DInclude
+    {
+    public:
+        DolasShaderInclude()
+        {
+            m_root_dir = PathUtils::GetShadersSourceDir();
+            if (!m_root_dir.empty())
+            {
+                // Ensure trailing slash
+                char last = m_root_dir.back();
+                if (last != '/' && last != '\\')
+                {
+                    m_root_dir.push_back('/');
+                }
+            }
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Open(
+            D3D_INCLUDE_TYPE /*IncludeType*/,
+            LPCSTR pFileName,
+            LPCVOID /*pParentData*/,
+            LPCVOID* ppData,
+            UINT* pBytes) override
+        {
+            if (!pFileName || !ppData || !pBytes)
+            {
+                return E_INVALIDARG;
+            }
+
+            std::string full_path = m_root_dir + pFileName;
+
+            std::ifstream file(full_path, std::ios::binary | std::ios::ate);
+            if (!file.is_open())
+            {
+                // Failed to open include file
+                return E_FAIL;
+            }
+
+            std::streamsize size = file.tellg();
+            if (size <= 0)
+            {
+                return E_FAIL;
+            }
+            file.seekg(0, std::ios::beg);
+
+            char* buffer = new char[static_cast<size_t>(size)];
+            if (!file.read(buffer, size))
+            {
+                delete[] buffer;
+                return E_FAIL;
+            }
+
+            *ppData = buffer;
+            *pBytes = static_cast<UINT>(size);
+            return S_OK;
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Close(LPCVOID pData) override
+        {
+            const char* buffer = static_cast<const char*>(pData);
+            delete[] buffer;
+            return S_OK;
+        }
+
+    private:
+        std::string m_root_dir;
+    };
     ShaderContext::ShaderContext()
     {
     }
@@ -306,10 +376,11 @@ namespace Dolas
 		m_entry_point = entry_point;
 		m_file_path = file_path;
 		ID3DBlob* error_blob = nullptr;
+        DolasShaderInclude include_handler;
 		HR(D3DCompileFromFile(
 			StringUtil::StringToWString(file_path).c_str(), // file path
 			nullptr, // macros
-			D3D_COMPILE_STANDARD_FILE_INCLUDE, // include?
+			&include_handler, // include
 			entry_point.c_str(), // entry point
 			"vs_5_0", // shader model
 			D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // flags
@@ -361,10 +432,11 @@ namespace Dolas
 		m_entry_point = entry_point;
 		m_file_path = file_path;
 		ID3DBlob* error_blob = nullptr;
+        DolasShaderInclude include_handler;
 		HR(D3DCompileFromFile(
 			StringUtil::StringToWString(file_path).c_str(), // file path
 			nullptr, // macros
-			D3D_COMPILE_STANDARD_FILE_INCLUDE, // include
+			&include_handler, // include
 			entry_point.c_str(), // entry point
 			"ps_5_0", // shader model
 			D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // flags

@@ -2,6 +2,6 @@
 #define SHADE_MODE_HLSLI
 
 #define SHADE_MODE_STANDARD 0
-
-
+#define SHADE_MODE_BLINN_PHONG 1
+#define SHADE_MODE_COUNT 2
 #endif

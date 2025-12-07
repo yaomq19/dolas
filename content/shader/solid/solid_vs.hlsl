@@ -1,4 +1,4 @@
-#include "solid_common.hlsli"
+#include "solid/solid_common.hlsli"
 #include "global_constants.hlsli"
 
 // Basic vertex shader

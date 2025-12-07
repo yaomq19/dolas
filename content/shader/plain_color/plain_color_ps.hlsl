@@ -1,6 +1,6 @@
-#include "plain_color_common.hlsli"
-#include "../global_constants.hlsli"
-#include "../dolas_hlsl_support.hlsli"
+#include "plain_color/plain_color_common.hlsli"
+#include "global_constants.hlsli"
+#include "dolas_hlsl_support.hlsli"
 DOLAS_GLOBAL_CONSTANTS
 {
     float4 g_PlainColor;
