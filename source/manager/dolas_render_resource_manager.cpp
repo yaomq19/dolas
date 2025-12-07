@@ -80,6 +80,19 @@ namespace Dolas
             render_resource->m_gbuffer_c_id = gbuffer_c_texture_id;
         }
 
+		TextureID gbuffer_d_texture_id = STRING_ID(gbuffer_d_map);
+		desc.texture_handle = gbuffer_d_texture_id;
+		desc.width = DEFAULT_CLIENT_WIDTH;
+		desc.height = DEFAULT_CLIENT_HEIGHT;
+		desc.format = DolasTextureFormat::R8G8B8A8_UNORM;
+		desc.usage = DolasTextureUsage::RenderTarget;
+		desc.generateMips = false;
+		desc.arraySize = 1;
+		if (texture_manager->DolasCreateTexture2D(desc))
+		{
+			render_resource->m_gbuffer_d_id = gbuffer_d_texture_id;
+		}
+
         TextureID depth_stencil_texture_id = STRING_ID(depth_stencil_map);
         desc.texture_handle = depth_stencil_texture_id;
         desc.width = DEFAULT_CLIENT_WIDTH;

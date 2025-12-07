@@ -19,6 +19,7 @@ namespace Dolas
         TextureID m_gbuffer_a_id;
         TextureID m_gbuffer_b_id;
         TextureID m_gbuffer_c_id;
+        TextureID m_gbuffer_d_id;
         TextureID m_depth_stencil_id;
         TextureID m_scene_result_id;
     }; // class RenderResource

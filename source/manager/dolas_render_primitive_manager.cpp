@@ -168,7 +168,33 @@ namespace Dolas
                 return RENDER_PRIMITIVE_ID_EMPTY;
             }
         }
-        else
+		else if (has_position && has_normal)
+		{
+			final_vertices.resize(2);
+			if (pos_element_count == 3 && normal_element_count == 3)
+			{
+				input_layout_type = InputLayoutType::InputLayoutType_POS_3_NORM_3;
+				for (const auto& vertex : vertex_list)
+				{
+					const auto& pos = vertex["position"];
+					const auto& normal = vertex["normal"];
+
+					final_vertices[0].push_back(pos[0]);
+					final_vertices[0].push_back(pos[1]);
+					final_vertices[0].push_back(pos[2]);
+
+					final_vertices[1].push_back(normal[0]);
+					final_vertices[1].push_back(normal[1]);
+					final_vertices[1].push_back(normal[2]);
+				}
+			}
+			else
+			{
+				LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: unsupported input_layout combination in {0}", mesh_file_path);
+				return RENDER_PRIMITIVE_ID_EMPTY;
+			}
+		}
+		else
         {
             LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: input_layout missing required elements in {0}", mesh_file_path);
             return RENDER_PRIMITIVE_ID_EMPTY;
@@ -329,7 +355,7 @@ namespace Dolas
 		Bool success = render_primitive_manager->CreateRenderPrimitive(
 			cube_render_primitive_id,
 			PrimitiveTopology::PrimitiveTopology_TriangleList,
-			InputLayoutType::InputLayoutType_POS_3,
+			InputLayoutType::InputLayoutType_POS_3_NORM_3,
 			vertices_data,
 			indices_data);
 
@@ -626,8 +652,11 @@ namespace Dolas
 		vertices_data.clear();
 		indices.clear();
 
-		// 使用单一顶点流：positions（x, y, z），对应 InputLayoutType_POS_3
-		vertices_data.resize(1);
+		// 使用双顶点流：
+		//   stream 0: positions（x, y, z）
+		//   stream 1: normals  （x, y, z）
+		// 对应 InputLayoutType_POS_3_NORM_3
+		vertices_data.resize(2);
 		std::vector<Float>& positions = vertices_data[0];
 
 		const Float half_extent = 0.5f;
@@ -674,7 +703,7 @@ namespace Dolas
 		positions.push_back(half_extent);
 
 		// 6 个面，每个面 2 个三角形，共 12 个三角形（36 个索引）
-
+		
 		// 前面 (+Z)：v4, v5, v6, v7
 		indices.push_back(4); indices.push_back(5); indices.push_back(6);
 		indices.push_back(4); indices.push_back(6); indices.push_back(7);
@@ -698,6 +727,80 @@ namespace Dolas
 		// 底面 (-Y)：v0, v4, v7, v3
 		indices.push_back(0); indices.push_back(4); indices.push_back(7);
 		indices.push_back(0); indices.push_back(7); indices.push_back(3);
+
+		// 计算每个顶点的法线（按面法线加权平均再归一化）
+		const size_t vertex_count = positions.size() / 3;
+		std::vector<Float>& normals = vertices_data[1];
+		normals.assign(vertex_count * 3, 0.0f);
+
+		for (size_t i = 0; i + 2 < indices.size(); i += 3)
+		{
+			UInt i0 = indices[i + 0];
+			UInt i1 = indices[i + 1];
+			UInt i2 = indices[i + 2];
+
+			Float p0x = positions[i0 * 3 + 0];
+			Float p0y = positions[i0 * 3 + 1];
+			Float p0z = positions[i0 * 3 + 2];
+
+			Float p1x = positions[i1 * 3 + 0];
+			Float p1y = positions[i1 * 3 + 1];
+			Float p1z = positions[i1 * 3 + 2];
+
+			Float p2x = positions[i2 * 3 + 0];
+			Float p2y = positions[i2 * 3 + 1];
+			Float p2z = positions[i2 * 3 + 2];
+
+			// 计算三角形面法线
+			Float ux = p1x - p0x;
+			Float uy = p1y - p0y;
+			Float uz = p1z - p0z;
+
+			Float vx = p2x - p0x;
+			Float vy = p2y - p0y;
+			Float vz = p2z - p0z;
+
+			Float nx = uy * vz - uz * vy;
+			Float ny = uz * vx - ux * vz;
+			Float nz = ux * vy - uy * vx;
+
+			// 累加到三个顶点的法线向量上
+			normals[i0 * 3 + 0] += nx;
+			normals[i0 * 3 + 1] += ny;
+			normals[i0 * 3 + 2] += nz;
+
+			normals[i1 * 3 + 0] += nx;
+			normals[i1 * 3 + 1] += ny;
+			normals[i1 * 3 + 2] += nz;
+
+			normals[i2 * 3 + 0] += nx;
+			normals[i2 * 3 + 1] += ny;
+			normals[i2 * 3 + 2] += nz;
+		}
+
+		// 对每个顶点的法线做归一化
+		for (size_t v = 0; v < vertex_count; ++v)
+		{
+			Float nx = normals[v * 3 + 0];
+			Float ny = normals[v * 3 + 1];
+			Float nz = normals[v * 3 + 2];
+
+			Float len_sq = nx * nx + ny * ny + nz * nz;
+			if (len_sq > 0.0f)
+			{
+				Float inv_len = 1.0f / std::sqrt(len_sq);
+				normals[v * 3 + 0] = nx * inv_len;
+				normals[v * 3 + 1] = ny * inv_len;
+				normals[v * 3 + 2] = nz * inv_len;
+			}
+			else
+			{
+				// 退化情况下给一个默认法线（例如指向 +Y）
+				normals[v * 3 + 0] = 0.0f;
+				normals[v * 3 + 1] = 1.0f;
+				normals[v * 3 + 2] = 0.0f;
+			}
+		}
 
 		return true;
 	}
@@ -770,6 +873,23 @@ namespace Dolas
                 }
 #endif
                 break;
+			case InputLayoutType::InputLayoutType_POS_3_NORM_3:
+				if (stream_index == 0)
+				{
+					vertex_stride = 3;
+				}
+				else if (stream_index == 1)
+				{
+					vertex_stride = 3;
+				}
+#ifdef DOLAS_DEBUG
+				else
+				{
+					LOG_ERROR("Vertex stride mismatch: POS_3_UV_2_NORM_3");
+					return nullptr;
+				}
+#endif
+				break;
             default:
 			    LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Unsupported input layout type");
 			    return nullptr;

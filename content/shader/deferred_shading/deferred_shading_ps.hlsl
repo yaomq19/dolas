@@ -34,9 +34,14 @@ void DecodeGBufferData(inout GBufferData gbuffer_data, float2 texcoord)
     gbuffer_data.gbuffer_d = g_gbuffer_d.Sample(g_sampler_d, texcoord);
 }
 
-int DecodeShadeMode(float shade_mode_float)
+float3 DecodeNormal(float3 normal_positive)
 {
-    return (int)shade_mode_float;
+    return normalize(normal_positive * 2.0f - 1.0f);
+}
+
+float DecodeShininess(float shininess_positive)
+{
+    return shininess_positive * 255.0f;
 }
 
 void ConvertGBufferToSurfaceData(inout SurfaceData surface_data, in GBufferData gbuffer_data)
@@ -51,7 +56,11 @@ void ConvertGBufferToSurfaceData(inout SurfaceData surface_data, in GBufferData 
     }
     else if (shade_mode == SHADE_MODE_BLINN_PHONG)
     {
-
+        surface_data.world_normal = DecodeNormal(gbuffer_data.gbuffer_a.xyz);
+        surface_data.k_a = gbuffer_data.gbuffer_b.rgb;
+        surface_data.k_d = gbuffer_data.gbuffer_c.rgb;
+        surface_data.k_s = gbuffer_data.gbuffer_d.rgb;
+        surface_data.shininess = DecodeShininess(gbuffer_data.gbuffer_d.a);
     }
 }
 
@@ -79,7 +88,14 @@ float4 PS(PS_INPUT input) : SV_TARGET0
     light_data.intensity = g_LightDirectionIntensity.w;
     light_data.color = g_LightColor.xyz;
 
-    float3 main_light_shading = MainLightShading(surface_data, light_data);
+    float3 N = normalize(surface_data.world_normal);
+    // float3 L = light_data.direction;
+    float3 L = float3(0.0f, 1.0f, 0.0f);
+    float3 V = normalize(g_EyeDirection.xyz);
+
+    SurfaceContext surface_context = EvaluateSurfaceContext(N, L, V);
+    
+    float3 main_light_shading = MainLightShading(surface_data, surface_context, light_data);
     float3 I_a = float3(0.01f, 0.01f, 0.01f);
     float3 ambient_lighting = surface_data.k_a * I_a;
     float3 final_color = main_light_shading + ambient_lighting;

@@ -6,6 +6,7 @@ cbuffer PerViewConstantBuffer : register(b0)
     matrix g_ViewMatrix;  
     matrix g_ProjectionMatrix;  
     float4 g_CameraPosition;
+    float4 g_EyeDirection;
 }
 
 cbuffer PerFrameConstantBuffer : register(b1)

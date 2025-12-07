@@ -103,9 +103,11 @@ namespace Dolas
         auto gbuffer_a_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_a_id);
         auto gbuffer_b_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_b_id);
         auto gbuffer_c_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_c_id);
+        auto gbuffer_d_rtv = rhi->CreateRenderTargetView(render_resource->m_gbuffer_d_id);
         rhi->ClearRenderTargetView(gbuffer_a_rtv, black_clear_color);
         rhi->ClearRenderTargetView(gbuffer_b_rtv, black_clear_color);
         rhi->ClearRenderTargetView(gbuffer_c_rtv, black_clear_color);
+        rhi->ClearRenderTargetView(gbuffer_d_rtv, black_clear_color);
         rhi->EndEvent();
         
         rhi->BeginEvent(L"ClearSceneDepthTexture");
@@ -140,6 +142,7 @@ namespace Dolas
         rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_a_id));
         rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_b_id));
         rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_c_id));
+        rtvs.push_back(g_dolas_engine.m_rhi->CreateRenderTargetView(render_resource->m_gbuffer_d_id));
 
         auto dsv = g_dolas_engine.m_rhi->CreateDepthStencilView(render_resource->m_depth_stencil_id);
 
@@ -189,6 +192,7 @@ namespace Dolas
         pixel_context->SetShaderResourceView(0, render_resource->m_gbuffer_a_id);
         pixel_context->SetShaderResourceView(1, render_resource->m_gbuffer_b_id);
         pixel_context->SetShaderResourceView(2, render_resource->m_gbuffer_c_id);
+        pixel_context->SetShaderResourceView(3, render_resource->m_gbuffer_d_id);
 
         if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
         {

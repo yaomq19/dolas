@@ -505,6 +505,7 @@ namespace Dolas
 		per_view_constant_buffer.view = render_camera->GetViewMatrix();
 		per_view_constant_buffer.proj = render_camera->GetProjectionMatrix();
 		per_view_constant_buffer.camera_position = Vector4(render_camera->GetPosition(), 1.0f);
+		per_view_constant_buffer.eye_direction = Vector4(render_camera->GetForward(), 0.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
 		HR(m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
@@ -869,6 +870,7 @@ namespace Dolas
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+
 		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2];
 		pos_3_uv_2_desc =
 		{
@@ -877,6 +879,7 @@ namespace Dolas
 			// TEXCOORD 来自 slot 1，单独一个 UV buffer，每个顶点从 offset = 0 开始
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+
 		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3];
 		pos_3_uv_2_norm_3_desc =
 		{
@@ -886,6 +889,15 @@ namespace Dolas
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			// NORMAL:   slot 2
 			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_NORM_3];
+		pos_3_norm_3_desc =
+		{
+			// POSITION: slot 0
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			// NORMAL:   slot 1
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 	}
 
@@ -1006,7 +1018,7 @@ namespace Dolas
 		std::shared_ptr<InputLayout> input_layout = std::make_shared<InputLayout>();
 		ID3D11InputLayout* d3d11_input_layout = nullptr;
 		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[input_layout_type];
-		m_d3d_device->CreateInputLayout(input_element_desc.data(), input_element_desc.size(), pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout);
+		HR(m_d3d_device->CreateInputLayout(input_element_desc.data(), input_element_desc.size(), pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout));
 		input_layout->m_d3d_input_layout = d3d11_input_layout;
 		return input_layout;
 	}

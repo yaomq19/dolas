@@ -1,5 +1,5 @@
 {
     "type" : "base_geometry",
     "base_geometry" : "cube",
-    "material" : "plain_color.material"
+    "material" : "ground_plane.material"
 }
