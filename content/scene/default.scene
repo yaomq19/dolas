@@ -5,7 +5,14 @@
             "entity_file": "ground_plane.entity", 
             "position": [0.0, 0.0, 0.0],
             "rotation": [1.0, 0.0, 0.0, 0.0],
-            "scale": [1.0, 1.0, 0.1]
+            "scale": [1.5, 1.5, 0.1]
+        },
+        {
+            "name": "sphere_0",
+            "entity_file": "sphere_0.entity", 
+            "position": [0.0, 0.0, 2.0],
+            "rotation": [1.0, 0.0, 0.0, 0.0],
+            "scale": [0.75, 0.75, 0.75]
         }
     ],
 

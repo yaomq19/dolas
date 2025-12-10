@@ -1,6 +1,7 @@
 #include "manager/dolas_render_primitive_manager.h"
 
 #include <iostream>
+#include <cmath>
 
 #include "common/dolas_hash.h"
 #include "core/dolas_engine.h"
@@ -260,7 +261,7 @@ namespace Dolas
 
 		std::vector<std::vector<Float>> vertices_data;
 		std::vector<UInt> indices_data;
-		if (!GenerateSphereRawData(10, vertices_data, indices_data))
+		if (!GenerateSphereRawData(20, vertices_data, indices_data))
 		{
 			LOG_ERROR("Failed to generate sphere Raw Data");
 			return false;
@@ -269,7 +270,7 @@ namespace Dolas
 		Bool success = render_primitive_manager->CreateRenderPrimitive(
 			sphere_render_primitive_string_id,
 			PrimitiveTopology::PrimitiveTopology_TriangleList,
-			InputLayoutType::InputLayoutType_POS_3,
+			InputLayoutType::InputLayoutType_POS_3_NORM_3,
 			vertices_data,
 			indices_data);
 		if (!success)
@@ -325,7 +326,7 @@ namespace Dolas
 		Bool success = render_primitive_manager->CreateRenderPrimitive(
 			cylinder_render_primitive_id,
 			PrimitiveTopology::PrimitiveTopology_TriangleList,
-			InputLayoutType::InputLayoutType_POS_3,
+			InputLayoutType::InputLayoutType_POS_3_NORM_3,
 			vertices_data,
 			indices_data);
 		if (!success)
@@ -370,7 +371,7 @@ namespace Dolas
 
 	Bool RenderPrimitiveManager::GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
 	{
-		// ��֤ segments ������Χ
+		// 保证 segments 在合理范围内
 		if (segments < 1 || segments > 100)
 		{
 			LOG_ERROR("Invalid segments value: {}, valid range is [1, 100]", segments);
@@ -380,64 +381,95 @@ namespace Dolas
 		vertices_data.clear();
 		indices.clear();
 
-		vertices_data.resize(1); // ֻʹ��һ�ֶ����ʽ������ʹ�õ�һ��Ԫ�ش洢λ������
+		// 使用双顶点流：
+		//   stream 0: positions（x, y, z）
+		//   stream 1: normals  （x, y, z）
+		// 对应 InputLayoutType_POS_3_NORM_3
+		vertices_data.resize(2);
+		std::vector<Float>& positions = vertices_data[0];
+		std::vector<Float>& normals   = vertices_data[1];
+
 		const Float PI = 3.14159265358979323846f;
 		const Float radius = 1.0f;
 
-		// ����ֶ���
-		// latitudeSegments: γ�ȷ���ķֶ������ӱ������ϼ���
-		// longitudeSegments: ���ȷ���ķֶ������������壩
+		// 划分段数
 		UInt latitudeSegments = segments;
-		UInt longitudeSegments = segments * 2; // ���ȷֶ���ͨ����γ�ȵ�2����ʹ�����θ��ӽ�������
+		UInt longitudeSegments = segments * 2;
 
-		// ���ɶ���
-		// �������� = (latitudeSegments + 1) * (longitudeSegments + 1)
-		for (UInt lat = 0; lat <= latitudeSegments; ++lat)
+		// 将一个小矩形面片拆成两个三角形，非 index 形式：每个三角形有独立的 3 个顶点
+		auto add_vertex = [&](Float x, Float y, Float z)
 		{
-			// phi: γ�Ƚǣ���Χ [0, PI]���ӱ��� (0) ���ϼ� (PI)
-			Float phi = static_cast<Float>(lat) / static_cast<Float>(latitudeSegments) * PI;
-			Float sinPhi = sin(phi);
-			Float cosPhi = cos(phi);
+			positions.push_back(x);
+			positions.push_back(y);
+			positions.push_back(z);
 
-			for (UInt lon = 0; lon <= longitudeSegments; ++lon)
+			// 单位球：位置归一化就是法线
+			Float len_sq = x * x + y * y + z * z;
+			if (len_sq > 0.0f)
 			{
-				// theta: ���Ƚǣ���Χ [0, 2*PI]
-				Float theta = static_cast<Float>(lon) / static_cast<Float>(longitudeSegments) * 2.0f * PI;
-				Float sinTheta = sin(theta);
-				Float cosTheta = cos(theta);
-
-				// ������ת�ѿ�������
-				// x = r * sin(phi) * cos(theta)
-				// y = r * cos(phi)
-				// z = r * sin(phi) * sin(theta)
-				Float x = radius * sinPhi * cosTheta;
-				Float y = radius * cosPhi;
-				Float z = radius * sinPhi * sinTheta;
-
-				vertices_data[0].push_back(x);
-				vertices_data[0].push_back(y);
-				vertices_data[0].push_back(z);
+				Float inv_len = 1.0f / std::sqrt(len_sq);
+				normals.push_back(x * inv_len);
+				normals.push_back(y * inv_len);
+				normals.push_back(z * inv_len);
 			}
-		}
+			else
+			{
+				// 退化时给个默认法线
+				normals.push_back(0.0f);
+				normals.push_back(1.0f);
+				normals.push_back(0.0f);
+			}
+		};
 
-		// �����������������б���
+		auto sphere_pos = [&](Float phi, Float theta)
+		{
+			Float sinPhi = std::sin(phi);
+			Float cosPhi = std::cos(phi);
+			Float sinTheta = std::sin(theta);
+			Float cosTheta = std::cos(theta);
+
+			Float x = radius * sinPhi * cosTheta;
+			Float y = radius * cosPhi;
+			Float z = radius * sinPhi * sinTheta;
+			return std::tuple<Float, Float, Float>(x, y, z);
+		};
+
 		for (UInt lat = 0; lat < latitudeSegments; ++lat)
 		{
+			Float phi0 = static_cast<Float>(lat) / static_cast<Float>(latitudeSegments) * PI;
+			Float phi1 = static_cast<Float>(lat + 1) / static_cast<Float>(latitudeSegments) * PI;
+
 			for (UInt lon = 0; lon < longitudeSegments; ++lon)
 			{
-				// ��ǰ�ı��ε��ĸ���������
-				UInt first = lat * (longitudeSegments + 1) + lon;
-				UInt second = first + longitudeSegments + 1;
+				Float theta0 = static_cast<Float>(lon) / static_cast<Float>(longitudeSegments) * 2.0f * PI;
+				Float theta1 = static_cast<Float>(lon + 1) / static_cast<Float>(longitudeSegments) * 2.0f * PI;
 
-				// ��һ�������� (��ʱ�뷽��)
-				indices.push_back(first);
-				indices.push_back(second);
-				indices.push_back(first + 1);
+				// 四个角点
+				Float x00, y00, z00;
+				std::tie(x00, y00, z00) = sphere_pos(phi0, theta0);
+				Float x01, y01, z01;
+				std::tie(x01, y01, z01) = sphere_pos(phi0, theta1);
+				Float x10, y10, z10;
+				std::tie(x10, y10, z10) = sphere_pos(phi1, theta0);
+				Float x11, y11, z11;
+				std::tie(x11, y11, z11) = sphere_pos(phi1, theta1);
 
-				// �ڶ��������� (��ʱ�뷽��)
-				indices.push_back(second);
-				indices.push_back(second + 1);
-				indices.push_back(first + 1);
+				UInt base_index = static_cast<UInt>(positions.size() / 3);
+
+				// 三角形 1: p00, p10, p01
+				add_vertex(x00, y00, z00);
+				add_vertex(x10, y10, z10);
+				add_vertex(x01, y01, z01);
+
+				// 三角形 2: p10, p11, p01
+				add_vertex(x10, y10, z10);
+				add_vertex(x11, y11, z11);
+				add_vertex(x01, y01, z01);
+
+				for (UInt k = 0; k < 6; ++k)
+				{
+					indices.push_back(base_index + k);
+				}
 			}
 		}
 
@@ -510,138 +542,146 @@ namespace Dolas
 		vertices_data.clear();
 		indices.clear();
 
-		// ʹ�õ�һ��������positions��x, y, z������Ӧ InputLayoutType_POS_3
-		vertices_data.resize(1);
+		// 使用双顶点流：
+		//   stream 0: positions（x, y, z）
+		//   stream 1: normals  （x, y, z）
+		// 对应 InputLayoutType_POS_3_NORM_3
+		vertices_data.resize(2);
 		std::vector<Float>& positions = vertices_data[0];
+		std::vector<Float>& normals   = vertices_data[1];
 
 		const Float radius = 1.0f;
 		const Float half_height = 0.5f;
-		const UInt  segments = 32;   // Բ�ֶܷ���
+		const UInt  segments = 32;
 		const Float PI = MathUtil::PI;
 
-		// ---------- 1. ���涥�㣨�ϻ� + �»��� ----------
-		// ���� [0 .. segments]
-		for (UInt i = 0; i <= segments; ++i)
+		auto add_vertex = [&](Float px, Float py, Float pz, Float nx, Float ny, Float nz)
 		{
-			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
-			Float cosTheta = cos(theta);
-			Float sinTheta = sin(theta);
+			positions.push_back(px);
+			positions.push_back(py);
+			positions.push_back(pz);
 
-			Float x = radius * cosTheta;
-			Float z = radius * sinTheta;
+			// 归一化法线
+			Float len_sq = nx * nx + ny * ny + nz * nz;
+			if (len_sq > 0.0f)
+			{
+				Float inv_len = 1.0f / std::sqrt(len_sq);
+				nx *= inv_len;
+				ny *= inv_len;
+				nz *= inv_len;
+			}
+			normals.push_back(nx);
+			normals.push_back(ny);
+			normals.push_back(nz);
+		};
+
+		// ---------- 1. 侧面（圆柱侧壁）----------
+		for (UInt i = 0; i < segments; ++i)
+		{
+			Float theta0 = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float theta1 = static_cast<Float>(i + 1) / static_cast<Float>(segments) * 2.0f * PI;
+
+			Float cos0 = std::cos(theta0);
+			Float sin0 = std::sin(theta0);
+			Float cos1 = std::cos(theta1);
+			Float sin1 = std::sin(theta1);
+
+			// 四个角点
+			Float x0 = radius * cos0;
+			Float z0 = radius * sin0;
+			Float x1 = radius * cos1;
+			Float z1 = radius * sin1;
+
+			Float yTop    = half_height;
+			Float yBottom = -half_height;
+
+			// 圆柱侧面法线 = 投影到 XZ 平面的归一化向量
+			Float n0x = cos0, n0z = sin0;
+			Float n1x = cos1, n1z = sin1;
+
+			UInt base_index = static_cast<UInt>(positions.size() / 3);
+
+			// 三角形 1: top_curr, bottom_curr, top_next
+			add_vertex(x0, yTop,    z0, n0x, 0.0f, n0z);
+			add_vertex(x0, yBottom, z0, n0x, 0.0f, n0z);
+			add_vertex(x1, yTop,    z1, n1x, 0.0f, n1z);
+
+			// 三角形 2: top_next, bottom_curr, bottom_next
+			add_vertex(x1, yTop,    z1, n1x, 0.0f, n1z);
+			add_vertex(x0, yBottom, z0, n0x, 0.0f, n0z);
+			add_vertex(x1, yBottom, z1, n1x, 0.0f, n1z);
+
+			for (UInt k = 0; k < 6; ++k)
+			{
+				indices.push_back(base_index + k);
+			}
+		}
+
+		// ---------- 2. 顶盖 (+Y) ----------
+		for (UInt i = 0; i < segments; ++i)
+		{
+			Float theta0 = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float theta1 = static_cast<Float>(i + 1) / static_cast<Float>(segments) * 2.0f * PI;
+
+			Float cos0 = std::cos(theta0);
+			Float sin0 = std::sin(theta0);
+			Float cos1 = std::cos(theta1);
+			Float sin1 = std::sin(theta1);
+
 			Float y = half_height;
 
-			positions.push_back(x);
-			positions.push_back(y);
-			positions.push_back(z);
+			// 顶盖法线朝 +Y
+			const Float nx = 0.0f, ny = 1.0f, nz = 0.0f;
+
+			Float cx = 0.0f, cz = 0.0f;
+			Float x0 = radius * cos0, z0 = radius * sin0;
+			Float x1 = radius * cos1, z1 = radius * sin1;
+
+			UInt base_index = static_cast<UInt>(positions.size() / 3);
+
+			// 三角形: center, p0, p1（顺时针为正面，根据你的 Cull 设置）
+			add_vertex(cx, y, cz, nx, ny, nz);
+			add_vertex(x0, y, z0, nx, ny, nz);
+			add_vertex(x1, y, z1, nx, ny, nz);
+
+			for (UInt k = 0; k < 3; ++k)
+			{
+				indices.push_back(base_index + k);
+			}
 		}
 
-		// �׻� [segments+1 .. 2*segments+1]
-		const UInt bottom_ring_start = segments + 1;
-		for (UInt i = 0; i <= segments; ++i)
+		// ---------- 3. 底盖 (-Y) ----------
+		for (UInt i = 0; i < segments; ++i)
 		{
-			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
-			Float cosTheta = cos(theta);
-			Float sinTheta = sin(theta);
+			Float theta0 = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
+			Float theta1 = static_cast<Float>(i + 1) / static_cast<Float>(segments) * 2.0f * PI;
 
-			Float x = radius * cosTheta;
-			Float z = radius * sinTheta;
+			Float cos0 = std::cos(theta0);
+			Float sin0 = std::sin(theta0);
+			Float cos1 = std::cos(theta1);
+			Float sin1 = std::sin(theta1);
+
 			Float y = -half_height;
 
-			positions.push_back(x);
-			positions.push_back(y);
-			positions.push_back(z);
-		}
+			// 底盖法线朝 -Y
+			const Float nx = 0.0f, ny = -1.0f, nz = 0.0f;
 
-		// ---------- 2. �����������������б��� ----------
-		for (UInt i = 0; i < segments; ++i)
-		{
-			UInt top_curr = i;
-			UInt top_next = i + 1;
-			UInt bottom_curr = bottom_ring_start + i;
-			UInt bottom_next = bottom_ring_start + i + 1;
+			Float cx = 0.0f, cz = 0.0f;
+			Float x0 = radius * cos0, z0 = radius * sin0;
+			Float x1 = radius * cos1, z1 = radius * sin1;
 
-			// ��һ�������Σ���ʱ�룬����࿴��
-			indices.push_back(top_curr);
-			indices.push_back(bottom_curr);
-			indices.push_back(top_next);
+			UInt base_index = static_cast<UInt>(positions.size() / 3);
 
-			// �ڶ���������
-			indices.push_back(top_next);
-			indices.push_back(bottom_curr);
-			indices.push_back(bottom_next);
-		}
+			// 为保持正面一致性，这里使用合适的三角形顶点顺序
+			// 三角形: center, p1, p0
+			add_vertex(cx, y, cz, nx, ny, nz);
+			add_vertex(x1, y, z1, nx, ny, nz);
+			add_vertex(x0, y, z0, nx, ny, nz);
 
-		// ---------- 3. �˸Ƕ��㣺���� + �׶� ----------
-		// ��������
-		const UInt top_center_index = static_cast<UInt>(positions.size() / 3);
-		positions.push_back(0.0f);
-		positions.push_back(half_height);
-		positions.push_back(0.0f);
-
-		// ���ǻ����ظ�һȦ���Ա������߼��Ͳ���һ���򵥣�
-		const UInt top_cap_ring_start = static_cast<UInt>(positions.size() / 3);
-		for (UInt i = 0; i <= segments; ++i)
-		{
-			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
-			Float cosTheta = cos(theta);
-			Float sinTheta = sin(theta);
-
-			Float x = radius * cosTheta;
-			Float z = radius * sinTheta;
-			Float y = half_height;
-
-			positions.push_back(x);
-			positions.push_back(y);
-			positions.push_back(z);
-		}
-
-		// �׸�����
-		const UInt bottom_center_index = static_cast<UInt>(positions.size() / 3);
-		positions.push_back(0.0f);
-		positions.push_back(-half_height);
-		positions.push_back(0.0f);
-
-		// �׸ǻ�
-		const UInt bottom_cap_ring_start = static_cast<UInt>(positions.size() / 3);
-		for (UInt i = 0; i <= segments; ++i)
-		{
-			Float theta = static_cast<Float>(i) / static_cast<Float>(segments) * 2.0f * PI;
-			Float cosTheta = cos(theta);
-			Float sinTheta = sin(theta);
-
-			Float x = radius * cosTheta;
-			Float z = radius * sinTheta;
-			Float y = -half_height;
-
-			positions.push_back(x);
-			positions.push_back(y);
-			positions.push_back(z);
-		}
-
-		// ---------- 4. �˸����������ǳ� +Y���׸ǳ� -Y�� ----------
-		// ���ǣ��������¿�����ʱ��
-		for (UInt i = 0; i < segments; ++i)
-		{
-			UInt v0 = top_center_index;
-			UInt v1 = top_cap_ring_start + i;
-			UInt v2 = top_cap_ring_start + i + 1;
-
-			indices.push_back(v0);
-			indices.push_back(v1);
-			indices.push_back(v2);
-		}
-
-		// �׸ǣ��������¿�����Ҫ˳ʱ�룬�ȼ��ڽ��� v1/v2
-		for (UInt i = 0; i < segments; ++i)
-		{
-			UInt v0 = bottom_center_index;
-			UInt v1 = bottom_cap_ring_start + i + 1;
-			UInt v2 = bottom_cap_ring_start + i;
-
-			indices.push_back(v0);
-			indices.push_back(v1);
-			indices.push_back(v2);
+			for (UInt k = 0; k < 3; ++k)
+			{
+				indices.push_back(base_index + k);
+			}
 		}
 
 		return true;
@@ -658,149 +698,86 @@ namespace Dolas
 		// 对应 InputLayoutType_POS_3_NORM_3
 		vertices_data.resize(2);
 		std::vector<Float>& positions = vertices_data[0];
+		std::vector<Float>& normals   = vertices_data[1];
 
 		const Float half_extent = 0.5f;
 
-		// 8 个顶点，立方体中心在原点，边长为 1（范围 [-0.5, 0.5]）
-		// v0: (-x, -y, -z)
-		positions.push_back(-half_extent);
-		positions.push_back(-half_extent);
-		positions.push_back(-half_extent);
+		// 先定义 8 个立方体顶点（用于查表），中心在原点，边长为 1（范围 [-0.5, 0.5]）
+		struct Vec3
+		{
+			Float x, y, z;
+		};
+		Vec3 base_positions[8] =
+		{
+			{ -half_extent, -half_extent, -half_extent }, // v0
+			{ -half_extent,  half_extent, -half_extent }, // v1
+			{  half_extent,  half_extent, -half_extent }, // v2
+			{  half_extent, -half_extent, -half_extent }, // v3
+			{ -half_extent, -half_extent,  half_extent }, // v4
+			{ -half_extent,  half_extent,  half_extent }, // v5
+			{  half_extent,  half_extent,  half_extent }, // v6
+			{  half_extent, -half_extent,  half_extent }  // v7
+		};
 
-		// v1: (-x, +y, -z)
-		positions.push_back(-half_extent);
-		positions.push_back(half_extent);
-		positions.push_back(-half_extent);
+		// 每个三角形单独写入 3 个顶点（非 index 形式）
+		// indices 数组就是 0,1,2,3,...,35
+		auto add_triangle = [&](UInt i0, UInt i1, UInt i2, const Vec3& normal)
+		{
+			UInt base_index = static_cast<UInt>(positions.size() / 3);
 
-		// v2: (+x, +y, -z)
-		positions.push_back(half_extent);
-		positions.push_back(half_extent);
-		positions.push_back(-half_extent);
+			auto push_vertex = [&](UInt vi)
+			{
+				const Vec3& p = base_positions[vi];
+				positions.push_back(p.x);
+				positions.push_back(p.y);
+				positions.push_back(p.z);
 
-		// v3: (+x, -y, -z)
-		positions.push_back(half_extent);
-		positions.push_back(-half_extent);
-		positions.push_back(-half_extent);
+				normals.push_back(normal.x);
+				normals.push_back(normal.y);
+				normals.push_back(normal.z);
+			};
 
-		// v4: (-x, -y, +z)
-		positions.push_back(-half_extent);
-		positions.push_back(-half_extent);
-		positions.push_back(half_extent);
+			push_vertex(i0);
+			push_vertex(i1);
+			push_vertex(i2);
 
-		// v5: (-x, +y, +z)
-		positions.push_back(-half_extent);
-		positions.push_back(half_extent);
-		positions.push_back(half_extent);
+			indices.push_back(base_index + 0);
+			indices.push_back(base_index + 1);
+			indices.push_back(base_index + 2);
+		};
 
-		// v6: (+x, +y, +z)
-		positions.push_back(half_extent);
-		positions.push_back(half_extent);
-		positions.push_back(half_extent);
+		// 六个面的法线
+		const Vec3 n_front  = {  0.0f,  0.0f,  1.0f };
+		const Vec3 n_back   = {  0.0f,  0.0f, -1.0f };
+		const Vec3 n_left   = { -1.0f,  0.0f,  0.0f };
+		const Vec3 n_right  = {  1.0f,  0.0f,  0.0f };
+		const Vec3 n_top    = {  0.0f,  1.0f,  0.0f };
+		const Vec3 n_bottom = {  0.0f, -1.0f,  0.0f };
 
-		// v7: (+x, -y, +z)
-		positions.push_back(half_extent);
-		positions.push_back(-half_extent);
-		positions.push_back(half_extent);
-
-		// 6 个面，每个面 2 个三角形，共 12 个三角形（36 个索引）
-		
+		// 6 个面，每个面 2 个三角形，共 12 个三角形（36 个顶点 / 索引）
 		// 前面 (+Z)：v4, v5, v6, v7
-		indices.push_back(4); indices.push_back(5); indices.push_back(6);
-		indices.push_back(4); indices.push_back(6); indices.push_back(7);
+		add_triangle(4, 5, 6, n_front);
+		add_triangle(4, 6, 7, n_front);
 
 		// 后面 (-Z)：v0, v1, v2, v3
-		indices.push_back(3); indices.push_back(2); indices.push_back(1);
-		indices.push_back(3); indices.push_back(1); indices.push_back(0);
+		add_triangle(3, 2, 1, n_back);
+		add_triangle(3, 1, 0, n_back);
 
 		// 左面 (-X)：v0, v1, v5, v4
-		indices.push_back(0); indices.push_back(1); indices.push_back(5);
-		indices.push_back(0); indices.push_back(5); indices.push_back(4);
+		add_triangle(0, 1, 5, n_left);
+		add_triangle(0, 5, 4, n_left);
 
 		// 右面 (+X)：v3, v2, v6, v7
-		indices.push_back(7); indices.push_back(6); indices.push_back(2);
-		indices.push_back(7); indices.push_back(2); indices.push_back(3);
+		add_triangle(7, 6, 2, n_right);
+		add_triangle(7, 2, 3, n_right);
 
 		// 顶面 (+Y)：v1, v2, v6, v5
-		indices.push_back(1); indices.push_back(2); indices.push_back(6);
-		indices.push_back(1); indices.push_back(6); indices.push_back(5);
+		add_triangle(1, 2, 6, n_top);
+		add_triangle(1, 6, 5, n_top);
 
 		// 底面 (-Y)：v0, v4, v7, v3
-		indices.push_back(0); indices.push_back(4); indices.push_back(7);
-		indices.push_back(0); indices.push_back(7); indices.push_back(3);
-
-		// 计算每个顶点的法线（按面法线加权平均再归一化）
-		const size_t vertex_count = positions.size() / 3;
-		std::vector<Float>& normals = vertices_data[1];
-		normals.assign(vertex_count * 3, 0.0f);
-
-		for (size_t i = 0; i + 2 < indices.size(); i += 3)
-		{
-			UInt i0 = indices[i + 0];
-			UInt i1 = indices[i + 1];
-			UInt i2 = indices[i + 2];
-
-			Float p0x = positions[i0 * 3 + 0];
-			Float p0y = positions[i0 * 3 + 1];
-			Float p0z = positions[i0 * 3 + 2];
-
-			Float p1x = positions[i1 * 3 + 0];
-			Float p1y = positions[i1 * 3 + 1];
-			Float p1z = positions[i1 * 3 + 2];
-
-			Float p2x = positions[i2 * 3 + 0];
-			Float p2y = positions[i2 * 3 + 1];
-			Float p2z = positions[i2 * 3 + 2];
-
-			// 计算三角形面法线
-			Float ux = p1x - p0x;
-			Float uy = p1y - p0y;
-			Float uz = p1z - p0z;
-
-			Float vx = p2x - p0x;
-			Float vy = p2y - p0y;
-			Float vz = p2z - p0z;
-
-			Float nx = uy * vz - uz * vy;
-			Float ny = uz * vx - ux * vz;
-			Float nz = ux * vy - uy * vx;
-
-			// 累加到三个顶点的法线向量上
-			normals[i0 * 3 + 0] += nx;
-			normals[i0 * 3 + 1] += ny;
-			normals[i0 * 3 + 2] += nz;
-
-			normals[i1 * 3 + 0] += nx;
-			normals[i1 * 3 + 1] += ny;
-			normals[i1 * 3 + 2] += nz;
-
-			normals[i2 * 3 + 0] += nx;
-			normals[i2 * 3 + 1] += ny;
-			normals[i2 * 3 + 2] += nz;
-		}
-
-		// 对每个顶点的法线做归一化
-		for (size_t v = 0; v < vertex_count; ++v)
-		{
-			Float nx = normals[v * 3 + 0];
-			Float ny = normals[v * 3 + 1];
-			Float nz = normals[v * 3 + 2];
-
-			Float len_sq = nx * nx + ny * ny + nz * nz;
-			if (len_sq > 0.0f)
-			{
-				Float inv_len = 1.0f / std::sqrt(len_sq);
-				normals[v * 3 + 0] = nx * inv_len;
-				normals[v * 3 + 1] = ny * inv_len;
-				normals[v * 3 + 2] = nz * inv_len;
-			}
-			else
-			{
-				// 退化情况下给一个默认法线（例如指向 +Y）
-				normals[v * 3 + 0] = 0.0f;
-				normals[v * 3 + 1] = 1.0f;
-				normals[v * 3 + 2] = 0.0f;
-			}
-		}
+		add_triangle(0, 4, 7, n_bottom);
+		add_triangle(0, 7, 3, n_bottom);
 
 		return true;
 	}

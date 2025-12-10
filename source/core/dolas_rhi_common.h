@@ -95,7 +95,6 @@ namespace Dolas
 		Matrix4x4 view;
 		Matrix4x4 proj;
 		Vector4 camera_position; // w is unused
-		Vector4 eye_direction; // w is unused
 	};
 
 	struct PerObjectConstantBuffer

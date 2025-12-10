@@ -89,9 +89,8 @@ float4 PS(PS_INPUT input) : SV_TARGET0
     light_data.color = g_LightColor.xyz;
 
     float3 N = normalize(surface_data.world_normal);
-    // float3 L = light_data.direction;
-    float3 L = float3(0.0f, 1.0f, 0.0f);
-    float3 V = normalize(g_EyeDirection.xyz);
+    float3 L = normalize(-light_data.direction);
+    float3 V = normalize(g_CameraPosition.xyz - world_position);
 
     SurfaceContext surface_context = EvaluateSurfaceContext(N, L, V);
     

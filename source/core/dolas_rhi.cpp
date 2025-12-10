@@ -505,7 +505,6 @@ namespace Dolas
 		per_view_constant_buffer.view = render_camera->GetViewMatrix();
 		per_view_constant_buffer.proj = render_camera->GetProjectionMatrix();
 		per_view_constant_buffer.camera_position = Vector4(render_camera->GetPosition(), 1.0f);
-		per_view_constant_buffer.eye_direction = Vector4(render_camera->GetForward(), 0.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
 		HR(m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));

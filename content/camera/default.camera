@@ -1,8 +1,8 @@
 {
     "camera_perspective_type": "perspective",
-    "position": [0, -3, 0],
-    "forward": [0, 1, 0],
-    "up": [0, 0, 1],
+    "position": [1.939003, -4.5596633, 2.3117614],
+    "forward": [-0.27318278, 0.9228391, -0.2715497],
+    "up": [-0.0770801, 0.2603803, 0.9624244],
     "near_plane" : 0.1,
     "far_plane" : 2000.0,
     "fov" : 90.0,

@@ -68,6 +68,10 @@ namespace Dolas
                     {
                         render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
                     }
+					else if(base_geometry_name == "sphere")
+					{
+						render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
+					}
                     else
                     {
                         goto CreateRenderEntity_Failed;
@@ -131,7 +135,7 @@ namespace Dolas
         // 成功路径：创建 RenderEntity 并返回有效 ID
         {
             RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
-            render_entity->m_file_id = STRING_ID(render_entity_file_path);
+            render_entity->m_file_id = HashConverter::StringHash(render_entity_file_path);
             render_entity->m_render_primitive_id = render_primitive_id;
             render_entity->m_material_id = material_id;
             render_entity->m_pose.m_postion = scene_entity.position;
