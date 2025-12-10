@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <tuple>
 
 #include "common/dolas_hash.h"
 #include "core/dolas_engine.h"

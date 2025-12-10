@@ -22,7 +22,8 @@ namespace Dolas
 #ifndef DEFAULT_CLIENT_HEIGHT
 #define DEFAULT_CLIENT_HEIGHT 1080
 #endif
-	
+	class VertexContext;
+	class PixelContext;
 
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
@@ -75,10 +76,10 @@ namespace Dolas
 		void SetBlendState(BlendStateType type);
 		
 		// VertexContext
-		Bool BindVertexContext(class VertexContext* vertex_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindVertexContext(std::shared_ptr<VertexContext> vertex_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
 		
 		// PixelContext
-		Bool BindPixelContext(class PixelContext* pixel_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindPixelContext(std::shared_ptr<PixelContext> pixel_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
 		
 		// Buffer
 

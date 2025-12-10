@@ -341,7 +341,7 @@ namespace Dolas
         m_d3d_immediate_context->OMSetBlendState(blend_state.m_d3d_blend_state, nullptr, 0xFFFFFFFF);
     }
 
-	Bool DolasRHI::BindVertexContext(VertexContext* vertex_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	Bool DolasRHI::BindVertexContext(std::shared_ptr<VertexContext> vertex_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
 		/* 1. Set shader to context */
 		m_d3d_immediate_context->VSSetShader(vertex_context->GetD3DVertexShader(), class_instances, num_class_instances);
@@ -380,7 +380,7 @@ namespace Dolas
 	}
 
 	// PixelContext
-	Bool DolasRHI::BindPixelContext(PixelContext* pixel_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
+	Bool DolasRHI::BindPixelContext(std::shared_ptr<PixelContext> pixel_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
 		/* 1. Set shader to context */ 
 		m_d3d_immediate_context->PSSetShader(pixel_context->GetD3DPixelShader(), class_instances, num_class_instances);

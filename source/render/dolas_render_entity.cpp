@@ -35,10 +35,10 @@ namespace Dolas
 		Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(m_material_id);
 		DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexContext();
+        std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelContext();
+        std::shared_ptr<PixelContext> pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
         
         rhi->UpdatePerObjectParameters(m_pose);

@@ -9,12 +9,16 @@
 namespace Dolas
 {
     class Material;
+    class VertexContext;
+    class PixelContext;
+
     struct GlobalMaterials
     {
         MaterialID m_deferred_shading = MATERIAL_ID_EMPTY;
         MaterialID m_sky_box_material_id = MATERIAL_ID_EMPTY;
         MaterialID m_debug_draw_material_id = MATERIAL_ID_EMPTY;
     };
+
     class MaterialManager
     {
     public:
@@ -29,8 +33,10 @@ namespace Dolas
         Material* GetSkyBoxMaterial();
         Material* GetDebugDrawMaterial();
     private:
-        std::unordered_map<MaterialID, Material*> m_materials;
+        std::shared_ptr<VertexContext> CreateVertexContext(const std::string& file_path, const std::string& entry_point);
+        std::shared_ptr<PixelContext>  CreatePixelContext(const std::string& file_path, const std::string& entry_point);
 
+        std::unordered_map<MaterialID, Material*> m_materials;
         GlobalMaterials m_global_materials;
     };// class MaterialManager
 }// namespace Dolas

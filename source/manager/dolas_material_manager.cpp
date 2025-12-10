@@ -39,18 +39,10 @@ namespace Dolas
             Material* material = it->second;
             if (material)
             {
-                // 清理材质资源
-                if (material->m_vertex_context)
-                {
-                    material->m_vertex_context->Release();
-                    material->m_vertex_context = nullptr;
-                }
-                if (material->m_pixel_context)
-                {
-                    material->m_pixel_context->Release();
-                    material->m_pixel_context = nullptr;
-                }
-                // 释放Material对象本身
+                // Material 持有的是共享的 ShaderContext，不负责销毁底层 D3D 资源
+                material->m_vertex_context.reset();
+                material->m_pixel_context.reset();
+                // 释放 Material 本身
                 DOLAS_DELETE(material);
             }
         }
@@ -82,13 +74,13 @@ namespace Dolas
         // 顶点着色器
         if (json_data.contains("vertex_shader"))
         {
-            material->m_vertex_context = g_dolas_engine.m_shader_manager->GetOrCreateVertexShader(json_data["vertex_shader"], "VS");
+            material->m_vertex_context = CreateVertexContext(json_data["vertex_shader"], "VS");
         }
 
         // 像素着色器
         if (json_data.contains("pixel_shader"))
         {
-            material->m_pixel_context = g_dolas_engine.m_shader_manager->GetOrCreatePixelShader(json_data["pixel_shader"], "PS");
+            material->m_pixel_context = CreatePixelContext(json_data["pixel_shader"], "PS");
         }
 
         // 解析纹理信息
@@ -227,4 +219,15 @@ namespace Dolas
 		return GetMaterialByID(m_global_materials.m_debug_draw_material_id);
     }
 
+	// protected methods
+    std::shared_ptr<VertexContext> MaterialManager::CreateVertexContext(const std::string& file_path, const std::string& entry_point)
+    {
+        // 通过 ShaderManager 复用/创建底层 VertexContext
+        return g_dolas_engine.m_shader_manager->GetOrCreateVertexContext(file_path, entry_point);
+    }
+
+    std::shared_ptr<PixelContext> MaterialManager::CreatePixelContext(const std::string& file_path, const std::string& entry_point)
+    {
+        return g_dolas_engine.m_shader_manager->GetOrCreatePixelContext(file_path, entry_point);
+    }
 } // namespace Dolas

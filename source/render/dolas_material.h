@@ -4,8 +4,9 @@
 #include <string>
 #include <unordered_map>
 #include <d3d11.h>
+#include <memory>
 #include "common/dolas_hash.h"
-
+#include "render/dolas_shader.h"
 namespace Dolas
 {
     class Material
@@ -14,12 +15,12 @@ namespace Dolas
     public:
         Material();
         ~Material();
-        class VertexContext* GetVertexContext();
-        class PixelContext* GetPixelContext();
+        std::shared_ptr<VertexContext> GetVertexContext();
+        std::shared_ptr<PixelContext> GetPixelContext();
     protected:
         MaterialID m_file_id;
-        class VertexContext* m_vertex_context = nullptr;
-        class PixelContext* m_pixel_context = nullptr;
+        std::shared_ptr<VertexContext> m_vertex_context{ nullptr };
+        std::shared_ptr<PixelContext> m_pixel_context{ nullptr };
     }; // class Material
 } // namespace Dolas
 

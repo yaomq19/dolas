@@ -183,10 +183,10 @@ namespace Dolas
         Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
         DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexContext();
+        std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelContext();
+        std::shared_ptr<PixelContext> pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
         pixel_context->SetShaderResourceView(0, render_resource->m_gbuffer_a_id);
@@ -233,10 +233,10 @@ namespace Dolas
         Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
         DOLAS_RETURN_IF_NULL(material);
 
-        VertexContext* vertex_context = material->GetVertexContext();
+        std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
         DOLAS_RETURN_IF_NULL(vertex_context);
 
-        PixelContext* pixel_context = material->GetPixelContext();
+        std::shared_ptr<PixelContext> pixel_context = material->GetPixelContext();
         DOLAS_RETURN_IF_NULL(pixel_context);
 
         pixel_context->SetShaderResourceView(0, g_dolas_engine.m_texture_manager->GetGlobalTexture(GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX));
@@ -287,10 +287,10 @@ namespace Dolas
 		Material* debug_draw_material = g_dolas_engine.m_material_manager->GetDebugDrawMaterial();
 		DOLAS_RETURN_IF_NULL(debug_draw_material);
 
-		VertexContext* vertex_context = debug_draw_material->GetVertexContext();
+        std::shared_ptr<VertexContext> vertex_context = debug_draw_material->GetVertexContext();
 		DOLAS_RETURN_IF_NULL(vertex_context);
 
-		PixelContext* pixel_context = debug_draw_material->GetPixelContext();
+        std::shared_ptr<PixelContext> pixel_context = debug_draw_material->GetPixelContext();
 		DOLAS_RETURN_IF_NULL(pixel_context);
 
         auto render_resouce = TryGetRenderResource();

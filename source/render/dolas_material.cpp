@@ -14,12 +14,12 @@ namespace Dolas
 
 	}
 
-	VertexContext* Material::GetVertexContext()
+	std::shared_ptr<VertexContext> Material::GetVertexContext()
 	{
 		return m_vertex_context;
 	}
 
-	PixelContext* Material::GetPixelContext()
+	std::shared_ptr<PixelContext> Material::GetPixelContext()
 	{
 		return m_pixel_context;
 	}
