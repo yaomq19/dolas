@@ -89,6 +89,21 @@ namespace Dolas
     protected:
         ID3D11PixelShader* m_d3d_pixel_shader = nullptr;
     }; // class PixelContext
+
+    // Lightweight shader objects used for caching compiled shaders in ShaderManager.
+    // Currently they are thin aliases of the corresponding *Context types,
+    // which already own ID3D11*Shader, reflection info and GlobalConstantBuffer.
+    class VertexShader : public VertexContext
+    {
+    public:
+        using VertexContext::VertexContext;
+    };
+
+    class PixelShader : public PixelContext
+    {
+    public:
+        using PixelContext::PixelContext;
+    };
     
 } // namespace Dolas
 

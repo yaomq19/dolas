@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>DolasAssetEditor</AssemblyName>
+    <RootNamespace>Dolas.AssetEditor</RootNamespace>
+
+    <!-- 兼容 CMake/VS 多配置 -->
+    <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
+    <Platforms>AnyCPU;x64</Platforms>
+
+    <!-- 源码目录由 CMake 写死注入（使用 /，MSBuild 可识别） -->
+    <DolasAssetEditorSourceDir>@DOLAS_ASSET_EDITOR_SOURCE_DIR@</DolasAssetEditorSourceDir>
+  </PropertyGroup>
+
+  <!-- 让生成的 csproj 可以引用源代码目录下的文件 -->
+  <ItemGroup>
+    <!-- 注意：源码目录里可能残留 bin/obj（尤其是旧工程构建产物），必须排除，
+         否则会把 WPF 自动生成的 *.g.cs（例如 App.g.cs）也编进来导致重复定义。 -->
+    <Compile Include="$(DolasAssetEditorSourceDir)/**/*.cs"
+             Exclude="$(DolasAssetEditorSourceDir)/**/bin/**;$(DolasAssetEditorSourceDir)/**/obj/**" />
+    <ApplicationDefinition Include="$(DolasAssetEditorSourceDir)/App.xaml" />
+    <Page Include="$(DolasAssetEditorSourceDir)/MainWindow.xaml" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'RelWithDebInfo'">
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'MinSizeRel'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+</Project>
+
+

@@ -1,11 +1,11 @@
 # To Do List
+- Asset系统优化
 - 定义 Dolas 的网格格式，并根据这个网格格式制作导入器（首先实现FBX导入器）
 - 实现 pbr brdf standard shade mode
 - 实现 SetNamedSampler 接口
 - Shader 反射系统
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系
 - 显示世界坐标系
-- Asset系统优化
 - 制作简易RSD系统
 - 制作C#工具项目，第一个工具：ShaderCompiler
     - 制作完成后，Shader 从此完全切换为离线编译

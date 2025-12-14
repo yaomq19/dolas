@@ -27,22 +27,22 @@ namespace Dolas
     {
         for (auto& it : m_vertex_shaders)
         {
-            VertexContext* vertex_context = it.second;
-            if (vertex_context)
+            VertexShader* vertex_shader = it.second;
+            if (vertex_shader)
             {
-                vertex_context->Release();
-                DOLAS_DELETE(vertex_context);
+                vertex_shader->Release();
+                DOLAS_DELETE(vertex_shader);
             }
         }
         m_vertex_shaders.clear();
 
         for (auto& it : m_pixel_shaders)
         {
-            PixelContext* pixel_context = it.second;
-            if (pixel_context)
+            PixelShader* pixel_shader = it.second;
+            if (pixel_shader)
             {
-                pixel_context->Release();
-                DOLAS_DELETE(pixel_context);
+                pixel_shader->Release();
+                DOLAS_DELETE(pixel_shader);
             }
         }
         m_pixel_shaders.clear();
@@ -53,47 +53,50 @@ namespace Dolas
 	{
         std::string key = GenerateShaderKey(file_path, entry_point);
         
-        VertexContext* vertex_context = nullptr;
+        VertexShader* vertex_shader = nullptr;
         auto it = m_vertex_shaders.find(key);
         if (it == m_vertex_shaders.end())
         {
-            vertex_context = CreateVertexShader(file_path, entry_point);
-            if (!vertex_context)
+            // 动态类型为 VertexShader，函数返回类型是 VertexContext* 以保持兼容
+            VertexContext* created = CreateVertexShader(file_path, entry_point);
+            if (!created)
             {
                 return nullptr;
             }
-            m_vertex_shaders[key] = vertex_context;
+            vertex_shader = static_cast<VertexShader*>(created);
+            m_vertex_shaders[key] = vertex_shader;
         }
         else
         {
-            vertex_context = it->second;
+            vertex_shader = it->second;
         }
 
         // 返回一个不负责销毁的 shared_ptr，生命周期由 ShaderManager 管理
-        return std::shared_ptr<VertexContext>(vertex_context, [](VertexContext*) {});
+        return std::shared_ptr<VertexContext>(vertex_shader, [](VertexContext*) {});
     }
 
     std::shared_ptr<PixelContext> ShaderManager::GetOrCreatePixelContext(const std::string& file_path, const std::string& entry_point)
     {
         std::string key = GenerateShaderKey(file_path, entry_point);
 
-        PixelContext* pixel_context = nullptr;
+        PixelShader* pixel_shader = nullptr;
         auto it = m_pixel_shaders.find(key);
         if (it == m_pixel_shaders.end())
         {
-            pixel_context = CreatePixelShader(file_path, entry_point);
-            if (!pixel_context)
+            PixelContext* created = CreatePixelShader(file_path, entry_point);
+            if (!created)
             {
                 return nullptr;
             }
-            m_pixel_shaders[key] = pixel_context;
+            pixel_shader = static_cast<PixelShader*>(created);
+            m_pixel_shaders[key] = pixel_shader;
         }
         else
         {
-            pixel_context = it->second;
+            pixel_shader = it->second;
         }
 
-        return std::shared_ptr<PixelContext>(pixel_context, [](PixelContext*) {});
+        return std::shared_ptr<PixelContext>(pixel_shader, [](PixelContext*) {});
     }
     
     void ShaderManager::dumpShaderReflectionInfos() const

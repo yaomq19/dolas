@@ -59,3 +59,6 @@ add_subdirectory(source)
 
 # 添加 Shader Compiler 子目录
 add_subdirectory(shader_compiler)
+
+# 添加资产编辑器（仅对 Visual Studio 生成器注入外部 C# WPF 工程）
+add_subdirectory(asset_editor)

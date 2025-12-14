@@ -25,9 +25,9 @@ namespace Dolas
         PixelContext*  CreatePixelShader(const std::string& file_path, const std::string& entry_point);
         std::string    GenerateShaderKey(const std::string& file_path, const std::string& entry_point);
 
-        // ShaderManager 持有实际的上下文对象指针，负责其生命周期
-        std::unordered_map<std::string, VertexContext*> m_vertex_shaders;
-        std::unordered_map<std::string, PixelContext*>  m_pixel_shaders;
+        // ShaderManager 持有共享的底层着色器对象（VertexShader / PixelShader）
+        std::unordered_map<std::string, VertexShader*> m_vertex_shaders;
+        std::unordered_map<std::string, PixelShader*>  m_pixel_shaders;
     }; // class ShaderManager
 } // namespace Dolas
 
