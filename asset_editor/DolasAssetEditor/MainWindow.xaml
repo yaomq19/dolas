@@ -4,10 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Dolas.AssetEditor.ViewModels"
+        xmlns:conv="clr-namespace:Dolas.AssetEditor.Converters"
         mc:Ignorable="d"
         Title="Dolas 资产编辑器"
         Width="1200" Height="720"
         WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <conv:EditorTypeToVisibilityConverter x:Key="EditorTypeToVisibility" />
+        <conv:InverseBoolToVisibilityConverter x:Key="InvBoolToVis" />
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
 
     <Window.DataContext>
         <vm:MainWindowViewModel />
@@ -50,7 +57,8 @@
                              Text="{Binding AssetFilterText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="筛选（占位）" />
                     <TreeView Margin="6"
-                              ItemsSource="{Binding AssetRoots}">
+                              ItemsSource="{Binding AssetRoots}"
+                              SelectedItemChanged="AssetTree_SelectedItemChanged">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <TextBlock Text="{Binding Name}" />
@@ -60,16 +68,92 @@
                 </DockPanel>
             </GroupBox>
 
-            <!-- 中间：视口/预览（占位） -->
-            <GroupBox Grid.Row="0" Grid.Column="1" Header="预览">
-                <Grid Margin="6">
-                    <Border BorderBrush="#2B2B2B" BorderThickness="1" Background="#111">
-                        <TextBlock Foreground="#DDD"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Text="这里后续嵌入渲染视口 / 预览控件" />
-                    </Border>
-                </Grid>
+            <!-- 中间：JSON 内容显示与编辑 -->
+            <GroupBox Grid.Row="0" Grid.Column="1" Header="内容">
+                <DockPanel Margin="6">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock VerticalAlignment="Center" Text="{Binding SelectedAssetName}" FontWeight="SemiBold" />
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#666" Text="{Binding SelectedAssetPath}" />
+                        <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
+                            <Button Content="重载" Command="{Binding ReloadCommand}" Margin="0,0,6,0" />
+                            <Button Content="保存" Command="{Binding SaveCommand}" />
+                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center"
+                                   Margin="12,0,0,0"
+                                   Foreground="#B00020"
+                                   Text="未保存"
+                                   Visibility="{Binding IsDirty, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <Grid>
+                        <Border BorderBrush="#2B2B2B" BorderThickness="1">
+                            <Grid>
+                                <TextBlock Foreground="#666"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="请选择左侧 content 下的 JSON 资产文件（例如 default.camera）"
+                                           Visibility="{Binding HasSelectedJsonAsset, Converter={StaticResource InvBoolToVis}}" />
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Auto">
+                                    <TreeView ItemsSource="{Binding JsonRoot.Children}"
+                                              Visibility="{Binding HasSelectedJsonAsset, Converter={StaticResource BoolToVis}}">
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="260" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" />
+                                                        <TextBlock Margin="8,0,0,0" Foreground="#777" Text="{Binding Summary}" />
+                                                    </StackPanel>
+
+                                                    <Grid Grid.Column="1">
+                                                        <!-- String / Int / Float -->
+                                                        <TextBox MinWidth="200"
+                                                                 Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=String}" />
+                                                        <TextBox MinWidth="200"
+                                                                 Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Int}" />
+                                                        <TextBox MinWidth="200"
+                                                                 Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Float}" />
+
+                                                        <!-- Bool -->
+                                                        <CheckBox Content="true/false"
+                                                                  IsChecked="{Binding BoolValue}"
+                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Bool}" />
+
+                                                        <!-- Vector3 -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Vector3}">
+                                                            <TextBox Width="70" Margin="0,0,6,0" Text="{Binding XText, UpdateSourceTrigger=PropertyChanged}" />
+                                                            <TextBox Width="70" Margin="0,0,6,0" Text="{Binding YText, UpdateSourceTrigger=PropertyChanged}" />
+                                                            <TextBox Width="70" Text="{Binding ZText, UpdateSourceTrigger=PropertyChanged}" />
+                                                        </StackPanel>
+
+                                                        <!-- Vector4 -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Vector4}">
+                                                            <TextBox Width="70" Margin="0,0,6,0" Text="{Binding XText, UpdateSourceTrigger=PropertyChanged}" />
+                                                            <TextBox Width="70" Margin="0,0,6,0" Text="{Binding YText, UpdateSourceTrigger=PropertyChanged}" />
+                                                            <TextBox Width="70" Margin="0,0,6,0" Text="{Binding ZText, UpdateSourceTrigger=PropertyChanged}" />
+                                                            <TextBox Width="70" Text="{Binding WText, UpdateSourceTrigger=PropertyChanged}" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Grid>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </DockPanel>
             </GroupBox>
 
             <!-- 右侧：属性 -->

@@ -1,5 +1,5 @@
 {
-    "type" : "mesh",
-    "mesh" : "quad.mesh",
-    "material" : "solid.material"
+  "type": "mesh",
+  "mesh": "quad.mesh",
+  "material": "solid.material"
 }

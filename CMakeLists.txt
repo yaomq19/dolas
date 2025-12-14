@@ -62,3 +62,6 @@ add_subdirectory(shader_compiler)
 
 # 添加资产编辑器（仅对 Visual Studio 生成器注入外部 C# WPF 工程）
 add_subdirectory(asset_editor)
+
+# 添加 precompile（RSD -> C++ 头文件生成）
+add_subdirectory(precompile)

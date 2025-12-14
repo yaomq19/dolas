@@ -1,0 +1,14 @@
+{
+  "class_name" : "CameraRSD",
+  "file_suffix" : ".camera",
+  "camera_perspective_type": "String",
+  "position": "Vector3",
+  "forward": "Vector3",
+  "up": "Vector3",
+  "near_plane": "Float",
+  "far_plane": "Float",
+  "fov": "Float",
+  "aspect_ratio": "Float",
+  "window_width": "Float",
+  "window_height": "Float"
+}
