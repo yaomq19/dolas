@@ -121,6 +121,9 @@
                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Int}" />
                                                         <TextBox MinWidth="200"
                                                                  Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=UInt}" />
+                                                        <TextBox MinWidth="200"
+                                                                 Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Float}" />
 
                                                         <!-- Bool -->

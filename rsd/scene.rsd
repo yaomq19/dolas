@@ -1,0 +1,9 @@
+{
+  "class_name": "SceneRSD",
+  "file_suffix": ".scene",
+
+  "entities": "DynamicArray<Json>",
+  "models": "DynamicArray<Json>"
+}
+
+

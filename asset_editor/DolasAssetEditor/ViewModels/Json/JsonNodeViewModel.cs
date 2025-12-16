@@ -55,9 +55,26 @@ public sealed class JsonNodeViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// 用 schema 强制字段类型的构造入口（父容器必须是 object 字段）。
+    /// </summary>
+    public static JsonNodeViewModel CreateSchemaField(
+        string fieldName,
+        JsonNode? node,
+        Action? markDirty,
+        JsonObject parentObject,
+        string objectKey,
+        string typeSpec)
+    {
+        // 对标量/向量：强制 EditorType；对容器：仍按实际 node 展开
+        var vm = new JsonNodeViewModel(fieldName, node, markDirty, parentObject: parentObject, objectKey: objectKey);
+        vm.ForceTypeFromSpec(typeSpec);
+        return vm;
+    }
+
     public string Name { get; }
 
-    public JsonEditorType EditorType { get; }
+    public JsonEditorType EditorType { get; private set; }
 
     public ObservableCollection<JsonNodeViewModel> Children { get; }
 
@@ -134,10 +151,66 @@ public sealed class JsonNodeViewModel : ViewModelBase
                 JsonEditorType.String => "String",
                 JsonEditorType.Bool => "Bool",
                 JsonEditorType.Int => "Int",
+                JsonEditorType.UInt => "UInt",
                 JsonEditorType.Float => "Float",
                 JsonEditorType.Null => "Null",
                 _ => EditorType.ToString()
             };
+        }
+    }
+
+    private void ForceTypeFromSpec(string typeSpec)
+    {
+        // 只对可编辑的基础类型做强制（按你的 rsd 约定）
+        var spec = typeSpec.Trim();
+        var t = spec switch
+        {
+            "String" => JsonEditorType.String,
+            "Bool" => JsonEditorType.Bool,
+            "Int" => JsonEditorType.Int,
+            "UInt" => JsonEditorType.UInt,
+            "Float" => JsonEditorType.Float,
+            "Vector3" => JsonEditorType.Vector3,
+            "Vector4" => JsonEditorType.Vector4,
+            _ => EditorType
+        };
+
+        // 由于 EditorType 是只读属性（构造时推断），这里的强制只用于 UI 层的“字段类型提示/编辑”：
+        // 我们把内部显示字段重新初始化到正确的绑定值，并依赖上层已把 node 纠正为兼容形态。
+        // 为了保持最小改动：当推断类型与强制类型不一致时，只刷新可编辑的 backing 字段。
+        if (t == EditorType) return;
+
+        EditorType = t;
+        OnPropertyChanged(nameof(EditorType));
+        OnPropertyChanged(nameof(Summary));
+
+        // Scalar
+        if (t is JsonEditorType.String or JsonEditorType.Int or JsonEditorType.UInt or JsonEditorType.Float)
+        {
+            if (_node is JsonValue v)
+            {
+                if (t == JsonEditorType.String && v.TryGetValue<string>(out var strValue))
+                    _scalarText = strValue;
+                else
+                    _scalarText = v.ToJsonString();
+            }
+        }
+
+        if (t == JsonEditorType.Bool)
+        {
+            if (_node is JsonValue v && v.TryGetValue<bool>(out var b))
+                _boolValue = b;
+        }
+
+        if (t is JsonEditorType.Vector3 or JsonEditorType.Vector4)
+        {
+            if (_node is JsonArray arr)
+            {
+                _xText = arr.Count > 0 ? ReadNumberAsString(arr[0]) : "0";
+                _yText = arr.Count > 1 ? ReadNumberAsString(arr[1]) : "0";
+                _zText = arr.Count > 2 ? ReadNumberAsString(arr[2]) : "0";
+                _wText = arr.Count > 3 ? ReadNumberAsString(arr[3]) : "0";
+            }
         }
     }
 
@@ -203,6 +276,10 @@ public sealed class JsonNodeViewModel : ViewModelBase
             case JsonEditorType.Int:
                 if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l))
                     return TryReplaceInParent(JsonValue.Create(l));
+                return false;
+            case JsonEditorType.UInt:
+                if (ulong.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ul))
+                    return TryReplaceInParent(JsonValue.Create(ul));
                 return false;
             case JsonEditorType.Float:
                 if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))

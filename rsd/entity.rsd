@@ -1,0 +1,11 @@
+{
+  "class_name": "EntityRSD",
+  "file_suffix": ".entity",
+
+  "type": "String",
+  "mesh": "String",
+  "base_geometry": "String",
+  "material": "String"
+}
+
+

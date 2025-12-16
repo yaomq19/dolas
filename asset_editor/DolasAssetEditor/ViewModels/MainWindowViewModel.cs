@@ -15,6 +15,9 @@ namespace Dolas.AssetEditor.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly IAssetDatabase _assetDatabase;
+    private readonly string? _repoRoot;
+    private readonly RsdSchemaRegistry? _rsdRegistry;
+    private RsdSchema? _matchedSchema;
 
     private string _statusText = "就绪";
     private string _assetFilterText = string.Empty;
@@ -33,6 +36,19 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _assetDatabase = assetDatabase;
 
+        _repoRoot = RepoLocator.TryFindRepoRoot(AppContext.BaseDirectory);
+        if (_repoRoot is not null)
+        {
+            try
+            {
+                _rsdRegistry = RsdSchemaRegistry.LoadFromRepoRoot(_repoRoot);
+            }
+            catch
+            {
+                _rsdRegistry = null;
+            }
+        }
+
         OpenProjectCommand = new RelayCommand(OpenProject);
         ExitCommand = new RelayCommand(() => Application.Current.Shutdown());
         AboutCommand = new RelayCommand(ShowAbout);
@@ -45,6 +61,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             "DolasAssetEditor 启动完成。",
             "提示：这是基础框架，后续可接入 content/ 扫描、引擎资源导入与预览。"
         };
+
+        if (_repoRoot is null)
+            Logs.Add("警告：未定位到仓库根目录（无法读取 rsd/*.rsd 进行类型匹配）。");
+        else if (_rsdRegistry is null)
+            Logs.Add("警告：rsd schema 加载失败（无法按后缀匹配资产类型）。");
     }
 
     public ObservableCollection<AssetItem> AssetRoots { get; }
@@ -123,33 +144,51 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             JsonRoot = null;
             _jsonRootNode = null;
+            _matchedSchema = null;
             IsDirty = false;
             OnPropertyChanged(nameof(HasSelectedJsonAsset));
             (ReloadCommand as RelayCommand)?.RaiseCanExecuteChanged();
             return;
         }
 
-        LoadJsonFromFile(item.FullPath);
+        LoadAssetByRsd(item.FullPath);
     }
 
-    private void LoadJsonFromFile(string filePath)
+    private void LoadAssetByRsd(string filePath)
     {
         try
         {
+            if (_repoRoot is null || _rsdRegistry is null)
+                throw new InvalidOperationException("无法定位/加载 rsd 目录：请确保从仓库 build/ 生成并运行，且根目录存在 rsd/。");
+
+            var suffix = Path.GetExtension(filePath);
+            if (string.IsNullOrWhiteSpace(suffix))
+                throw new InvalidOperationException($"无法获取资产后缀名：{filePath}");
+
+            if (!_rsdRegistry.TryGetBySuffix(suffix, out var schema) || schema is null)
+                throw new InvalidOperationException($"没有任何 .rsd 的 file_suffix 匹配该资产：{suffix}（{filePath}）");
+
             var text = File.ReadAllText(filePath);
-            _jsonRootNode = JsonNode.Parse(text);
-            if (_jsonRootNode is null)
+            var rootNode = JsonNode.Parse(text);
+            if (rootNode is null)
                 throw new InvalidOperationException("JsonNode.Parse returned null");
 
-            JsonRoot = new JsonNodeViewModel(Path.GetFileName(filePath), _jsonRootNode, MarkDirty);
-            IsDirty = false;
-            StatusText = "已加载";
-            Logs.Add($"加载资产：{filePath}");
+            _matchedSchema = schema;
+            var (rootObj, vm, mutated, warnings) = RsdAssetBinder.BindToSchema(rootNode, schema, MarkDirty);
+            _jsonRootNode = rootObj;
+            JsonRoot = vm;
+
+            if (!mutated) IsDirty = false;
+            StatusText = $"已加载（{schema.ClassName} / {schema.FileSuffix}）";
+            Logs.Add($"加载资产：{filePath} -> schema: {schema.ClassName} ({schema.FileSuffix})");
+            foreach (var w in warnings)
+                Logs.Add($"提示：{w}");
         }
         catch (Exception ex)
         {
             JsonRoot = null;
             _jsonRootNode = null;
+            _matchedSchema = null;
             IsDirty = false;
             StatusText = "加载失败";
             Logs.Add($"加载失败：{filePath} -> {ex.Message}");
@@ -188,7 +227,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(SelectedAssetPath))
             return;
-        LoadJsonFromFile(SelectedAssetPath);
+        LoadAssetByRsd(SelectedAssetPath);
     }
 
     private void ShowAbout()

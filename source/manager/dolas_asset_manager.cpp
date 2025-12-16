@@ -44,6 +44,9 @@ namespace Dolas
         }
         m_scene_asset_map.clear();
 
+        // 清理 RSD 相机资产（值类型）
+        m_camera_rsd_asset_map.clear();
+
         return true;
     }
 
@@ -108,6 +111,39 @@ namespace Dolas
 		return m_scene_asset_map[file_path];
 	}
 
+    const CameraRSD& AssetManager::GetCameraRSDAsset(const std::string& file_name)
+    {
+        std::string camera_dir_path = PathUtils::GetCameraDir();
+        std::string file_path = camera_dir_path + file_name;
+
+        auto iter = m_camera_rsd_asset_map.find(file_path);
+        if (iter != m_camera_rsd_asset_map.end())
+        {
+            return iter->second;
+        }
+
+        json json_data;
+        if (!LoadJsonFile(file_path, json_data))
+        {
+            LOG_ERROR("Failed to load camera file: {}", file_path);
+            // 仍然插入一个默认对象，避免返回悬空引用
+            auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, CameraRSD{});
+            return it->second;
+        }
+
+        CameraRSD* camera_rsd = parseJsonToCameraRSDAsset(json_data);
+        if (camera_rsd == nullptr)
+        {
+            LOG_ERROR("Failed to parse camera RSD from json: {}", file_path);
+            auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, CameraRSD{});
+            return it->second;
+        }
+
+        auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, *camera_rsd);
+        DOLAS_DELETE(camera_rsd);
+        return it->second;
+    }
+
     CameraAsset* AssetManager::parseJsonToCameraAsset(const json& json_data)
     {
 		CameraAsset* camera_asset = DOLAS_NEW(CameraAsset);
@@ -142,6 +178,47 @@ namespace Dolas
 		}
 
 		return camera_asset;
+    }
+
+    CameraRSD* AssetManager::parseJsonToCameraRSDAsset(const json& json_data)
+    {
+        CameraRSD* camera_asset = DOLAS_NEW(CameraRSD);
+
+        auto read_vec3 = [&](const char* key, Vector3& out) -> Bool
+        {
+            if (!json_data.contains(key) || !json_data[key].is_array() || json_data[key].size() < 3)
+                return false;
+            out = Vector3(json_data[key][0], json_data[key][1], json_data[key][2]);
+            return true;
+        };
+
+        camera_asset->camera_perspective_type = json_data.value("camera_perspective_type", "");
+
+        if (!read_vec3("position", camera_asset->position) ||
+            !read_vec3("forward", camera_asset->forward) ||
+            !read_vec3("up", camera_asset->up))
+        {
+            LOG_ERROR("Invalid camera vectors in JSON!");
+            DOLAS_DELETE(camera_asset);
+            return nullptr;
+        }
+
+        // 统一按字段存在与否读取；缺失时保持默认值（0）
+        if (json_data.contains("near_plane")) camera_asset->near_plane = json_data["near_plane"];
+        if (json_data.contains("far_plane")) camera_asset->far_plane = json_data["far_plane"];
+        if (json_data.contains("fov")) camera_asset->fov = json_data["fov"];
+        if (json_data.contains("aspect_ratio")) camera_asset->aspect_ratio = json_data["aspect_ratio"];
+        if (json_data.contains("window_width")) camera_asset->window_width = json_data["window_width"];
+        if (json_data.contains("window_height")) camera_asset->window_height = json_data["window_height"];
+
+        // 基本校验：perspective/orthographic 之外也允许，但记录一下
+        if (camera_asset->camera_perspective_type != "perspective" &&
+            camera_asset->camera_perspective_type != "orthographic")
+        {
+            LOG_ERROR("Unknown camera perspective type: {}", camera_asset->camera_perspective_type);
+        }
+
+        return camera_asset;
     }
 
 	SceneAsset* AssetManager::parseJsonToSceneAsset(const json& json_data)

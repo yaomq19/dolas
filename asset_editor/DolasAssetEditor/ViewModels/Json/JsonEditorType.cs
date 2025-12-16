@@ -7,6 +7,7 @@ public enum JsonEditorType
     String,
     Bool,
     Int,
+    UInt,
     Float,
     Vector3,
     Vector4,
