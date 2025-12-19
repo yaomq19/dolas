@@ -93,8 +93,23 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        CameraAsset* camera_asset = g_dolas_engine.m_asset_manager->GetCameraAsset(file_name);
-        DOLAS_RETURN_FALSE_IF_NULL(camera_asset);
+        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetCameraRSDAsset(file_name);
+        DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
+
+        // 为了最小改动，先把 RSD 数据映射回旧的 CameraAsset 结构，复用现有 BuildFromAsset。
+        CameraAsset camera_asset_tmp{};
+        camera_asset_tmp.perspective_type = camera_rsd->camera_perspective_type;
+        camera_asset_tmp.position = camera_rsd->position;
+        camera_asset_tmp.forward = camera_rsd->forward;
+        camera_asset_tmp.up = camera_rsd->up;
+        camera_asset_tmp.near_plane = camera_rsd->near_plane;
+        camera_asset_tmp.far_plane = camera_rsd->far_plane;
+        camera_asset_tmp.fov = camera_rsd->fov;
+        camera_asset_tmp.aspect_ratio = camera_rsd->aspect_ratio;
+        camera_asset_tmp.window_width = camera_rsd->window_width;
+        camera_asset_tmp.window_height = camera_rsd->window_height;
+
+        CameraAsset* camera_asset = &camera_asset_tmp;
 		RenderCamera* render_camera = nullptr;
 
 		if (camera_asset->perspective_type == "perspective")

@@ -111,7 +111,7 @@ namespace Dolas
 		return m_scene_asset_map[file_path];
 	}
 
-    const CameraRSD& AssetManager::GetCameraRSDAsset(const std::string& file_name)
+    CameraRSD* AssetManager::GetCameraRSDAsset(const std::string& file_name)
     {
         std::string camera_dir_path = PathUtils::GetCameraDir();
         std::string file_path = camera_dir_path + file_name;
@@ -119,29 +119,26 @@ namespace Dolas
         auto iter = m_camera_rsd_asset_map.find(file_path);
         if (iter != m_camera_rsd_asset_map.end())
         {
-            return iter->second;
+            return &iter->second;
         }
 
         json json_data;
         if (!LoadJsonFile(file_path, json_data))
         {
             LOG_ERROR("Failed to load camera file: {}", file_path);
-            // 仍然插入一个默认对象，避免返回悬空引用
-            auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, CameraRSD{});
-            return it->second;
+            return nullptr;
         }
 
         CameraRSD* camera_rsd = parseJsonToCameraRSDAsset(json_data);
         if (camera_rsd == nullptr)
         {
             LOG_ERROR("Failed to parse camera RSD from json: {}", file_path);
-            auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, CameraRSD{});
-            return it->second;
+            return nullptr;
         }
 
         auto [it, _] = m_camera_rsd_asset_map.emplace(file_path, *camera_rsd);
         DOLAS_DELETE(camera_rsd);
-        return it->second;
+        return &it->second;
     }
 
     CameraAsset* AssetManager::parseJsonToCameraAsset(const json& json_data)

@@ -56,7 +56,7 @@ namespace Dolas
         
 		CameraAsset* GetCameraAsset(const std::string& file_name);
         SceneAsset* GetSceneAsset(const std::string& file_name);
-        const CameraRSD& GetCameraRSDAsset(const std::string& file_name);
+        CameraRSD* GetCameraRSDAsset(const std::string& file_name);
     protected:
         json LoadJsonFile(const std::string& file_path);
         CameraAsset* parseJsonToCameraAsset(const json& json_data);
