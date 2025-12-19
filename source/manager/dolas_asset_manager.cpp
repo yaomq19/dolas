@@ -47,6 +47,9 @@ namespace Dolas
         // 清理 RSD 相机资产（值类型）
         m_camera_rsd_asset_map.clear();
 
+        // 清理 RSD 场景资产（值类型）
+        m_scene_rsd_asset_map.clear();
+
         return true;
     }
 
@@ -75,40 +78,34 @@ namespace Dolas
 		return json_data;
 	}
 
-    CameraAsset* AssetManager::GetCameraAsset(const std::string& file_name)
-    {
-        std::string camera_dir_path = PathUtils::GetCameraDir();
-		std::string file_path = camera_dir_path + file_name;
-
-        auto iter = m_camera_asset_map.find(file_path);
-		if (iter != m_camera_asset_map.end() && iter->second != nullptr)
-		{
-			return m_camera_asset_map[file_path];
-		}
-
-        json json_data = LoadJsonFile(file_path);
-
-		CameraAsset* camera_asset = parseJsonToCameraAsset(json_data);
-		m_camera_asset_map[file_path] = camera_asset;
-        return m_camera_asset_map[file_path];
-    }
-
-	SceneAsset* AssetManager::GetSceneAsset(const std::string& file_name)
+	SceneRSD* AssetManager::GetSceneAsset(const std::string& file_name)
 	{
 		std::string scene_dir_path = PathUtils::GetSceneDir();
 		std::string file_path = scene_dir_path + file_name;
 
-		auto iter = m_scene_asset_map.find(file_path);
-		if (iter != m_scene_asset_map.end() && iter->second != nullptr)
+		auto iter = m_scene_rsd_asset_map.find(file_path);
+		if (iter != m_scene_rsd_asset_map.end())
 		{
-			return m_scene_asset_map[file_path];
+			return &iter->second;
 		}
 
-		json json_data = LoadJsonFile(file_path);
+        json json_data;
+        if (!LoadJsonFile(file_path, json_data))
+        {
+            LOG_ERROR("Failed to load scene file: {}", file_path);
+            return nullptr;
+        }
 
-		SceneAsset* scene_asset = parseJsonToSceneAsset(json_data);
-		m_scene_asset_map[file_path] = scene_asset;
-		return m_scene_asset_map[file_path];
+        SceneRSD* scene_rsd = parseJsonToSceneRSDAsset(json_data);
+        if (scene_rsd == nullptr)
+        {
+            LOG_ERROR("Failed to parse scene RSD from json: {}", file_path);
+            return nullptr;
+        }
+
+        auto [it, _] = m_scene_rsd_asset_map.emplace(file_path, *scene_rsd);
+        DOLAS_DELETE(scene_rsd);
+        return &it->second;
 	}
 
     CameraRSD* AssetManager::GetCameraRSDAsset(const std::string& file_name)
@@ -216,6 +213,36 @@ namespace Dolas
         }
 
         return camera_asset;
+    }
+
+    SceneRSD* AssetManager::parseJsonToSceneRSDAsset(const json& json_data)
+    {
+        SceneRSD* scene_rsd = DOLAS_NEW(SceneRSD);
+
+        // entities
+        if (json_data.contains("entities") && json_data["entities"].is_array())
+        {
+            for (const auto& e : json_data["entities"])
+            {
+                scene_rsd->entities.push_back(e);
+            }
+        }
+        else
+        {
+            // 允许为空，但给个提示
+            LOG_WARN("Scene JSON does not contain entities array (or it's not an array).");
+        }
+
+        // models
+        if (json_data.contains("models") && json_data["models"].is_array())
+        {
+            for (const auto& m : json_data["models"])
+            {
+                scene_rsd->models.push_back(m);
+            }
+        }
+
+        return scene_rsd;
     }
 
 	SceneAsset* AssetManager::parseJsonToSceneAsset(const json& json_data)

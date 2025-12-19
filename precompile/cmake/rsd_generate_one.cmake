@@ -204,12 +204,10 @@ string(APPEND _header "#include \"base/dolas_base.h\"\n")
 string(APPEND _header "#include \"core/dolas_math.h\"\n\n")
 
 string(APPEND _header "namespace Dolas {\n")
-string(APPEND _header "namespace Rsd {\n\n")
 string(APPEND _header "struct ${_class_name}\n{\n")
 string(APPEND _header "    static constexpr const char* kFileSuffix = \"${_file_suffix}\";\n")
 string(APPEND _header "${_field_lines}")
 string(APPEND _header "};\n\n")
-string(APPEND _header "} // namespace Rsd\n")
 string(APPEND _header "} // namespace Dolas\n")
 
 # 仅当内容变化时才写文件，避免无意义的全量重编译
