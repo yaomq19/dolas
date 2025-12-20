@@ -6,7 +6,6 @@
 #include "render/dolas_render_entity.h"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
-#include "tinyxml2.h"
 namespace Dolas
 {
     RenderEntityManager::RenderEntityManager()
@@ -46,31 +45,17 @@ namespace Dolas
 		MaterialID material_id = MATERIAL_ID_EMPTY;
 
         std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
-        
-        tinyxml2::XMLDocument doc;
-        Bool ret = g_dolas_engine.m_asset_manager->LoadXmlFile(render_entity_file_path, doc);
-        if (!ret)
-        {
-            return result_id;
-        }
 
-        const tinyxml2::XMLElement* root = doc.RootElement();
-        if (!root)
+        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetEntityRSDAsset(scene_entity.entity_file);
+        if (entity_rsd == nullptr)
             return result_id;
 
-        auto child_text = [&](const char* name) -> std::string
-        {
-            const tinyxml2::XMLElement* el = root->FirstChildElement(name);
-            const char* t = el ? el->GetText() : nullptr;
-            return t ? std::string(t) : std::string();
-        };
-
-        const std::string type_name = child_text("type");
+        const std::string& type_name = entity_rsd->type;
         if (!type_name.empty())
         {
             if (type_name == "base_geometry")
             {
-                const std::string base_geometry_name = child_text("base_geometry");
+                const std::string& base_geometry_name = entity_rsd->base_geometry;
                 if (base_geometry_name == "cube")
                 {
                     render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
@@ -91,7 +76,7 @@ namespace Dolas
                 {
                     return result_id;
                 }
-                std::string mesh_file_name = child_text("mesh");
+                std::string mesh_file_name = entity_rsd->mesh;
                 if (mesh_file_name.empty())
                     return result_id;
 
@@ -112,7 +97,7 @@ namespace Dolas
 		}
 
         {
-            const std::string material_file_name = child_text("material");
+            const std::string material_file_name = entity_rsd->material;
             if (material_file_name.empty())
                 return result_id;
 

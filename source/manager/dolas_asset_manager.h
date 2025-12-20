@@ -12,6 +12,8 @@ using json = nlohmann::json;
 #include "core/dolas_math.h"
 #include "rsd/camera.h"
 #include "rsd/scene.h"
+#include "rsd/entity.h"
+#include "rsd/material.h"
 namespace Dolas
 {
     struct CameraAsset
@@ -54,26 +56,24 @@ namespace Dolas
         Bool Initialize();
         Bool Clear();
 
-        Bool LoadJsonFile(const std::string& file_path, json& json_data);
-        Bool LoadXmlFile(const std::string& file_path, tinyxml2::XMLDocument& xml_doc);
-        
         SceneRSD* GetSceneAsset(const std::string& file_name);
         CameraRSD* GetCameraRSDAsset(const std::string& file_name);
+        EntityRSD* GetEntityRSDAsset(const std::string& file_name);
+        MaterialRSD* GetMaterialRSDAsset(const std::string& file_name);
     protected:
-        json LoadJsonFile(const std::string& file_path);
-        CameraAsset* parseJsonToCameraAsset(const json& json_data);
-		SceneAsset* parseJsonToSceneAsset(const json& json_data);
-        CameraRSD* parseJsonToCameraRSDAsset(const json& json_data);
-        SceneRSD* parseJsonToSceneRSDAsset(const json& json_data);
+        // 不对外暴露 XML：仅内部使用
+        Bool LoadXmlFile(const std::string& file_path, tinyxml2::XMLDocument& xml_doc);
 
         // XML 版本（RSD 系统）
         CameraRSD* parseXmlToCameraRSDAsset(const tinyxml2::XMLDocument& doc);
         SceneRSD* parseXmlToSceneRSDAsset(const tinyxml2::XMLDocument& doc);
+        EntityRSD* parseXmlToEntityRSDAsset(const tinyxml2::XMLDocument& doc);
+        MaterialRSD* parseXmlToMaterialRSDAsset(const tinyxml2::XMLDocument& doc);
 
-		std::unordered_map<std::string, CameraAsset*> m_camera_asset_map;
-		std::unordered_map<std::string, SceneAsset*> m_scene_asset_map;
         std::unordered_map<std::string, CameraRSD> m_camera_rsd_asset_map;
         std::unordered_map<std::string, SceneRSD> m_scene_rsd_asset_map;
+        std::unordered_map<std::string, EntityRSD> m_entity_rsd_asset_map;
+        std::unordered_map<std::string, MaterialRSD> m_material_rsd_asset_map;
     };
 }
 #endif // DOLAS_ASSET_MANAGER_H

@@ -11,7 +11,6 @@
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_log_system_manager.h"
-#include "tinyxml2.h"
 
 namespace Dolas
 {
@@ -60,92 +59,55 @@ namespace Dolas
     {
         std::string material_file_path = PathUtils::GetMaterialDir() + file_name;
 
-        tinyxml2::XMLDocument doc;
-        Bool ret = g_dolas_engine.m_asset_manager->LoadXmlFile(material_file_path, doc);
-        if (!ret)
-        {
+        // 其他系统不需要知道 XML：统一通过 RSD 资产读取
+        MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetMaterialRSDAsset(file_name);
+        if (material_rsd == nullptr)
             return MATERIAL_ID_EMPTY;
-        }
-
-        const tinyxml2::XMLElement* root = doc.RootElement();
-        if (!root)
-            return MATERIAL_ID_EMPTY;
-
-        auto child_text = [&](const char* name) -> std::string
-        {
-            const tinyxml2::XMLElement* el = root->FirstChildElement(name);
-            const char* t = el ? el->GetText() : nullptr;
-            return t ? std::string(t) : std::string();
-        };
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
         material->m_file_id = HashConverter::StringHash(material_file_path);
         // 顶点着色器
-        {
-            const auto vs = child_text("vertex_shader");
-            if (!vs.empty())
-                material->m_vertex_context = CreateVertexContext(vs, "VS");
-        }
+        if (!material_rsd->vertex_shader.empty())
+            material->m_vertex_context = CreateVertexContext(material_rsd->vertex_shader, "VS");
 
         // 像素着色器
-        {
-            const auto ps = child_text("pixel_shader");
-            if (!ps.empty())
-                material->m_pixel_context = CreatePixelContext(ps, "PS");
-        }
+        if (!material_rsd->pixel_shader.empty())
+            material->m_pixel_context = CreatePixelContext(material_rsd->pixel_shader, "PS");
 
-        // 解析纹理信息
-        auto bind_texture_list = [&](const char* listName, const auto& ctx)
+        // 纹理（目前只做 pixel_shader_texture，跟你现有 content 对齐）
+        if (material->m_pixel_context)
         {
-            if (!ctx) return;
-            const tinyxml2::XMLElement* list = root->FirstChildElement(listName);
-            if (!list) return;
-            for (auto* tex = list->FirstChildElement("texture"); tex; tex = tex->NextSiblingElement("texture"))
+            for (const auto& kv : material_rsd->pixel_shader_texture)
             {
-                const char* texture_name = tex->Attribute("name");
-                const char* texture_file_name = tex->Attribute("file");
-                if (!texture_name || !texture_file_name) continue;
+                const std::string& texture_name = kv.first;
+                const std::string& texture_file_name = kv.second;
 
                 TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
                 if (texture_id == TEXTURE_ID_EMPTY)
                     continue;
 
                 int slot = 0;
-                std::string tn = texture_name;
-                if (tn == "albedo_map") slot = 0;
-                else if (tn == "normal_map") slot = 1;
-                else if (tn == "roughness_map") slot = 2;
-                else if (tn == "metallic_map") slot = 3;
-                ctx->SetShaderResourceView(slot, texture_id);
+                if (texture_name == "albedo_map") slot = 0;
+                else if (texture_name == "normal_map") slot = 1;
+                else if (texture_name == "roughness_map") slot = 2;
+                else if (texture_name == "metallic_map") slot = 3;
+
+                material->m_pixel_context->SetShaderResourceView(slot, texture_id);
             }
-        };
+        }
 
-        bind_texture_list("vertex_shader_texture", material->m_vertex_context);
-        bind_texture_list("pixel_shader_texture", material->m_pixel_context);
-
-        // 解析全局常量缓冲（GlobalConstants）参数
-        auto bind_globals = [&](const char* blockName, const auto& ctx)
+        // 全局变量
+        if (material->m_vertex_context)
         {
-            if (!ctx) return;
-            const tinyxml2::XMLElement* block = root->FirstChildElement(blockName);
-            if (!block) return;
-            for (auto* v = block->FirstChildElement("vec4"); v; v = v->NextSiblingElement("vec4"))
-            {
-                const char* var_name = v->Attribute("name");
-                if (!var_name) continue;
-                double x = 0, y = 0, z = 0, w = 0;
-                if (v->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("w", &w) != tinyxml2::XML_SUCCESS) continue;
-                Vector4 values((Float)x, (Float)y, (Float)z, (Float)w);
-                ctx->SetGlobalVariable(var_name, values);
-            }
-        };
-
-        bind_globals("vertex_shader_global_variables", material->m_vertex_context);
-        bind_globals("pixel_shader_global_variables", material->m_pixel_context);
+            for (const auto& kv : material_rsd->vertex_shader_global_variables)
+                material->m_vertex_context->SetGlobalVariable(kv.first, kv.second);
+        }
+        if (material->m_pixel_context)
+        {
+            for (const auto& kv : material_rsd->pixel_shader_global_variables)
+                material->m_pixel_context->SetGlobalVariable(kv.first, kv.second);
+        }
 
         m_materials[material->m_file_id] = material;
         return material->m_file_id;

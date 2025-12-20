@@ -39,6 +39,59 @@ public static class XmlAssetCodec
             var el = root.Element(fieldName);
             if (el is null) continue;
 
+            // MaterialRSD 的 map 约定（XML 形态固定）
+            if (t.StartsWith("Map<", StringComparison.OrdinalIgnoreCase) || t.StartsWith("Map<", StringComparison.Ordinal))
+            {
+                // Map<String, Vector4>
+                if (t.Contains("Vector4", StringComparison.OrdinalIgnoreCase))
+                {
+                    var map = new JsonObject();
+                    foreach (var v in el.Elements("vec4"))
+                    {
+                        var name = v.Attribute("name")?.Value;
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+                        map[name] = new JsonArray(
+                            ReadAttrDouble(v, "x"),
+                            ReadAttrDouble(v, "y"),
+                            ReadAttrDouble(v, "z"),
+                            ReadAttrDouble(v, "w"));
+                    }
+                    obj[fieldName] = map;
+                    continue;
+                }
+
+                // Map<String, String>（textures）
+                if (t.Contains("String", StringComparison.OrdinalIgnoreCase) && t.LastIndexOf("String", StringComparison.OrdinalIgnoreCase) != t.IndexOf("String", StringComparison.OrdinalIgnoreCase))
+                {
+                    var map = new JsonObject();
+                    foreach (var tex in el.Elements("texture"))
+                    {
+                        var name = tex.Attribute("name")?.Value;
+                        var file = tex.Attribute("file")?.Value;
+                        if (string.IsNullOrWhiteSpace(name) || file is null) continue;
+                        map[name] = file;
+                    }
+                    obj[fieldName] = map;
+                    continue;
+                }
+
+                // Map<String, Float>（parameter）
+                if (t.Contains("Float", StringComparison.OrdinalIgnoreCase))
+                {
+                    var map = new JsonObject();
+                    foreach (var f in el.Elements("float"))
+                    {
+                        var name = f.Attribute("name")?.Value;
+                        var value = f.Attribute("value")?.Value;
+                        if (string.IsNullOrWhiteSpace(name) || value is null) continue;
+                        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+                            map[name] = d;
+                    }
+                    obj[fieldName] = map;
+                    continue;
+                }
+            }
+
             if (t == "String")
             {
                 obj[fieldName] = el.Value;
@@ -102,6 +155,53 @@ public static class XmlAssetCodec
                 continue;
 
             var t = typeSpec.Trim();
+
+            // Map 类型写回（按 MaterialRSD 的 XML 约定）
+            if (t.StartsWith("Map<", StringComparison.OrdinalIgnoreCase) && node is JsonObject mapObj)
+            {
+                var container = new XElement(fieldName);
+
+                if (t.Contains("Vector4", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var kv in mapObj)
+                    {
+                        if (kv.Value is not JsonArray arr || arr.Count < 4) continue;
+                        var v = new XElement("vec4");
+                        v.SetAttributeValue("name", kv.Key);
+                        v.SetAttributeValue("x", arr[0]?.ToString() ?? "0");
+                        v.SetAttributeValue("y", arr[1]?.ToString() ?? "0");
+                        v.SetAttributeValue("z", arr[2]?.ToString() ?? "0");
+                        v.SetAttributeValue("w", arr[3]?.ToString() ?? "0");
+                        container.Add(v);
+                    }
+                    root.Add(container);
+                    continue;
+                }
+
+                if (t.Contains("Float", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var kv in mapObj)
+                    {
+                        var f = new XElement("float");
+                        f.SetAttributeValue("name", kv.Key);
+                        f.SetAttributeValue("value", kv.Value?.ToString() ?? "0");
+                        container.Add(f);
+                    }
+                    root.Add(container);
+                    continue;
+                }
+
+                // Map<String,String>
+                foreach (var kv in mapObj)
+                {
+                    var tex = new XElement("texture");
+                    tex.SetAttributeValue("name", kv.Key);
+                    tex.SetAttributeValue("file", kv.Value?.ToString() ?? "");
+                    container.Add(tex);
+                }
+                root.Add(container);
+                continue;
+            }
 
             if (t.StartsWith("DynamicArray", StringComparison.OrdinalIgnoreCase))
             {
