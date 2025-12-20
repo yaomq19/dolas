@@ -195,6 +195,7 @@ namespace Dolas
             return true;
         }
         case RsdFieldType::Unsupported:
+			LOG_ERROR("Unsupported RSD field type for field '{0}'", f.name);
         default:
             return true;
         }

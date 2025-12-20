@@ -1,10 +1,10 @@
 <rsd class_name="MaterialRSD" file_suffix=".material">
   <field name="vertex_shader" type="String" />
   <field name="pixel_shader" type="String" />
-  <field name="vertex_shader_global_variables" type="Map&lt;String, Vector4&gt;" />
-  <field name="pixel_shader_global_variables" type="Map&lt;String, Vector4&gt;" />
-  <field name="pixel_shader_texture" type="Map&lt;String, String&gt;" />
-  <field name="parameter" type="Map&lt;String, Float&gt;" />
+  <field name="vertex_shader_global_variables" type="Map" key="String" value="Vector4" />
+  <field name="pixel_shader_global_variables" type="Map" key="String" value="Vector4" />
+  <field name="pixel_shader_texture" type="Map" key="String" value="String" />
+  <field name="parameter" type="Map" key="String" value="Float" />
 </rsd>
 
 

@@ -1,12 +1,12 @@
 <rsd class_name="MeshRSD" file_suffix=".mesh">
-  <field name="position" type="DynamicArray&lt;Float&gt;" />
-  <field name="normal" type="DynamicArray&lt;Float&gt;" />
-  <field name="uv0" type="DynamicArray&lt;Float&gt;" />
-  <field name="uv1" type="DynamicArray&lt;Float&gt;" />
-  <field name="color" type="DynamicArray&lt;Float&gt;" />
-  <field name="indices" type="DynamicArray&lt;UInt&gt;" />
+  <field name="position" type="DynamicArray" element="Float" />
+  <field name="normal" type="DynamicArray" element="Float" />
+  <field name="uv0" type="DynamicArray" element="Float" />
+  <field name="uv1" type="DynamicArray" element="Float" />
+  <field name="color" type="DynamicArray" element="Float" />
+  <field name="indices" type="DynamicArray" element="UInt" />
   <field name="topology" type="TriangleList" />
-  <field name="material" type="AssetReference&lt;MaterialRSD&gt;" />
+  <field name="material" type="AssetReference" target="MaterialRSD" />
 </rsd>
 
 

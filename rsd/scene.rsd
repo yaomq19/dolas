@@ -1,6 +1,6 @@
 <rsd class_name="SceneRSD" file_suffix=".scene">
-  <field name="entities" type="DynamicArray&lt;Xml&gt;" />
-  <field name="models" type="DynamicArray&lt;Xml&gt;" />
+  <field name="entities" type="DynamicArray" element="Xml" />
+  <field name="models" type="DynamicArray" element="Xml" />
 </rsd>
 
 
