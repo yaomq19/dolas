@@ -49,7 +49,7 @@ namespace Dolas
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetSceneAsset(file_name);
+		SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(PathUtils::GetSceneDir() + file_name);
 		DOLAS_RETURN_FALSE_IF_NULL(scene_rsd);
 
         // 兼容现有渲染逻辑：把 SceneRSD（XML 片段字符串）映射回旧 SceneAsset 结构

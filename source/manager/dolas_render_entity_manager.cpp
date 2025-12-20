@@ -46,7 +46,7 @@ namespace Dolas
 
         std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
 
-        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetEntityRSDAsset(scene_entity.entity_file);
+        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(PathUtils::GetEntityDir() + scene_entity.entity_file);
         if (entity_rsd == nullptr)
             return result_id;
 

@@ -25,12 +25,11 @@ namespace Dolas
 
     Bool AssetManager::Clear()
     {
-        // 某些编译环境下 std::unordered_map::clear() 可能被宏/头文件污染导致报错；
-        // 这里用“赋空”方式等效清空，避免依赖 clear() 名称查找。
-        m_camera_rsd_asset_map = decltype(m_camera_rsd_asset_map){};
-        m_scene_rsd_asset_map = decltype(m_scene_rsd_asset_map){};
-        m_entity_rsd_asset_map = decltype(m_entity_rsd_asset_map){};
-        m_material_rsd_asset_map = decltype(m_material_rsd_asset_map){};
+        for (auto& kv : m_rsd_caches)
+        {
+            if (kv.second) kv.second->Clear();
+        }
+        m_rsd_caches.clear();
 
         return true;
     }
@@ -176,56 +175,35 @@ namespace Dolas
                 ok = false;
         }
         return ok;
-    }
+	}
 
-    template <typename TRsd>
-    static TRsd* GetRsdFromDir(
-        const std::string& dir,
-        const std::string& file_name,
-        std::unordered_map<std::string, TRsd>& cache)
+    bool AssetManager::LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount)
     {
-        const std::string file_path = dir + file_name;
-
-        auto it = cache.find(file_path);
-        if (it != cache.end())
-            return &it->second;
-
         tinyxml2::XMLDocument doc;
         if (!LoadXmlFileInternal(file_path, doc))
         {
             LOG_ERROR("Failed to load xml: {}", file_path);
-            return nullptr;
+            return false;
         }
 
-        TRsd value{};
-        if (!ParseRsdFromXml<TRsd>(doc.RootElement(), value))
+        const tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root)
+        {
+            LOG_ERROR("Invalid xml root: {}", file_path);
+            return false;
+        }
+
+        bool ok = true;
+        for (std::size_t i = 0; i < fieldCount; i++)
+        {
+            if (!ParseFieldInto(outBase, fields[i], root))
+                ok = false;
+        }
+        if (!ok)
         {
             LOG_ERROR("Failed to parse RSD from xml: {}", file_path);
-            return nullptr;
         }
-
-        auto [ins, _] = cache.emplace(file_path, std::move(value));
-        return &ins->second;
-    }
-
-	SceneRSD* AssetManager::GetSceneAsset(const std::string& file_name)
-	{
-        return GetRsdFromDir<SceneRSD>(PathUtils::GetSceneDir(), file_name, m_scene_rsd_asset_map);
-	}
-
-    CameraRSD* AssetManager::GetCameraRSDAsset(const std::string& file_name)
-    {
-        return GetRsdFromDir<CameraRSD>(PathUtils::GetCameraDir(), file_name, m_camera_rsd_asset_map);
-    }
-
-    EntityRSD* AssetManager::GetEntityRSDAsset(const std::string& file_name)
-    {
-        return GetRsdFromDir<EntityRSD>(PathUtils::GetEntityDir(), file_name, m_entity_rsd_asset_map);
-    }
-
-    MaterialRSD* AssetManager::GetMaterialRSDAsset(const std::string& file_name)
-    {
-        return GetRsdFromDir<MaterialRSD>(PathUtils::GetMaterialDir(), file_name, m_material_rsd_asset_map);
+        return ok;
     }
 
 

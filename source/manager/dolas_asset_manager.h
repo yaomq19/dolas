@@ -3,8 +3,11 @@
 
 #include <string>
 #include <unordered_map>
+#include <typeindex>
+#include <memory>
 #include <vector>
 #include "base/dolas_base.h"
+#include "base/dolas_paths.h"
 
 #include "core/dolas_math.h"
 #include "rsd/camera.h"
@@ -13,6 +16,20 @@
 #include "rsd/material.h"
 namespace Dolas
 {
+    // 按类型自动创建/缓存的 RSD 容器（type-erasure），避免新增资产类型时还要改 AssetManager 成员。
+    struct IRsdCache
+    {
+        virtual ~IRsdCache() = default;
+        virtual void Clear() = 0;
+    };
+
+    template<class TRsd>
+    struct RsdCache final : IRsdCache
+    {
+        std::unordered_map<std::string, TRsd> map;
+        void Clear() override { map.clear(); }
+    };
+
     struct CameraAsset
     {
         std::string perspective_type;
@@ -53,15 +70,51 @@ namespace Dolas
         Bool Initialize();
         Bool Clear();
 
-        SceneRSD* GetSceneAsset(const std::string& file_name);
-        CameraRSD* GetCameraRSDAsset(const std::string& file_name);
-        EntityRSD* GetEntityRSDAsset(const std::string& file_name);
-        MaterialRSD* GetMaterialRSDAsset(const std::string& file_name);
+        template<class TRsd>
+        TRsd* GetRsdAsset(const std::string& file_name);
+
     protected:
-        std::unordered_map<std::string, CameraRSD> m_camera_rsd_asset_map;
-        std::unordered_map<std::string, SceneRSD> m_scene_rsd_asset_map;
-        std::unordered_map<std::string, EntityRSD> m_entity_rsd_asset_map;
-        std::unordered_map<std::string, MaterialRSD> m_material_rsd_asset_map;
+        // 只在 cpp 内部实现（避免其他模块感知 XML/tinyxml2）
+        bool LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount);
+
+        template<class TRsd>
+        RsdCache<TRsd>& GetTypedCache()
+        {
+            const std::type_index k(typeid(TRsd));
+            auto& ptr = m_rsd_caches[k];
+            if (!ptr) ptr = std::make_unique<RsdCache<TRsd>>();
+            return *static_cast<RsdCache<TRsd>*>(ptr.get());
+        }
+
+        static bool IsAbsolutePathLike(const std::string& p)
+        {
+            if (p.size() >= 2 && ((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) && p[1] == ':')
+                return true; // Windows: C:\...
+            if (!p.empty() && (p[0] == '/' || p[0] == '\\'))
+                return true;
+            return false;
+        }
+
+        std::unordered_map<std::type_index, std::unique_ptr<IRsdCache>> m_rsd_caches;
     };
+
+    template<class TRsd>
+    TRsd* AssetManager::GetRsdAsset(const std::string& file_name)
+    {
+        // 允许传入绝对路径；否则按 content 相对路径拼接
+        const std::string file_path = IsAbsolutePathLike(file_name) ? file_name : (PathUtils::GetContentDir() + file_name);
+
+        auto& cache = GetTypedCache<TRsd>().map;
+        auto it = cache.find(file_path);
+        if (it != cache.end())
+            return &it->second;
+
+        TRsd value{};
+        if (!LoadAndParseRsdFile(file_path, &value, TRsd::kFields, TRsd::kFieldCount))
+            return nullptr;
+
+        auto [ins, _] = cache.emplace(file_path, std::move(value));
+        return &ins->second;
+    }
 }
 #endif // DOLAS_ASSET_MANAGER_H

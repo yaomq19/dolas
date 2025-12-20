@@ -93,7 +93,7 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetCameraRSDAsset(file_name);
+        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(PathUtils::GetCameraDir() + file_name);
         DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
 
         // 为了最小改动，先把 RSD 数据映射回旧的 CameraAsset 结构，复用现有 BuildFromAsset。
