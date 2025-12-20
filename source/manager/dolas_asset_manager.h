@@ -7,6 +7,7 @@
 #include "base/dolas_base.h"
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
+#include "tinyxml2.h"
 
 #include "core/dolas_math.h"
 #include "rsd/camera.h"
@@ -54,6 +55,7 @@ namespace Dolas
         Bool Clear();
 
         Bool LoadJsonFile(const std::string& file_path, json& json_data);
+        Bool LoadXmlFile(const std::string& file_path, tinyxml2::XMLDocument& xml_doc);
         
         SceneRSD* GetSceneAsset(const std::string& file_name);
         CameraRSD* GetCameraRSDAsset(const std::string& file_name);
@@ -63,6 +65,10 @@ namespace Dolas
 		SceneAsset* parseJsonToSceneAsset(const json& json_data);
         CameraRSD* parseJsonToCameraRSDAsset(const json& json_data);
         SceneRSD* parseJsonToSceneRSDAsset(const json& json_data);
+
+        // XML 版本（RSD 系统）
+        CameraRSD* parseXmlToCameraRSDAsset(const tinyxml2::XMLDocument& doc);
+        SceneRSD* parseXmlToSceneRSDAsset(const tinyxml2::XMLDocument& doc);
 
 		std::unordered_map<std::string, CameraAsset*> m_camera_asset_map;
 		std::unordered_map<std::string, SceneAsset*> m_scene_asset_map;

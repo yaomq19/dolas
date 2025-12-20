@@ -4,10 +4,9 @@
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_entity.h"
-#include "nlohmann/json.hpp"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
-using json = nlohmann::json;
+#include "tinyxml2.h"
 namespace Dolas
 {
     RenderEntityManager::RenderEntityManager()
@@ -48,88 +47,86 @@ namespace Dolas
 
         std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
         
-        json json_data;
-        Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(render_entity_file_path, json_data);
+        tinyxml2::XMLDocument doc;
+        Bool ret = g_dolas_engine.m_asset_manager->LoadXmlFile(render_entity_file_path, doc);
         if (!ret)
         {
-            goto CreateRenderEntity_Failed;
+            return result_id;
         }
 
-        if (json_data.contains("type"))
+        const tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root)
+            return result_id;
+
+        auto child_text = [&](const char* name) -> std::string
         {
-            std::string type_name = json_data["type"];
-            
+            const tinyxml2::XMLElement* el = root->FirstChildElement(name);
+            const char* t = el ? el->GetText() : nullptr;
+            return t ? std::string(t) : std::string();
+        };
+
+        const std::string type_name = child_text("type");
+        if (!type_name.empty())
+        {
             if (type_name == "base_geometry")
             {
-				if (json_data.contains("base_geometry"))
-				{
-                    std::string base_geometry_name = json_data["base_geometry"];
-                    if (base_geometry_name == "cube")
-                    {
-                        render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
-                    }
-					else if(base_geometry_name == "sphere")
-					{
-						render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
-					}
-                    else
-                    {
-                        goto CreateRenderEntity_Failed;
-                    }
-				}
-				else
-				{
-					goto CreateRenderEntity_Failed;
-				}
+                const std::string base_geometry_name = child_text("base_geometry");
+                if (base_geometry_name == "cube")
+                {
+                    render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
+                }
+                else if (base_geometry_name == "sphere")
+                {
+                    render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
+                }
+                else
+                {
+                    return result_id;
+                }
             }
             else if (type_name == "mesh")
             {
-				if (json_data.contains("mesh"))
-				{
-					RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
-					if (primitive_manager == nullptr)
-					{
-						goto CreateRenderEntity_Failed;
-					}
-					std::string mesh_file_name = json_data["mesh"];
-					render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
-					if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
-					{
-						goto CreateRenderEntity_Failed;
-					}
-				}
-				else
-				{
-					goto CreateRenderEntity_Failed;
-				}
+                RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
+                if (primitive_manager == nullptr)
+                {
+                    return result_id;
+                }
+                std::string mesh_file_name = child_text("mesh");
+                if (mesh_file_name.empty())
+                    return result_id;
+
+                render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
+                if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
+                {
+                    return result_id;
+                }
             }
 			else
 			{
-				goto CreateRenderEntity_Failed;
+				return result_id;
 			}
         }
 		else
 		{
-			goto CreateRenderEntity_Failed;
+			return result_id;
 		}
 
-        if (json_data.contains("material"))
         {
+            const std::string material_file_name = child_text("material");
+            if (material_file_name.empty())
+                return result_id;
+
             MaterialManager* material_manager = g_dolas_engine.m_material_manager;
             if (material_manager == nullptr)
             {
-                goto CreateRenderEntity_Failed;
+                return result_id;
             }
-            std::string material_file_name = json_data["material"];
+
             material_id = material_manager->CreateMaterial(material_file_name);
             if (material_id == MATERIAL_ID_EMPTY)
             {
-                goto CreateRenderEntity_Failed;
+                return result_id;
             }
-        }
-        else
-        {
-            goto CreateRenderEntity_Failed;
         }
 
         // 成功路径：创建 RenderEntity 并返回有效 ID
@@ -145,8 +142,6 @@ namespace Dolas
             m_render_entities[render_entity->m_file_id] = render_entity;
             result_id = render_entity->m_file_id;
         }
-
-    CreateRenderEntity_Failed:
         return result_id;
     }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Nodes;
+using System.Xml.Linq;
 
 namespace Dolas.AssetEditor.Services;
 
@@ -56,31 +56,27 @@ public sealed class RsdSchemaRegistry
 
     private static RsdSchema LoadOne(string rsdFile)
     {
-        var text = File.ReadAllText(rsdFile);
-        var node = JsonNode.Parse(text) as JsonObject
-                   ?? throw new InvalidOperationException($"RSD 不是 JSON object：{rsdFile}");
+        var doc = XDocument.Load(rsdFile, LoadOptions.PreserveWhitespace);
+        var root = doc.Root ?? throw new InvalidOperationException($"RSD XML 没有根节点：{rsdFile}");
+        if (!string.Equals(root.Name.LocalName, "rsd", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"RSD 根节点必须是 <rsd>：{rsdFile}");
 
-        string? className = null;
-        string? fileSuffix = null;
-        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-
-        foreach (var kv in node)
-        {
-            if (kv.Value is not JsonValue v || !v.TryGetValue<string>(out var typeStr))
-                throw new InvalidOperationException($"RSD 字段值必须是字符串：{rsdFile} -> {kv.Key}");
-
-            if (kv.Key == "class_name")
-                className = typeStr;
-            else if (kv.Key == "file_suffix")
-                fileSuffix = typeStr;
-            else
-                fields[kv.Key] = typeStr;
-        }
-
+        var className = root.Attribute("class_name")?.Value?.Trim();
+        var fileSuffix = root.Attribute("file_suffix")?.Value?.Trim();
         if (string.IsNullOrWhiteSpace(className))
-            throw new InvalidOperationException($"RSD 缺少必需字段 class_name：{rsdFile}");
+            throw new InvalidOperationException($"RSD 缺少必需属性 class_name：{rsdFile}");
         if (string.IsNullOrWhiteSpace(fileSuffix))
-            throw new InvalidOperationException($"RSD 缺少必需字段 file_suffix：{rsdFile}");
+            throw new InvalidOperationException($"RSD 缺少必需属性 file_suffix：{rsdFile}");
+
+        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var f in root.Elements("field"))
+        {
+            var name = f.Attribute("name")?.Value?.Trim();
+            var type = f.Attribute("type")?.Value?.Trim();
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(type))
+                throw new InvalidOperationException($"RSD <field> 缺少 name/type：{rsdFile}");
+            fields[name] = type;
+        }
 
         return new RsdSchema
         {

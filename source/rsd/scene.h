@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 #include <set>
-#include <nlohmann/json.hpp>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
@@ -17,8 +16,9 @@ namespace Dolas {
 struct SceneRSD
 {
     static constexpr const char* kFileSuffix = ".scene";
-    std::vector<nlohmann::json> entities;
-    std::vector<nlohmann::json> models;
+    // XML 片段：每个 <entity> / <model> 节点的原始 XML 字符串
+    std::vector<std::string> entities;
+    std::vector<std::string> models;
 };
 
 } // namespace Dolas

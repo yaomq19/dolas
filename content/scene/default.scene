@@ -1,22 +1,19 @@
-{
-    "entities": [
-        {
-            "name": "ground_plane",
-            "entity_file": "ground_plane.entity", 
-            "position": [0.0, 0.0, 0.0],
-            "rotation": [1.0, 0.0, 0.0, 0.0],
-            "scale": [1.5, 1.5, 0.1]
-        },
-        {
-            "name": "sphere_0",
-            "entity_file": "sphere_0.entity", 
-            "position": [0.0, 0.0, 2.0],
-            "rotation": [1.0, 0.0, 0.0, 0.0],
-            "scale": [0.75, 0.75, 0.75]
-        }
-    ],
+<asset>
+  <entities>
+    <entity name="ground_plane" entity_file="ground_plane.entity">
+      <position x="0.0" y="0.0" z="0.0" />
+      <!-- rotation: w,x,y,z -->
+      <rotation w="1.0" x="0.0" y="0.0" z="0.0" />
+      <scale x="1.5" y="1.5" z="0.1" />
+    </entity>
+    <entity name="sphere_0" entity_file="sphere_0.entity">
+      <position x="0.0" y="0.0" z="2.0" />
+      <rotation w="1.0" x="0.0" y="0.0" z="0.0" />
+      <scale x="0.75" y="0.75" z="0.75" />
+    </entity>
+  </entities>
 
-    "models" : [
-        { "name" : "backpack/backpack.obj"}
-    ]
-}
+  <models>
+    <model name="backpack/backpack.obj" />
+  </models>
+</asset>

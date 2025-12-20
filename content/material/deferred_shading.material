@@ -1,8 +1,8 @@
-{
-    "vertex_shader" : "deferred_shading/deferred_shading_vs.hlsl",
-    "pixel_shader" : "deferred_shading/deferred_shading_ps.hlsl",
+<asset>
+  <vertex_shader>deferred_shading/deferred_shading_vs.hlsl</vertex_shader>
+  <pixel_shader>deferred_shading/deferred_shading_ps.hlsl</pixel_shader>
 
-    "parameter" : {
-        "intensity" : 1
-    }
-}
+  <parameter>
+    <float name="intensity" value="1" />
+  </parameter>
+</asset>

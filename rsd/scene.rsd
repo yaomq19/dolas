@@ -1,9 +1,6 @@
-{
-  "class_name": "SceneRSD",
-  "file_suffix": ".scene",
-
-  "entities": "DynamicArray<Json>",
-  "models": "DynamicArray<Json>"
-}
+<rsd class_name="SceneRSD" file_suffix=".scene">
+  <field name="entities" type="DynamicArray&lt;Xml&gt;" />
+  <field name="models" type="DynamicArray&lt;Xml&gt;" />
+</rsd>
 
 

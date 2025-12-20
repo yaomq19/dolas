@@ -1,5 +1,5 @@
-{
-    "type" : "mesh",
-    "mesh" : "cube.mesh",
-    "material" : "solid.material"
-}
+<asset>
+  <type>mesh</type>
+  <mesh>cube.mesh</mesh>
+  <material>solid.material</material>
+</asset>

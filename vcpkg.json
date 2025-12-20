@@ -2,6 +2,7 @@
     "dependencies": [
         "spdlog",
         "nlohmann-json",
+        "tinyxml2",
         "assimp",
         {
             "name": "directxtex",

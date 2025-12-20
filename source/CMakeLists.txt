@@ -31,6 +31,7 @@ include_directories(
 
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(tinyxml2 CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(directxtex CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
@@ -53,6 +54,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE)
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
 # 链接 nlohmann/json (header-only)
 target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+# XML
+target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2::tinyxml2)
 # 链接 assimp
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 # 链接 DirectXTex

@@ -1,5 +1,5 @@
-{
-    "type" : "base_geometry",
-    "base_geometry" : "cube",
-    "material" : "ground_plane.material"
-}
+<asset>
+  <type>base_geometry</type>
+  <base_geometry>cube</base_geometry>
+  <material>ground_plane.material</material>
+</asset>

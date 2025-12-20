@@ -4,6 +4,8 @@
 #include <iostream>
 #include "base/dolas_paths.h"
 #include "manager/dolas_log_system_manager.h"
+#include "tinyxml2.h"
+#include <cstdlib>
 namespace Dolas
 {
     AssetManager::AssetManager()
@@ -65,6 +67,12 @@ namespace Dolas
         return true;
     }
 
+    Bool AssetManager::LoadXmlFile(const std::string& file_path, tinyxml2::XMLDocument& xml_doc)
+    {
+        const auto ret = xml_doc.LoadFile(file_path.c_str());
+        return ret == tinyxml2::XML_SUCCESS;
+    }
+
     json AssetManager::LoadJsonFile(const std::string& file_path)
 	{
 		json json_data;
@@ -89,14 +97,14 @@ namespace Dolas
 			return &iter->second;
 		}
 
-        json json_data;
-        if (!LoadJsonFile(file_path, json_data))
+        tinyxml2::XMLDocument doc;
+        if (!LoadXmlFile(file_path, doc))
         {
-            LOG_ERROR("Failed to load scene file: {}", file_path);
+            LOG_ERROR("Failed to load scene xml: {}", file_path);
             return nullptr;
         }
 
-        SceneRSD* scene_rsd = parseJsonToSceneRSDAsset(json_data);
+        SceneRSD* scene_rsd = parseXmlToSceneRSDAsset(doc);
         if (scene_rsd == nullptr)
         {
             LOG_ERROR("Failed to parse scene RSD from json: {}", file_path);
@@ -119,14 +127,14 @@ namespace Dolas
             return &iter->second;
         }
 
-        json json_data;
-        if (!LoadJsonFile(file_path, json_data))
+        tinyxml2::XMLDocument doc;
+        if (!LoadXmlFile(file_path, doc))
         {
-            LOG_ERROR("Failed to load camera file: {}", file_path);
+            LOG_ERROR("Failed to load camera xml: {}", file_path);
             return nullptr;
         }
 
-        CameraRSD* camera_rsd = parseJsonToCameraRSDAsset(json_data);
+        CameraRSD* camera_rsd = parseXmlToCameraRSDAsset(doc);
         if (camera_rsd == nullptr)
         {
             LOG_ERROR("Failed to parse camera RSD from json: {}", file_path);
@@ -243,6 +251,111 @@ namespace Dolas
         }
 
         return scene_rsd;
+    }
+
+    // ===== XML 版本（RSD 系统使用）=====
+    static const tinyxml2::XMLElement* FindChild(const tinyxml2::XMLElement* root, const char* name)
+    {
+        return root ? root->FirstChildElement(name) : nullptr;
+    }
+
+    static std::string ChildText(const tinyxml2::XMLElement* root, const char* name)
+    {
+        auto* el = root ? root->FirstChildElement(name) : nullptr;
+        const char* t = el ? el->GetText() : nullptr;
+        return t ? std::string(t) : std::string();
+    }
+
+    static bool ReadVector3(const tinyxml2::XMLElement* root, const char* name, Vector3& out)
+    {
+        auto* el = FindChild(root, name);
+        if (!el) return false;
+        double x = 0, y = 0, z = 0;
+        if (el->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) return false;
+        if (el->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) return false;
+        if (el->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) return false;
+        out = Vector3(static_cast<Float>(x), static_cast<Float>(y), static_cast<Float>(z));
+        return true;
+    }
+
+    static bool ReadVector4WXYZ(const tinyxml2::XMLElement* root, const char* name, Quaternion& out)
+    {
+        auto* el = FindChild(root, name);
+        if (!el) return false;
+        double w = 1, x = 0, y = 0, z = 0;
+        if (el->QueryDoubleAttribute("w", &w) != tinyxml2::XML_SUCCESS) return false;
+        if (el->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) return false;
+        if (el->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) return false;
+        if (el->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) return false;
+        out = Quaternion(static_cast<Float>(w), static_cast<Float>(x), static_cast<Float>(y), static_cast<Float>(z));
+        return true;
+    }
+
+    static bool ReadFloatChild(const tinyxml2::XMLElement* root, const char* name, Float& out)
+    {
+        auto* el = FindChild(root, name);
+        if (!el || !el->GetText()) return false;
+        out = static_cast<Float>(std::atof(el->GetText()));
+        return true;
+    }
+
+    CameraRSD* AssetManager::parseXmlToCameraRSDAsset(const tinyxml2::XMLDocument& doc)
+    {
+        const tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root) return nullptr;
+
+        CameraRSD* camera = DOLAS_NEW(CameraRSD);
+        camera->camera_perspective_type = ChildText(root, "camera_perspective_type");
+
+        if (!ReadVector3(root, "position", camera->position) ||
+            !ReadVector3(root, "forward", camera->forward) ||
+            !ReadVector3(root, "up", camera->up))
+        {
+            LOG_ERROR("Invalid camera vectors in XML!");
+            DOLAS_DELETE(camera);
+            return nullptr;
+        }
+
+        // 标量（缺失则保持默认 0）
+        ReadFloatChild(root, "near_plane", camera->near_plane);
+        ReadFloatChild(root, "far_plane", camera->far_plane);
+        ReadFloatChild(root, "fov", camera->fov);
+        ReadFloatChild(root, "aspect_ratio", camera->aspect_ratio);
+        ReadFloatChild(root, "window_width", camera->window_width);
+        ReadFloatChild(root, "window_height", camera->window_height);
+
+        return camera;
+    }
+
+    SceneRSD* AssetManager::parseXmlToSceneRSDAsset(const tinyxml2::XMLDocument& doc)
+    {
+        const tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root) return nullptr;
+
+        SceneRSD* scene = DOLAS_NEW(SceneRSD);
+        const tinyxml2::XMLElement* entities = root->FirstChildElement("entities");
+        if (entities)
+        {
+            for (auto* e = entities->FirstChildElement("entity"); e; e = e->NextSiblingElement("entity"))
+            {
+                tinyxml2::XMLPrinter p;
+                e->Accept(&p);
+                scene->entities.emplace_back(p.CStr());
+            }
+        }
+
+        const tinyxml2::XMLElement* models = root->FirstChildElement("models");
+        if (models)
+        {
+            for (auto* m = models->FirstChildElement("model"); m; m = m->NextSiblingElement("model"))
+            {
+                tinyxml2::XMLPrinter p;
+                m->Accept(&p);
+                scene->models.emplace_back(p.CStr());
+            }
+        }
+
+        return scene;
     }
 
 	SceneAsset* AssetManager::parseJsonToSceneAsset(const json& json_data)

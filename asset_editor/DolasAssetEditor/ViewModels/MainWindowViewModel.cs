@@ -1,7 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Input;
@@ -168,14 +167,12 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (!_rsdRegistry.TryGetBySuffix(suffix, out var schema) || schema is null)
                 throw new InvalidOperationException($"没有任何 .rsd 的 file_suffix 匹配该资产：{suffix}（{filePath}）");
 
-            var text = File.ReadAllText(filePath);
-            var rootNode = JsonNode.Parse(text);
-            if (rootNode is null)
-                throw new InvalidOperationException("JsonNode.Parse returned null");
-
             _matchedSchema = schema;
-            var (rootObj, vm, mutated, warnings) = RsdAssetBinder.BindToSchema(rootNode, schema, MarkDirty);
-            _jsonRootNode = rootObj;
+
+            // XML on disk -> JsonObject in memory（复用现有类型化编辑 UI）
+            var rootObj = XmlAssetCodec.LoadAssetAsJsonObject(filePath, schema);
+            var (boundRoot, vm, mutated, warnings) = RsdAssetBinder.BindToSchema(rootObj, schema, MarkDirty);
+            _jsonRootNode = boundRoot;
             JsonRoot = vm;
 
             if (!mutated) IsDirty = false;
@@ -210,8 +207,12 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var json = _jsonRootNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(SelectedAssetPath, json);
+            if (_matchedSchema is null)
+                throw new InvalidOperationException("未匹配到 schema，无法保存。");
+            if (_jsonRootNode is not JsonObject obj)
+                throw new InvalidOperationException("根节点不是 object，无法保存。");
+
+            XmlAssetCodec.SaveAssetFromJsonObject(SelectedAssetPath, _matchedSchema, obj);
             IsDirty = false;
             StatusText = "已保存";
             Logs.Add($"保存成功：{SelectedAssetPath}");

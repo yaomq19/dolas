@@ -1,14 +1,11 @@
-{
-    "vertex_shader" : "blinn_phong/blinn_phong_vs.hlsl",
-    "pixel_shader" : "blinn_phong/blinn_phong_ps.hlsl",
+<asset>
+  <vertex_shader>blinn_phong/blinn_phong_vs.hlsl</vertex_shader>
+  <pixel_shader>blinn_phong/blinn_phong_ps.hlsl</pixel_shader>
 
-    "vertex_shader_global_variables" : 
-    {},
-
-    "pixel_shader_global_variables" : 
-    {
-        "k_a" : [0.2, 0.54, 0.76, 1.0],
-        "k_d" : [0.2, 0.54, 0.76, 1.0],
-        "k_s_shininess" : [0.2, 0.54, 0.76, 64.0]
-    }
-}
+  <vertex_shader_global_variables />
+  <pixel_shader_global_variables>
+    <vec4 name="k_a" x="0.2" y="0.54" z="0.76" w="1.0" />
+    <vec4 name="k_d" x="0.2" y="0.54" z="0.76" w="1.0" />
+    <vec4 name="k_s_shininess" x="0.2" y="0.54" z="0.76" w="64.0" />
+  </pixel_shader_global_variables>
+</asset>

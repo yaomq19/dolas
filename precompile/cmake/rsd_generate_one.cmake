@@ -4,16 +4,26 @@ endif()
 
 file(READ "${INPUT}" _rsd_text)
 
-# 提取所有 "key" : "value" 键值对（rsd 约定：value 必为字符串）
-# 兼容空格： "a" : "b" / "a":"b"
-string(REGEX MATCHALL "\"([^\"]+)\"[ \t\r\n]*:[ \t\r\n]*\"([^\"]+)\"" _pairs "${_rsd_text}")
+# XML RSD 格式：
+# <rsd class_name="CameraRSD" file_suffix=".camera">
+#   <field name="position" type="Vector3" />
+# </rsd>
 
-if(_pairs STREQUAL "")
-    message(FATAL_ERROR "Invalid RSD (no key/value string pairs): ${INPUT}")
+string(REGEX MATCH "class_name[ \t\r\n]*=[ \t\r\n]*\"([^\"]+)\"" _m_class "${_rsd_text}")
+set(_class_name "${CMAKE_MATCH_1}")
+
+string(REGEX MATCH "file_suffix[ \t\r\n]*=[ \t\r\n]*\"([^\"]+)\"" _m_suffix "${_rsd_text}")
+set(_file_suffix "${CMAKE_MATCH_1}")
+
+if(_class_name STREQUAL "")
+    message(FATAL_ERROR "RSD missing required attribute: class_name (${INPUT})")
+endif()
+if(_file_suffix STREQUAL "")
+    message(FATAL_ERROR "RSD missing required attribute: file_suffix (${INPUT})")
 endif()
 
-set(_class_name "")
-set(_file_suffix "")
+string(REGEX MATCHALL "<field[^>]*>" _field_tags "${_rsd_text}")
+
 set(_field_lines "")
 set(_need_map FALSE)
 set(_need_set FALSE)
@@ -93,6 +103,11 @@ function(_cpp_type _spec _out_type _out_suffix)
         set(t "nlohmann::json")
         set(sfx "")
         set(_need_nlohmann_json TRUE PARENT_SCOPE)
+    elseif(spec STREQUAL "Xml")
+        # XML 片段/原始节点：以字符串形式保存
+        set(t "std::string")
+        set(sfx "")
+        set(_need_string TRUE PARENT_SCOPE)
     else()
         # 泛型/容器类型
         string(FIND "${spec}" "<" lt)
@@ -159,30 +174,23 @@ function(_cpp_type _spec _out_type _out_suffix)
     set(${_out_suffix} "${sfx}" PARENT_SCOPE)
 endfunction()
 
-foreach(p IN LISTS _pairs)
-    # p 形如： "key" : "value" 整段
-    string(REGEX REPLACE "^\"([^\"]+)\"[ \t\r\n]*:[ \t\r\n]*\"([^\"]+)\"$" "\\1" k "${p}")
-    string(REGEX REPLACE "^\"([^\"]+)\"[ \t\r\n]*:[ \t\r\n]*\"([^\"]+)\"$" "\\2" v "${p}")
+foreach(tag IN LISTS _field_tags)
+    string(REGEX MATCH "name[ \t\r\n]*=[ \t\r\n]*\"([^\"]+)\"" _mn "${tag}")
+    set(k "${CMAKE_MATCH_1}")
+    string(REGEX MATCH "type[ \t\r\n]*=[ \t\r\n]*\"([^\"]+)\"" _mt "${tag}")
+    set(v "${CMAKE_MATCH_1}")
+    if(k STREQUAL "" OR v STREQUAL "")
+        message(FATAL_ERROR "Invalid <field> tag (missing name/type): ${tag} in ${INPUT}")
+    endif()
 
-    if(k STREQUAL "class_name")
-        set(_class_name "${v}")
-        continue()
-    endif()
-    if(k STREQUAL "file_suffix")
-        set(_file_suffix "${v}")
-        continue()
-    endif()
+    # XML 实体解码（我们用正则解析，不走 XML parser）
+    string(REPLACE "&lt;" "<" v "${v}")
+    string(REPLACE "&gt;" ">" v "${v}")
+    string(REPLACE "&amp;" "&" v "${v}")
 
     _cpp_type("${v}" cpp_t cpp_sfx)
     set(_field_lines "${_field_lines}    ${cpp_t} ${k}${cpp_sfx};\n")
 endforeach()
-
-if(_class_name STREQUAL "")
-    message(FATAL_ERROR "RSD missing required field: class_name (${INPUT})")
-endif()
-if(_file_suffix STREQUAL "")
-    message(FATAL_ERROR "RSD missing required field: file_suffix (${INPUT})")
-endif()
 
 get_filename_component(_rsd_name "${INPUT}" NAME)
 set(_header "")

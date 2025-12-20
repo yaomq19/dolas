@@ -1,5 +1,5 @@
-{
-    "type" : "mesh",
-    "mesh" : "cube.mesh",
-    "material" : "plain_color.material"
-}
+<asset>
+  <type>mesh</type>
+  <mesh>cube.mesh</mesh>
+  <material>plain_color.material</material>
+</asset>

@@ -1,5 +1,5 @@
-{
-    "type" : "base_geometry",
-    "base_geometry" : "sphere",
-    "material" : "sphere_0.material"
-}
+<asset>
+  <type>base_geometry</type>
+  <base_geometry>sphere</base_geometry>
+  <material>sphere_0.material</material>
+</asset>

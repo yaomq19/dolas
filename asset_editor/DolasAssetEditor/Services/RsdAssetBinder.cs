@@ -59,6 +59,8 @@ public static class RsdAssetBinder
     {
         if (typeSpec.Trim() == "Json")
             return true;
+        if (typeSpec.Trim() == "Xml")
+            return node is JsonValue v && v.TryGetValue<string>(out _);
 
         var t = TypeSpecToEditorType(typeSpec);
         return t switch
@@ -96,6 +98,8 @@ public static class RsdAssetBinder
     {
         if (typeSpec.Trim() == "Json")
             return new JsonObject();
+        if (typeSpec.Trim() == "Xml")
+            return JsonValue.Create(string.Empty)!;
 
         var t = TypeSpecToEditorType(typeSpec);
         return t switch
@@ -123,6 +127,7 @@ public static class RsdAssetBinder
         if (s.StartsWith("Set", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Array;
         if (s.StartsWith("Map", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
         if (s.Equals("Json", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
+        if (s.Equals("Xml", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.String;
 
         return s switch
         {

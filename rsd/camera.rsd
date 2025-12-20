@@ -1,14 +1,12 @@
-{
-  "class_name" : "CameraRSD",
-  "file_suffix" : ".camera",
-  "camera_perspective_type": "String",
-  "position": "Vector3",
-  "forward": "Vector3",
-  "up": "Vector3",
-  "near_plane": "Float",
-  "far_plane": "Float",
-  "fov": "Float",
-  "aspect_ratio": "Float",
-  "window_width": "Float",
-  "window_height": "Float"
-}
+<rsd class_name="CameraRSD" file_suffix=".camera">
+  <field name="camera_perspective_type" type="String" />
+  <field name="position" type="Vector3" />
+  <field name="forward" type="Vector3" />
+  <field name="up" type="Vector3" />
+  <field name="near_plane" type="Float" />
+  <field name="far_plane" type="Float" />
+  <field name="fov" type="Float" />
+  <field name="aspect_ratio" type="Float" />
+  <field name="window_width" type="Float" />
+  <field name="window_height" type="Float" />
+</rsd>

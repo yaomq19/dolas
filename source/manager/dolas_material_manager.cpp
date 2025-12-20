@@ -7,12 +7,11 @@
 #include "render/dolas_material.h"
 #include "base/dolas_base.h"
 #include "base/dolas_paths.h"
-#include "nlohmann/json.hpp"
 #include "base/dolas_dx_trace.h"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_log_system_manager.h"
-using json = nlohmann::json;
+#include "tinyxml2.h"
 
 namespace Dolas
 {
@@ -61,135 +60,92 @@ namespace Dolas
     {
         std::string material_file_path = PathUtils::GetMaterialDir() + file_name;
 
-        json json_data;
-        Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(material_file_path, json_data);
+        tinyxml2::XMLDocument doc;
+        Bool ret = g_dolas_engine.m_asset_manager->LoadXmlFile(material_file_path, doc);
         if (!ret)
         {
             return MATERIAL_ID_EMPTY;
         }
 
+        const tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root)
+            return MATERIAL_ID_EMPTY;
+
+        auto child_text = [&](const char* name) -> std::string
+        {
+            const tinyxml2::XMLElement* el = root->FirstChildElement(name);
+            const char* t = el ? el->GetText() : nullptr;
+            return t ? std::string(t) : std::string();
+        };
+
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
         material->m_file_id = HashConverter::StringHash(material_file_path);
         // 顶点着色器
-        if (json_data.contains("vertex_shader"))
         {
-            material->m_vertex_context = CreateVertexContext(json_data["vertex_shader"], "VS");
+            const auto vs = child_text("vertex_shader");
+            if (!vs.empty())
+                material->m_vertex_context = CreateVertexContext(vs, "VS");
         }
 
         // 像素着色器
-        if (json_data.contains("pixel_shader"))
         {
-            material->m_pixel_context = CreatePixelContext(json_data["pixel_shader"], "PS");
+            const auto ps = child_text("pixel_shader");
+            if (!ps.empty())
+                material->m_pixel_context = CreatePixelContext(ps, "PS");
         }
 
         // 解析纹理信息
-		if (json_data.contains("vertex_shader_texture"))
-		{
-			const auto& textures = json_data["vertex_shader_texture"];
-			for (auto it = textures.begin(); it != textures.end(); ++it)
-			{
-				std::string texture_name = it.key();
-				std::string texture_file_name = it.value();
-
-				TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
-				if (texture_id == TEXTURE_ID_EMPTY)
-				{
-					return MATERIAL_ID_EMPTY;
-				}
-
-				// 根据纹理名称分配插槽
-				int slot = 0;
-				if (texture_name == "albedo_map") slot = 0;
-				else if (texture_name == "normal_map") slot = 1;
-				else if (texture_name == "roughness_map") slot = 2;
-				else if (texture_name == "metallic_map") slot = 3;
-				// 可以扩展更多纹理类型
-                material->m_vertex_context->SetShaderResourceView(slot, texture_id);
-			}
-		}
-
-        if (json_data.contains("pixel_shader_texture"))
+        auto bind_texture_list = [&](const char* listName, const auto& ctx)
         {
-            const auto& textures = json_data["pixel_shader_texture"];
-            for (auto it = textures.begin(); it != textures.end(); ++it)
+            if (!ctx) return;
+            const tinyxml2::XMLElement* list = root->FirstChildElement(listName);
+            if (!list) return;
+            for (auto* tex = list->FirstChildElement("texture"); tex; tex = tex->NextSiblingElement("texture"))
             {
-                std::string texture_name = it.key();
-                std::string texture_file_name = it.value();
-                
+                const char* texture_name = tex->Attribute("name");
+                const char* texture_file_name = tex->Attribute("file");
+                if (!texture_name || !texture_file_name) continue;
+
                 TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
                 if (texture_id == TEXTURE_ID_EMPTY)
-                {
-                    return MATERIAL_ID_EMPTY;
-                }
+                    continue;
 
-                // 根据纹理名称分配插槽
                 int slot = 0;
-                if (texture_name == "albedo_map") slot = 0;
-                else if (texture_name == "normal_map") slot = 1;
-                else if (texture_name == "roughness_map") slot = 2;
-                else if (texture_name == "metallic_map") slot = 3;
-                // 可以扩展更多纹理类型
-                material->m_pixel_context->SetShaderResourceView(slot, texture_id);
+                std::string tn = texture_name;
+                if (tn == "albedo_map") slot = 0;
+                else if (tn == "normal_map") slot = 1;
+                else if (tn == "roughness_map") slot = 2;
+                else if (tn == "metallic_map") slot = 3;
+                ctx->SetShaderResourceView(slot, texture_id);
             }
-        }
+        };
+
+        bind_texture_list("vertex_shader_texture", material->m_vertex_context);
+        bind_texture_list("pixel_shader_texture", material->m_pixel_context);
 
         // 解析全局常量缓冲（GlobalConstants）参数
-        // 约定：vertex_shader_global_variables / pixel_shader_global_variables 为
-        // { "变量名": [f0, f1, f2, f3 ...] } 形式的对象。
-        if (json_data.contains("vertex_shader_global_variables") && material->m_vertex_context)
+        auto bind_globals = [&](const char* blockName, const auto& ctx)
         {
-            const auto& parameters = json_data["vertex_shader_global_variables"];
-            if (parameters.is_object())
+            if (!ctx) return;
+            const tinyxml2::XMLElement* block = root->FirstChildElement(blockName);
+            if (!block) return;
+            for (auto* v = block->FirstChildElement("vec4"); v; v = v->NextSiblingElement("vec4"))
             {
-                for (auto it = parameters.begin(); it != parameters.end(); ++it)
-                {
-                    const std::string var_name = it.key();
-                    const auto& value_array = it.value();
-                    if (!value_array.is_array() || value_array.size() != 4)
-                    {
-                        LOG_ERROR("!value_array.is_array() || value_array.size() != 4");
-                        continue;
-                    }
-
-                    Int idx = 0;
-					Vector4 values;
-                    for (const auto& v : value_array)
-                    {
-                        values[idx++] = v.get<float>();
-                    }
-
-                    material->m_vertex_context->SetGlobalVariable(var_name, values);
-                }
+                const char* var_name = v->Attribute("name");
+                if (!var_name) continue;
+                double x = 0, y = 0, z = 0, w = 0;
+                if (v->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) continue;
+                if (v->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) continue;
+                if (v->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) continue;
+                if (v->QueryDoubleAttribute("w", &w) != tinyxml2::XML_SUCCESS) continue;
+                Vector4 values((Float)x, (Float)y, (Float)z, (Float)w);
+                ctx->SetGlobalVariable(var_name, values);
             }
-        }
+        };
 
-        if (json_data.contains("pixel_shader_global_variables") && material->m_pixel_context)
-        {
-            const auto& parameters = json_data["pixel_shader_global_variables"];
-            if (parameters.is_object())
-            {
-                for (auto it = parameters.begin(); it != parameters.end(); ++it)
-                {
-                    const std::string var_name = it.key();
-                    const auto& value_array = it.value();
-                    if (!value_array.is_array() || value_array.size() != 4)
-                    {
-                        LOG_ERROR("!value_array.is_array() || value_array.size() != 4");
-                        continue;
-                    }
-
-                    Int idx = 0;
-                    Vector4 values;
-                    for (const auto& v : value_array)
-                    {
-                        values[idx++] = v.get<float>();
-                    }
-
-                    material->m_pixel_context->SetGlobalVariable(var_name, values);
-                }
-            }
-        }
+        bind_globals("vertex_shader_global_variables", material->m_vertex_context);
+        bind_globals("pixel_shader_global_variables", material->m_pixel_context);
 
         m_materials[material->m_file_id] = material;
         return material->m_file_id;

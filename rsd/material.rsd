@@ -1,15 +1,11 @@
-{
-  "class_name": "MaterialRSD",
-  "file_suffix": ".material",
-
-  "vertex_shader": "String",
-  "pixel_shader": "String",
-
-  "vertex_shader_global_variables": "Map<String, Vector4>",
-  "pixel_shader_global_variables": "Map<String, Vector4>",
-
-  "pixel_shader_texture": "Map<String, String>",
-  "parameter": "Map<String, Float>"
-}
+<rsd class_name="MaterialRSD" file_suffix=".material">
+  <field name="vertex_shader" type="String" />
+  <field name="pixel_shader" type="String" />
+  <!-- 复杂结构先用 Xml 片段原样保存/编辑（避免在编辑器里丢数据） -->
+  <field name="vertex_shader_global_variables" type="Xml" />
+  <field name="pixel_shader_global_variables" type="Xml" />
+  <field name="pixel_shader_texture" type="Xml" />
+  <field name="parameter" type="Xml" />
+</rsd>
 
 
