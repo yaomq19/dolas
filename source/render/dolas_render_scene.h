@@ -20,7 +20,7 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        void BuildFromAsset(class SceneAsset* scene_asset);
+        void BuildFromAsset(struct SceneAsset* scene_asset);
 		const std::vector<RenderEntityID>& GetRenderEntities() const { return m_render_entities; }
     private:
         std::vector<RenderEntityID> m_render_entities;

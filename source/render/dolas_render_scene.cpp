@@ -56,7 +56,7 @@ namespace Dolas
 			//	return;
 			//}
 
-			//// ÕâÀïĞèÒª¾ßÌåÊµÏÖ½«aiScene×ª»»ÎªRenderEntityµÄÂß¼­
+			//// TODO: è¿™é‡Œåç»­éœ€è¦å®ç°å°† aiScene è½¬æ¢ä¸º RenderEntity çš„é€»è¾‘
    //     }
 
 		for (const SceneEntity& scene_entity : scene_asset->entities)

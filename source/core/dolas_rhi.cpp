@@ -9,6 +9,7 @@
 #endif
 
 #include <iostream>
+#include <limits>
 #include <imm.h>  // 输入法控制（切换到英文输入状态）
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_log_system_manager.h"
@@ -222,7 +223,10 @@ namespace Dolas
 		{
             d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i]->m_d3d_render_target_view : nullptr;
 		}
-        m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
+        std::size_t rt_count_sz = d3d11_render_target_view.size();
+        if (rt_count_sz > k_max_render_targets) rt_count_sz = k_max_render_targets;
+        if (rt_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) rt_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
+        m_d3d_immediate_context->OMSetRenderTargets((UINT)rt_count_sz, d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
 	}
 
     void DolasRHI::SetRenderTargetViewWithoutDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view)
@@ -237,7 +241,10 @@ namespace Dolas
 		{
 			d3d11_render_target_view_array[i] = i < d3d11_render_target_view.size() ? d3d11_render_target_view[i]->m_d3d_render_target_view : nullptr;
 		}
-		m_d3d_immediate_context->OMSetRenderTargets(d3d11_render_target_view.size(), d3d11_render_target_view_array, nullptr);
+        std::size_t rt_count_sz = d3d11_render_target_view.size();
+        if (rt_count_sz > k_max_render_targets) rt_count_sz = k_max_render_targets;
+        if (rt_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) rt_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
+		m_d3d_immediate_context->OMSetRenderTargets((UINT)rt_count_sz, d3d11_render_target_view_array, nullptr);
     }
 
 	void DolasRHI::ClearRenderTargetView(std::shared_ptr<RenderTargetView> rtv, const Float clear_color[4])
@@ -353,7 +360,9 @@ namespace Dolas
 		const auto& srvs = vertex_context->GetSlotToSRVMap();
 		for (auto srv_iter : srvs)
 		{
-			m_d3d_immediate_context->VSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
+            const std::size_t slot_sz = (std::size_t)srv_iter.first;
+            const UINT slot = (slot_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) ? (std::numeric_limits<UINT>::max)() : (UINT)slot_sz;
+			m_d3d_immediate_context->VSSetShaderResources(slot, 1, &(srv_iter.second));
 		}
 
 		/* 3. Set Samplers(TODO) */
@@ -392,7 +401,9 @@ namespace Dolas
 		const auto& srvs = pixel_context->GetSlotToSRVMap();
 		for (auto srv_iter : srvs)
 		{
-			m_d3d_immediate_context->PSSetShaderResources(srv_iter.first, 1, &(srv_iter.second));
+            const std::size_t slot_sz = (std::size_t)srv_iter.first;
+            const UINT slot = (slot_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) ? (std::numeric_limits<UINT>::max)() : (UINT)slot_sz;
+			m_d3d_immediate_context->PSSetShaderResources(slot, 1, &(srv_iter.second));
 		}
 
 		/* 3. Set Samplers(TODO) */
@@ -428,12 +439,14 @@ namespace Dolas
 	void DolasRHI::SetVertexBuffers(const std::vector<BufferID>& vertex_buffer_ids, const std::vector<UInt>& vertex_strides, const std::vector<UInt>& vertex_offsets)
 	{
 		std::vector<ID3D11Buffer*> d3d11_buffers;
-		for (int i = 0; i < vertex_buffer_ids.size(); i++)
+		for (std::size_t i = 0; i < vertex_buffer_ids.size(); i++)
 		{
 			Buffer* buffer = g_dolas_engine.m_buffer_manager->GetBufferByID(vertex_buffer_ids[i]);
 			d3d11_buffers.push_back(buffer->GetBuffer());
 		}
-		m_d3d_immediate_context->IASetVertexBuffers(0, d3d11_buffers.size(), d3d11_buffers.data(), vertex_strides.data(), vertex_offsets.data());
+        std::size_t vb_count_sz = d3d11_buffers.size();
+        if (vb_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) vb_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
+		m_d3d_immediate_context->IASetVertexBuffers(0, (UINT)vb_count_sz, d3d11_buffers.data(), vertex_strides.data(), vertex_offsets.data());
 	}
 
 	void DolasRHI::SetIndexBuffer(BufferID index_buffer_id)
@@ -1017,7 +1030,9 @@ namespace Dolas
 		std::shared_ptr<InputLayout> input_layout = std::make_shared<InputLayout>();
 		ID3D11InputLayout* d3d11_input_layout = nullptr;
 		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[input_layout_type];
-		HR(m_d3d_device->CreateInputLayout(input_element_desc.data(), input_element_desc.size(), pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout));
+        std::size_t elem_count_sz = input_element_desc.size();
+        if (elem_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) elem_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
+		HR(m_d3d_device->CreateInputLayout(input_element_desc.data(), (UINT)elem_count_sz, pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout));
 		input_layout->m_d3d_input_layout = d3d11_input_layout;
 		return input_layout;
 	}

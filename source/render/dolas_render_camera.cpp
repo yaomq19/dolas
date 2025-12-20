@@ -450,7 +450,7 @@ namespace Dolas
             -m_near_plane);
     }
 
-    void RenderCameraOrthographic::BuildFromAsset(class CameraAsset* camera_asset)
+    void RenderCameraOrthographic::BuildFromAsset(struct CameraAsset* camera_asset)
     {
 		SetPosition(camera_asset->position);
 		SetForwardAndUp(camera_asset->forward, camera_asset->up);

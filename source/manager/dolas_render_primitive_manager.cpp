@@ -1,4 +1,5 @@
 #include "manager/dolas_render_primitive_manager.h"
+#include <limits>
 
 #include <iostream>
 #include <cmath>
@@ -282,6 +283,7 @@ namespace Dolas
 		}
 
 		m_base_geometries[BaseGeometryType_SPHERE] = sphere_render_primitive_string_id;
+        return true;
 	}
 
 	Bool RenderPrimitiveManager::InitializeQuadGeometry()
@@ -310,6 +312,7 @@ namespace Dolas
 		}
 
 		m_base_geometries[BaseGeometryType_QUAD] = quad_render_primitive_id;
+        return true;
 	}
 
 	Bool RenderPrimitiveManager::InitializeCylinderGeometry()
@@ -338,6 +341,7 @@ namespace Dolas
 		}
 
 		m_base_geometries[BaseGeometryType_CYLINDER] = cylinder_render_primitive_id;
+        return true;
 	}
 
 	Bool RenderPrimitiveManager::InitializeCubeGeometry()
@@ -369,6 +373,7 @@ namespace Dolas
 		}
 
 		m_base_geometries[BaseGeometryType_CUBE] = cube_render_primitive_id;
+        return true;
 	}
 
 	Bool RenderPrimitiveManager::GenerateSphereRawData(UInt segments, std::vector<std::vector<Float>>& vertices_data, std::vector<UInt>& indices)
@@ -796,7 +801,7 @@ namespace Dolas
         std::vector<UInt> vertex_offsets; // unit: byte
 
         UInt vertex_count = 0;
-        for (UInt stream_index = 0; stream_index < vertices.size(); stream_index++)
+        for (std::size_t stream_index = 0; stream_index < vertices.size(); stream_index++)
         {
             UInt vertex_stride = 0; // unit: float
             switch (input_layout_type)
@@ -874,7 +879,13 @@ namespace Dolas
 			    return nullptr;
         }
 
-		    vertex_count = vertices[stream_index].size() / vertex_stride;
+            const std::size_t vc = (vertex_stride == 0) ? 0 : (vertices[stream_index].size() / vertex_stride);
+            if (vc > (std::size_t)(std::numeric_limits<UInt>::max)())
+            {
+                LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: vertex_count overflow ({})", vc);
+                return nullptr;
+            }
+		    vertex_count = (UInt)vc;
 
             BufferID vertex_buffer_id = g_dolas_engine.m_buffer_manager->CreateVertexBuffer(vertices[stream_index]);
 		    if (vertex_buffer_id == BUFFER_ID_EMPTY)
@@ -888,8 +899,21 @@ namespace Dolas
         }
         
         // index buffer
-        UInt index_count = indices.size();
-        BufferID index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer(indices.size() * sizeof(UInt), indices.data());
+        const std::size_t ic = indices.size();
+        if (ic > (std::size_t)(std::numeric_limits<UInt>::max)())
+        {
+            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index_count overflow ({})", ic);
+            return nullptr;
+        }
+        UInt index_count = (UInt)ic;
+
+        const std::size_t index_bytes_sz = ic * sizeof(UInt);
+        if (index_bytes_sz > (std::size_t)(std::numeric_limits<std::uint32_t>::max)())
+        {
+            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index buffer size overflow ({})", index_bytes_sz);
+            return nullptr;
+        }
+        BufferID index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer((std::uint32_t)index_bytes_sz, indices.data());
 		if (index_buffer_id == BUFFER_ID_EMPTY)
 		{
 			LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: Failed to create index buffer");

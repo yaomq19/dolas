@@ -27,7 +27,6 @@ namespace Dolas
 		class RenderPrimitiveManager* m_render_primitive_manager;
 		class BufferManager* m_buffer_manager;
 		class TestManager* m_test_manager;
-		class RenderStateManager* m_render_state_manager;
 		class RenderViewManager* m_render_view_manager;
 		class RenderCameraManager* m_render_camera_manager;
 		class RenderSceneManager* m_render_scene_manager;

@@ -74,7 +74,6 @@ namespace Dolas
 		DOLAS_DELETE(m_render_resource_manager);
 		DOLAS_DELETE(m_render_primitive_manager);
 		DOLAS_DELETE(m_buffer_manager);
-		DOLAS_DELETE(m_render_state_manager);
 		DOLAS_DELETE(m_render_view_manager);
 		DOLAS_DELETE(m_render_camera_manager);
 		DOLAS_DELETE(m_render_scene_manager);
