@@ -8,12 +8,6 @@
 #include "rsd/camera.h"
 namespace Dolas
 {
-    enum class CameraPerspectiveType
-    {
-        PERSPECTIVE,
-        ORTHOGRAPHIC
-    };
-
     class RenderCamera
     {
         friend class RenderCameraManager;

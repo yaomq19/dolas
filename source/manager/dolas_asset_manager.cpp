@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstring>
 namespace Dolas
 {
     AssetManager::AssetManager()
@@ -110,6 +111,60 @@ namespace Dolas
         {
             auto* p = reinterpret_cast<UInt*>(base + f.offset);
             if (el && el->GetText()) *p = (UInt)std::strtoul(el->GetText(), nullptr, 10);
+            return true;
+        }
+        case RsdFieldType::EnumUInt:
+        {
+            if (!el || !el->GetText())
+                return true;
+
+            std::string t = el->GetText();
+            // trim
+            auto isSpace = [](unsigned char c) { return std::isspace(c) != 0; };
+            while (!t.empty() && isSpace((unsigned char)t.front())) t.erase(t.begin());
+            while (!t.empty() && isSpace((unsigned char)t.back())) t.pop_back();
+
+            UInt u = 0;
+            bool matched = false;
+
+            // match against enum name/display/alias (case-insensitive for ASCII)
+            if (f.enumItems && f.enumItemCount > 0)
+            {
+                auto eqNoCase = [](const std::string& a, const char* b) -> bool {
+                    if (!b) return false;
+                    const std::string bb(b);
+                    if (a.size() != bb.size()) return false;
+                    for (size_t i = 0; i < a.size(); i++)
+                    {
+                        const unsigned char ca = (unsigned char)a[i];
+                        const unsigned char cb = (unsigned char)bb[i];
+                        const unsigned char la = (unsigned char)std::tolower(ca);
+                        const unsigned char lb = (unsigned char)std::tolower(cb);
+                        if (la != lb) return false;
+                    }
+                    return true;
+                };
+
+                for (std::size_t i = 0; i < f.enumItemCount; i++)
+                {
+                    const auto& it = f.enumItems[i];
+                    if (eqNoCase(t, it.name) || eqNoCase(t, it.display) || eqNoCase(t, it.alias))
+                    {
+                        u = (UInt)it.value;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!matched)
+            {
+                // numeric fallback
+                u = (UInt)std::strtoul(t.c_str(), nullptr, 10);
+            }
+
+            // The field is an enum class with underlying UInt. Avoid strict-aliasing UB by memcpy.
+            std::memcpy(base + f.offset, &u, sizeof(UInt));
             return true;
         }
         case RsdFieldType::FloatValue:

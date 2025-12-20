@@ -20,7 +20,7 @@ namespace Dolas
     /* Render Camera */
     // 顺序：构造 -> 析构 -> Getters -> Setters -> 受保护更新函数
     RenderCamera::RenderCamera()
-    :   m_camera_perspective_type(CameraPerspectiveType::PERSPECTIVE),
+    :   m_camera_perspective_type(CameraPerspectiveType::Perspective),
         m_position(default_camera_position),
         m_forward(default_camera_forward),
         m_up(default_camera_up),
@@ -288,7 +288,7 @@ namespace Dolas
 
     /* Render Camera Perspective */
     RenderCameraPerspective::RenderCameraPerspective()
-    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE),
+    :   RenderCamera(CameraPerspectiveType::Perspective),
         m_aspect_ratio(1.0f),
         m_fov(0.78539816339f)
     {
@@ -296,7 +296,7 @@ namespace Dolas
     }
 
     RenderCameraPerspective::RenderCameraPerspective(const Vector3& position)
-    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position),
+    :   RenderCamera(CameraPerspectiveType::Perspective, position),
         m_aspect_ratio(1.0f),
         m_fov(0.78539816339f)
     {
@@ -304,7 +304,7 @@ namespace Dolas
     }
 
     RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up)
-    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up),
+    :   RenderCamera(CameraPerspectiveType::Perspective, position, forward, up),
         m_aspect_ratio(1.0f),
         m_fov(0.78539816339f)
     {
@@ -312,7 +312,7 @@ namespace Dolas
     }
 
     RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane)
-    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up, near_plane, far_plane),
+    :   RenderCamera(CameraPerspectiveType::Perspective, position, forward, up, near_plane, far_plane),
         m_aspect_ratio(1.0f),
         m_fov(0.78539816339f)
     {
@@ -320,7 +320,7 @@ namespace Dolas
     }
 
     RenderCameraPerspective::RenderCameraPerspective(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane, Float fov, Float aspect_ratio)
-    :   RenderCamera(CameraPerspectiveType::PERSPECTIVE, position, forward, up, near_plane, far_plane),
+    :   RenderCamera(CameraPerspectiveType::Perspective, position, forward, up, near_plane, far_plane),
         m_aspect_ratio(aspect_ratio),
         m_fov(fov)
     {
@@ -375,7 +375,7 @@ namespace Dolas
 
     /* Render Camera Orthographic */
     RenderCameraOrthographic::RenderCameraOrthographic()
-    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC),
+    :   RenderCamera(CameraPerspectiveType::Orthographic),
         m_window_width(1.0f),
         m_window_height(1.0f)
     {
@@ -383,7 +383,7 @@ namespace Dolas
     }
 
     RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position)
-    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position),
+    :   RenderCamera(CameraPerspectiveType::Orthographic, position),
         m_window_width(1.0f),
         m_window_height(1.0f)
     {
@@ -391,7 +391,7 @@ namespace Dolas
     }
 
     RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up)
-    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up),
+    :   RenderCamera(CameraPerspectiveType::Orthographic, position, forward, up),
         m_window_width(1.0f),
         m_window_height(1.0f)
     {
@@ -399,7 +399,7 @@ namespace Dolas
     }
 
     RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane)
-    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up, near_plane, far_plane),
+    :   RenderCamera(CameraPerspectiveType::Orthographic, position, forward, up, near_plane, far_plane),
         m_window_width(1.0f),
         m_window_height(1.0f)
     {
@@ -407,7 +407,7 @@ namespace Dolas
     }
 
     RenderCameraOrthographic::RenderCameraOrthographic(const Vector3& position, const Vector3& forward, const Vector3& up, Float near_plane, Float far_plane, Float window_width, Float window_height)
-    :   RenderCamera(CameraPerspectiveType::ORTHOGRAPHIC, position, forward, up, near_plane, far_plane),
+    :   RenderCamera(CameraPerspectiveType::Orthographic, position, forward, up, near_plane, far_plane),
         m_window_width(window_width),
         m_window_height(window_height)
     {

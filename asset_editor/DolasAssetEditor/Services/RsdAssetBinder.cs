@@ -14,7 +14,7 @@ public static class RsdAssetBinder
         var obj = new JsonObject();
         foreach (var (fieldName, typeSpec) in schema.Fields)
         {
-            obj[fieldName] = DefaultNodeForType(typeSpec);
+            obj[fieldName] = DefaultNodeForType(schema, typeSpec);
         }
         return obj;
     }
@@ -35,16 +35,16 @@ public static class RsdAssetBinder
         {
             if (!obj.TryGetPropertyValue(fieldName, out var val) || val is null)
             {
-                obj[fieldName] = DefaultNodeForType(typeSpec);
+                obj[fieldName] = DefaultNodeForType(schema, typeSpec);
                 warnings.Add($"字段缺失：{fieldName}，已填充默认值（未保存）");
                 mutated = true;
                 continue;
             }
 
-            if (!IsCompatible(val, typeSpec))
+            if (!IsCompatible(schema, val, typeSpec))
             {
                 var old = val.ToJsonString();
-                obj[fieldName] = DefaultNodeForType(typeSpec);
+                obj[fieldName] = DefaultNodeForType(schema, typeSpec);
                 warnings.Add($"字段类型不匹配：{fieldName}，期望 {typeSpec}，实际 {old}，已用默认值替换（未保存）");
                 mutated = true;
             }
@@ -59,13 +59,14 @@ public static class RsdAssetBinder
         foreach (var (fieldName, typeSpec) in schema.Fields)
         {
             obj.TryGetPropertyValue(fieldName, out var val);
-            vmRoot.Children.Add(JsonNodeViewModel.CreateSchemaField(fieldName, val, markDirty, obj, fieldName, typeSpec));
+            var enumValues = TryGetEnumValues(schema, typeSpec);
+            vmRoot.Children.Add(JsonNodeViewModel.CreateSchemaField(fieldName, val, markDirty, obj, fieldName, typeSpec, enumValues));
         }
 
         return (obj, vmRoot, mutated, warnings);
     }
 
-    private static bool IsCompatible(JsonNode node, string typeSpec)
+    private static bool IsCompatible(RsdSchema schema, JsonNode node, string typeSpec)
     {
         if (typeSpec.Trim() == "Json")
             return true;
@@ -76,6 +77,7 @@ public static class RsdAssetBinder
         return t switch
         {
             JsonEditorType.String => node is JsonValue v && v.TryGetValue<string>(out _),
+            JsonEditorType.Enum => IsEnumStringCompatible(schema, node, typeSpec),
             JsonEditorType.Bool => node is JsonValue v && v.TryGetValue<bool>(out _),
             JsonEditorType.Int => IsNumber(node, allowFloat: false, allowUnsigned: false),
             JsonEditorType.UInt => IsNumber(node, allowFloat: false, allowUnsigned: true),
@@ -86,6 +88,30 @@ public static class RsdAssetBinder
             JsonEditorType.Object => node is JsonObject,
             _ => true
         };
+    }
+
+    private static IReadOnlyList<RsdEnumValue>? TryGetEnumValues(RsdSchema schema, string typeSpec)
+    {
+        var s = typeSpec.Trim();
+        if (!s.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var lt = s.IndexOf('<');
+        var gt = s.LastIndexOf('>');
+        if (lt < 0 || gt <= lt) return null;
+        var enumName = s.Substring(lt + 1, gt - lt - 1).Trim();
+        return schema.Enums.TryGetValue(enumName, out var def) ? def.Values : null;
+    }
+
+    private static bool IsEnumStringCompatible(RsdSchema schema, JsonNode node, string typeSpec)
+    {
+        if (node is not JsonValue v || !v.TryGetValue<string>(out var s)) return false;
+        s ??= string.Empty;
+        var values = TryGetEnumValues(schema, typeSpec);
+        if (values is null || values.Count == 0) return true; // schema missing values: don't fail hard
+        return values.Any(ev =>
+            string.Equals(ev.Name, s, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrWhiteSpace(ev.Alias) && string.Equals(ev.Alias, s, StringComparison.OrdinalIgnoreCase)) ||
+            (!string.IsNullOrWhiteSpace(ev.Display) && string.Equals(ev.Display, s, StringComparison.OrdinalIgnoreCase)));
     }
 
     private static bool IsNumber(JsonNode node, bool allowFloat, bool allowUnsigned)
@@ -104,7 +130,7 @@ public static class RsdAssetBinder
         return arr.All(n => n is JsonValue v && v.TryGetValue<double>(out _));
     }
 
-    private static JsonNode DefaultNodeForType(string typeSpec)
+    private static JsonNode DefaultNodeForType(RsdSchema schema, string typeSpec)
     {
         if (typeSpec.Trim() == "Json")
             return new JsonObject();
@@ -115,6 +141,7 @@ public static class RsdAssetBinder
         return t switch
         {
             JsonEditorType.String => JsonValue.Create(string.Empty)!,
+            JsonEditorType.Enum => DefaultEnumValue(schema, typeSpec),
             JsonEditorType.Bool => JsonValue.Create(false)!,
             JsonEditorType.Int => JsonValue.Create(0)!,
             JsonEditorType.UInt => JsonValue.Create(0)!,
@@ -127,6 +154,13 @@ public static class RsdAssetBinder
         };
     }
 
+    private static JsonNode DefaultEnumValue(RsdSchema schema, string typeSpec)
+    {
+        var values = TryGetEnumValues(schema, typeSpec);
+        var first = values?.FirstOrDefault()?.Name ?? string.Empty;
+        return JsonValue.Create(first)!;
+    }
+
     private static JsonEditorType TypeSpecToEditorType(string typeSpec)
     {
         var s = typeSpec.Trim();
@@ -136,6 +170,7 @@ public static class RsdAssetBinder
         if (s.StartsWith("StaticArray", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Array;
         if (s.StartsWith("Set", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Array;
         if (s.StartsWith("Map", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
+        if (s.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Enum;
         if (s.Equals("Json", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
         if (s.Equals("Xml", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.String;
 

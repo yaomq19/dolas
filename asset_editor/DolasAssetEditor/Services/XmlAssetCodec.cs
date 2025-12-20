@@ -96,6 +96,11 @@ public static class XmlAssetCodec
             {
                 obj[fieldName] = el.Value;
             }
+            else if (t.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase))
+            {
+                // Enum value is stored as plain text in XML (e.g. "Perspective" or legacy alias like "perspective").
+                obj[fieldName] = el.Value;
+            }
             else if (t == "Bool")
             {
                 if (bool.TryParse(el.Value, out var b))
@@ -225,6 +230,16 @@ public static class XmlAssetCodec
                     }
                 }
                 root.Add(container);
+                continue;
+            }
+
+            if (t.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase))
+            {
+                // Enum is stored as text. We keep whatever string is in JSON.
+                if (node is JsonValue enumValue && enumValue.TryGetValue<string>(out var sEnum))
+                    root.Add(new XElement(fieldName, sEnum));
+                else
+                    root.Add(new XElement(fieldName, node.ToJsonString()));
                 continue;
             }
 

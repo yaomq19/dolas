@@ -96,13 +96,13 @@ namespace Dolas
 
 		RenderCamera* render_camera = nullptr;
 
-		if (camera_rsd->camera_perspective_type == "perspective")
+        if (camera_rsd->camera_perspective_type == CameraPerspectiveType::Perspective)
 		{
             RenderCameraPerspective* perspective_render_camera = DOLAS_NEW(RenderCameraPerspective);
             perspective_render_camera->BuildFromRsd(camera_rsd);
             render_camera = perspective_render_camera;
 		}
-		else if (camera_rsd->camera_perspective_type == "orthographic")
+		else if (camera_rsd->camera_perspective_type == CameraPerspectiveType::Orthographic)
 		{
 			RenderCameraOrthographic* ortho_render_camera = DOLAS_NEW(RenderCameraOrthographic);
 			ortho_render_camera->BuildFromRsd(camera_rsd);
@@ -110,7 +110,7 @@ namespace Dolas
 		}
 		else
 		{
-			LOG_ERROR("Unknown camera perspective type: {0}", camera_rsd->camera_perspective_type);
+			LOG_ERROR("Unknown camera perspective type (numeric): {0}", (UInt)camera_rsd->camera_perspective_type);
 			return false;
 		}
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);

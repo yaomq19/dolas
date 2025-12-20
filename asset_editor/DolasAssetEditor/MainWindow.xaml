@@ -145,6 +145,14 @@
                                                                  Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Float}" />
 
+                                                        <!-- Enum -->
+                                                        <ComboBox MinWidth="200"
+                                                                  ItemsSource="{Binding EnumValues}"
+                                                                  DisplayMemberPath="Display"
+                                                                  SelectedValuePath="Name"
+                                                                  SelectedValue="{Binding EnumSelectedName, UpdateSourceTrigger=PropertyChanged}"
+                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Enum}" />
+
                                                         <!-- Bool -->
                                                         <CheckBox Content="true/false"
                                                                   IsChecked="{Binding BoolValue}"

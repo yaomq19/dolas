@@ -5,6 +5,7 @@ public enum JsonEditorType
     Object,
     Array,
     String,
+    Enum,
     Bool,
     Int,
     UInt,

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Dolas.AssetEditor.Services;
 
 namespace Dolas.AssetEditor.ViewModels.Json;
 
@@ -18,6 +19,8 @@ public sealed class JsonNodeViewModel : ViewModelBase
 
     private string _scalarText = string.Empty;
     private bool _boolValue;
+    private string _enumSelectedName = string.Empty;
+    private bool _suppressEnumWrite;
     private string _xText = "0";
     private string _yText = "0";
     private string _zText = "0";
@@ -64,11 +67,12 @@ public sealed class JsonNodeViewModel : ViewModelBase
         Action? markDirty,
         JsonObject parentObject,
         string objectKey,
-        string typeSpec)
+        string typeSpec,
+        System.Collections.Generic.IReadOnlyList<RsdEnumValue>? enumValues = null)
     {
         // 对标量/向量：强制 EditorType；对容器：仍按实际 node 展开
         var vm = new JsonNodeViewModel(fieldName, node, markDirty, parentObject: parentObject, objectKey: objectKey);
-        vm.ForceTypeFromSpec(typeSpec);
+        vm.ForceTypeFromSpec(typeSpec, enumValues);
         return vm;
     }
 
@@ -94,6 +98,20 @@ public sealed class JsonNodeViewModel : ViewModelBase
         set
         {
             if (!SetField(ref _boolValue, value)) return;
+            if (TryReplaceInParent(JsonValue.Create(value))) _markDirty?.Invoke();
+        }
+    }
+
+    public ObservableCollection<RsdEnumValue> EnumValues { get; } = new();
+
+    public string EnumSelectedName
+    {
+        get => _enumSelectedName;
+        set
+        {
+            if (!SetField(ref _enumSelectedName, value)) return;
+            if (_suppressEnumWrite) return;
+            if (EditorType != JsonEditorType.Enum) return;
             if (TryReplaceInParent(JsonValue.Create(value))) _markDirty?.Invoke();
         }
     }
@@ -149,6 +167,7 @@ public sealed class JsonNodeViewModel : ViewModelBase
                 JsonEditorType.Vector3 => "Vector3",
                 JsonEditorType.Vector4 => "Vector4",
                 JsonEditorType.String => "String",
+                JsonEditorType.Enum => "Enum",
                 JsonEditorType.Bool => "Bool",
                 JsonEditorType.Int => "Int",
                 JsonEditorType.UInt => "UInt",
@@ -159,10 +178,45 @@ public sealed class JsonNodeViewModel : ViewModelBase
         }
     }
 
-    private void ForceTypeFromSpec(string typeSpec)
+    private void ForceTypeFromSpec(string typeSpec, System.Collections.Generic.IReadOnlyList<RsdEnumValue>? enumValues = null)
     {
         // 只对可编辑的基础类型做强制（按你的 rsd 约定）
         var spec = typeSpec.Trim();
+        if (spec.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase))
+        {
+            EditorType = JsonEditorType.Enum;
+            OnPropertyChanged(nameof(EditorType));
+            OnPropertyChanged(nameof(Summary));
+
+            EnumValues.Clear();
+            if (enumValues is not null)
+            {
+                foreach (var ev in enumValues)
+                    EnumValues.Add(ev);
+            }
+
+            // current text (if any)
+            var cur = string.Empty;
+            if (_node is JsonValue jv && jv.TryGetValue<string>(out var s))
+                cur = s ?? string.Empty;
+
+            string canonical = cur;
+            var match = EnumValues.FirstOrDefault(ev =>
+                string.Equals(ev.Name, cur, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(ev.Alias) && string.Equals(ev.Alias, cur, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(ev.Display) && string.Equals(ev.Display, cur, StringComparison.OrdinalIgnoreCase)));
+
+            if (match is not null)
+                canonical = match.Name;
+            else if (EnumValues.Count > 0)
+                canonical = EnumValues[0].Name;
+
+            _suppressEnumWrite = true;
+            EnumSelectedName = canonical;
+            _suppressEnumWrite = false;
+            return;
+        }
+
         var t = spec switch
         {
             "String" => JsonEditorType.String,

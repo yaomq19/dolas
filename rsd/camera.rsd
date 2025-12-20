@@ -1,12 +1,22 @@
-<rsd class_name="CameraRSD" file_suffix=".camera">
-  <field name="camera_perspective_type" type="String" />
-  <field name="position" type="Vector3" />
-  <field name="forward" type="Vector3" />
-  <field name="up" type="Vector3" />
-  <field name="near_plane" type="Float" />
-  <field name="far_plane" type="Float" />
-  <field name="fov" type="Float" />
-  <field name="aspect_ratio" type="Float" />
-  <field name="window_width" type="Float" />
-  <field name="window_height" type="Float" />
-</rsd>
+<rsd_file>
+  <!-- Enum definition: used by fields with type="CameraPerspectiveType" -->
+  <!-- Use <value> instead of <item> (more standard English). -->
+  <enum class_name="CameraPerspectiveType" underlying="UInt">
+    <!-- alias: also accept legacy values in existing assets (case-insensitive) -->
+    <value name="Perspective" display="透视" alias="perspective" />
+    <value name="Orthographic" display="正交" alias="orthographic" />
+  </enum>
+
+  <rsd class_name="CameraRSD" file_suffix=".camera">
+    <field name="camera_perspective_type" type="CameraPerspectiveType" />
+    <field name="position" type="Vector3" />
+    <field name="forward" type="Vector3" />
+    <field name="up" type="Vector3" />
+    <field name="near_plane" type="Float" />
+    <field name="far_plane" type="Float" />
+    <field name="fov" type="Float" />
+    <field name="aspect_ratio" type="Float" />
+    <field name="window_width" type="Float" />
+    <field name="window_height" type="Float" />
+  </rsd>
+</rsd_file>

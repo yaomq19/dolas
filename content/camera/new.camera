@@ -1,6 +1,6 @@
 <asset>
-  <camera_perspective_type></camera_perspective_type>
-  <position x="0" y="0" z="0" />
+  <camera_perspective_type>Orthographic</camera_perspective_type>
+  <position x="163" y="0" z="0" />
   <forward x="0" y="0" z="0" />
   <up x="0" y="0" z="0" />
   <near_plane>0</near_plane>

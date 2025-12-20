@@ -58,18 +58,68 @@ public sealed class RsdSchemaRegistry
     {
         var doc = XDocument.Load(rsdFile, LoadOptions.PreserveWhitespace);
         var root = doc.Root ?? throw new InvalidOperationException($"RSD XML 没有根节点：{rsdFile}");
-        if (!string.Equals(root.Name.LocalName, "rsd", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"RSD 根节点必须是 <rsd>：{rsdFile}");
+        XElement rsdRoot;
 
-        var className = root.Attribute("class_name")?.Value?.Trim();
-        var fileSuffix = root.Attribute("file_suffix")?.Value?.Trim();
+        // Supported formats:
+        // - legacy:   <rsd class_name="X" file_suffix=".x">...</rsd>
+        // - extended: <rsd_file><enum .../><rsd .../></rsd_file>
+        var enums = new Dictionary<string, RsdEnumDef>(StringComparer.Ordinal);
+        if (string.Equals(root.Name.LocalName, "rsd", StringComparison.OrdinalIgnoreCase))
+        {
+            rsdRoot = root;
+        }
+        else if (string.Equals(root.Name.LocalName, "rsd_file", StringComparison.OrdinalIgnoreCase))
+        {
+            // Load enums first
+            foreach (var e in root.Elements("enum"))
+            {
+                var enumName = e.Attribute("class_name")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(enumName))
+                    throw new InvalidOperationException($"RSD <enum> 缺少 class_name：{rsdFile}");
+
+                var values = new List<RsdEnumValue>();
+                foreach (var v in e.Elements("value"))
+                {
+                    var name = v.Attribute("name")?.Value?.Trim();
+                    if (string.IsNullOrWhiteSpace(name))
+                        throw new InvalidOperationException($"RSD <enum>.<value> 缺少 name：{rsdFile}");
+
+                    var display = v.Attribute("display")?.Value?.Trim() ?? string.Empty;
+                    var alias = v.Attribute("alias")?.Value?.Trim() ?? string.Empty;
+                    values.Add(new RsdEnumValue
+                    {
+                        Name = name,
+                        Display = string.IsNullOrWhiteSpace(display) ? name : display,
+                        Alias = alias
+                    });
+                }
+
+                if (values.Count == 0)
+                    throw new InvalidOperationException($"RSD <enum> 没有任何 <value>：{rsdFile}");
+
+                enums[enumName] = new RsdEnumDef
+                {
+                    Name = enumName,
+                    Values = values
+                };
+            }
+
+            rsdRoot = root.Element("rsd") ?? throw new InvalidOperationException($"RSD <rsd_file> 缺少 <rsd>：{rsdFile}");
+        }
+        else
+        {
+            throw new InvalidOperationException($"RSD 根节点必须是 <rsd> 或 <rsd_file>：{rsdFile}");
+        }
+
+        var className = rsdRoot.Attribute("class_name")?.Value?.Trim();
+        var fileSuffix = rsdRoot.Attribute("file_suffix")?.Value?.Trim();
         if (string.IsNullOrWhiteSpace(className))
             throw new InvalidOperationException($"RSD 缺少必需属性 class_name：{rsdFile}");
         if (string.IsNullOrWhiteSpace(fileSuffix))
             throw new InvalidOperationException($"RSD 缺少必需属性 file_suffix：{rsdFile}");
 
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var f in root.Elements("field"))
+        foreach (var f in rsdRoot.Elements("field"))
         {
             var name = f.Attribute("name")?.Value?.Trim();
             var type = f.Attribute("type")?.Value?.Trim();
@@ -113,6 +163,13 @@ public sealed class RsdSchemaRegistry
                 continue;
             }
 
+            // Enum: if type refers to a local enum, normalize to "Enum<EnumName>" so UI can render it as a dropdown.
+            if (enums.ContainsKey(t))
+            {
+                fields[name] = $"Enum<{t}>";
+                continue;
+            }
+
             fields[name] = type;
         }
 
@@ -120,7 +177,8 @@ public sealed class RsdSchemaRegistry
         {
             ClassName = className.Trim(),
             FileSuffix = fileSuffix.Trim(),
-            Fields = fields
+            Fields = fields,
+            Enums = enums
         };
     }
 }
