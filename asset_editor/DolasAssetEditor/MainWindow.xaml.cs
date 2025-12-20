@@ -12,6 +12,20 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+    private void NewAssetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn)
+            return;
+
+        // 左键点击按钮时弹出下拉菜单（ContextMenu）
+        if (btn.ContextMenu is null)
+            return;
+
+        btn.ContextMenu.PlacementTarget = btn;
+        btn.ContextMenu.IsOpen = true;
+        e.Handled = true;
+    }
+
     private void AssetTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
         if (DataContext is not MainWindowViewModel vm)

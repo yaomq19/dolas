@@ -7,7 +7,8 @@
         xmlns:conv="clr-namespace:Dolas.AssetEditor.Converters"
         mc:Ignorable="d"
         Title="Dolas 资产编辑器"
-        Width="1200" Height="720"
+        Width="1600" Height="900"
+        MinWidth="1200"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
@@ -75,6 +76,24 @@
                         <TextBlock VerticalAlignment="Center" Text="{Binding SelectedAssetName}" FontWeight="SemiBold" />
                         <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#666" Text="{Binding SelectedAssetPath}" />
                         <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
+                            <Button x:Name="NewAssetButton"
+                                    Content="New Asset"
+                                    Margin="0,0,10,0"
+                                    Click="NewAssetButton_Click"
+                                    IsEnabled="{Binding CanCreateNewAsset}">
+                                <Button.ContextMenu>
+                                    <ContextMenu ItemsSource="{Binding AvailableSchemas}">
+                                        <ContextMenu.ItemContainerStyle>
+                                            <Style TargetType="MenuItem">
+                                                <Setter Property="Header" Value="{Binding ClassName}" />
+                                                <Setter Property="ToolTip" Value="{Binding FileSuffix}" />
+                                                <Setter Property="Command" Value="{Binding DataContext.NewAssetFromSchemaCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <Setter Property="CommandParameter" Value="{Binding}" />
+                                            </Style>
+                                        </ContextMenu.ItemContainerStyle>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                             <Button Content="重载" Command="{Binding ReloadCommand}" Margin="0,0,6,0" />
                             <Button Content="保存" Command="{Binding SaveCommand}" />
                         </StackPanel>

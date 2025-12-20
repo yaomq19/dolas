@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json.Nodes;
 using System.Windows;
+using Microsoft.Win32;
 using System.Windows.Input;
 using Dolas.AssetEditor.Commands;
 using Dolas.AssetEditor.Models;
@@ -53,8 +54,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         AboutCommand = new RelayCommand(ShowAbout);
         SaveCommand = new RelayCommand(SaveSelectedAsset, () => CanSave);
         ReloadCommand = new RelayCommand(ReloadSelectedAsset, () => CanReload);
+        NewAssetCommand = new RelayCommand(CreateNewAsset, () => CanCreateNewAsset);
+        NewAssetFromSchemaCommand = new RelayCommand<RsdSchema>(CreateNewAssetFromSchema, _ => CanCreateNewAsset);
 
         AssetRoots = new ObservableCollection<AssetItem>(_assetDatabase.GetRootItems());
+        AvailableSchemas = new ObservableCollection<RsdSchema>(_rsdRegistry?.AllSchemas ?? Array.Empty<RsdSchema>());
         Logs = new ObservableCollection<string>
         {
             "DolasAssetEditor 启动完成。",
@@ -69,6 +73,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<AssetItem> AssetRoots { get; }
 
+    public ObservableCollection<RsdSchema> AvailableSchemas { get; }
+
     public ObservableCollection<string> Logs { get; }
 
     public ICommand OpenProjectCommand { get; }
@@ -76,6 +82,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand AboutCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand ReloadCommand { get; }
+    public ICommand NewAssetCommand { get; }
+    public ICommand NewAssetFromSchemaCommand { get; }
 
     public string StatusText
     {
@@ -124,6 +132,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public bool CanReload => HasSelectedJsonAsset && !string.IsNullOrWhiteSpace(SelectedAssetPath);
 
+    public bool CanCreateNewAsset => _repoRoot is not null && _rsdRegistry is not null && AvailableSchemas.Count > 0;
+
     private void OpenProject()
     {
         // 基础框架：后续这里可以打开引擎工程文件（或选择 content 根目录）
@@ -134,6 +144,15 @@ public sealed class MainWindowViewModel : ViewModelBase
     public void SelectAsset(AssetItem? item)
     {
         if (item is null)
+            return;
+
+        // 重复选择同一个节点时，不弹提示也不重新加载
+        if (!string.IsNullOrWhiteSpace(SelectedAssetPath) &&
+            string.Equals(SelectedAssetPath, item.FullPath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        // 切换资产前：如果当前有未保存修改，提示是否保存
+        if (!PromptSaveIfDirty())
             return;
 
         SelectedAssetName = item.Name;
@@ -151,6 +170,31 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         LoadAssetByRsd(item.FullPath);
+    }
+
+    private bool PromptSaveIfDirty()
+    {
+        if (!IsDirty || !CanReload) return true;
+
+        var result = MessageBox.Show(
+            "当前资产有未保存的改动，是否先保存？\n\n- 选择“是”：保存后继续\n- 选择“否”：放弃改动并继续\n- 选择“取消”：中止本次操作",
+            "未保存的改动",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Cancel)
+            return false;
+
+        if (result == MessageBoxResult.Yes)
+        {
+            SaveSelectedAsset();
+            // 如果保存失败，IsDirty 仍为 true；此时中止后续操作更安全
+            return !IsDirty;
+        }
+
+        // No => discard
+        IsDirty = false;
+        return true;
     }
 
     private void LoadAssetByRsd(string filePath)
@@ -244,6 +288,69 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         var content = RepoLocator.TryFindContentRoot();
         return content is null ? new AssetDatabaseStub() : new AssetDatabaseFileSystem(content);
+    }
+
+    private void RefreshAssetTree()
+    {
+        AssetRoots.Clear();
+        foreach (var r in _assetDatabase.GetRootItems())
+            AssetRoots.Add(r);
+    }
+
+    private void CreateNewAsset()
+    {
+        // UI 上点击 "New Asset" 时，仅负责弹出下拉；真正创建走 CreateNewAssetFromSchema
+        StatusText = "请选择一种 RSD 进行创建...";
+    }
+
+    private void CreateNewAssetFromSchema(RsdSchema? schema)
+    {
+        if (schema is null)
+            return;
+
+        if (!PromptSaveIfDirty())
+            return;
+
+        try
+        {
+            var contentRoot = RepoLocator.TryFindContentRoot();
+            var dlg = new SaveFileDialog
+            {
+                Title = "新建资产 - 选择保存路径与文件名",
+                AddExtension = true,
+                DefaultExt = schema.FileSuffix,
+                Filter = $"{schema.FileSuffix} 资产|*{schema.FileSuffix}|所有文件|*.*",
+                InitialDirectory = contentRoot ?? _repoRoot ?? Environment.CurrentDirectory,
+                FileName = $"new{schema.FileSuffix}"
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            var filePath = dlg.FileName;
+            var dir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrWhiteSpace(dir))
+                Directory.CreateDirectory(dir);
+
+            // 用 schema 默认值生成一个可编辑对象，并写入磁盘（XML）
+            var defaultObj = RsdAssetBinder.CreateDefaultAssetObject(schema);
+            XmlAssetCodec.SaveAssetFromJsonObject(filePath, schema, defaultObj);
+
+            // 刷新左侧树并打开新资产
+            RefreshAssetTree();
+
+            SelectedAssetName = Path.GetFileName(filePath) ?? filePath;
+            SelectedAssetPath = filePath;
+            LoadAssetByRsd(filePath);
+            IsDirty = false;
+            StatusText = $"已创建并打开（{schema.ClassName}）";
+            Logs.Add($"新建资产：{filePath} ({schema.ClassName})");
+        }
+        catch (Exception ex)
+        {
+            StatusText = "新建失败";
+            Logs.Add($"新建失败：{schema.ClassName} -> {ex.Message}");
+        }
     }
 }
 

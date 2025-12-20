@@ -75,6 +75,44 @@ public sealed class RsdSchemaRegistry
             var type = f.Attribute("type")?.Value?.Trim();
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(type))
                 throw new InvalidOperationException($"RSD <field> 缺少 name/type：{rsdFile}");
+
+            // 兼容新版 XML 语法：
+            //   <field name="xxx" type="Map" key="String" value="Vector4" />
+            //   <field name="xxx" type="DynamicArray" element="Xml" />
+            // 并统一转换为旧式 typeSpec 字符串，供现有编辑器/codec 继续工作：
+            //   "Map<String, Vector4>"
+            //   "DynamicArray<Xml>"
+            var t = type.Trim();
+            if (t.Equals("Map", StringComparison.OrdinalIgnoreCase))
+            {
+                var key = f.Attribute("key")?.Value?.Trim();
+                var value = f.Attribute("value")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                    throw new InvalidOperationException($"RSD <field> type=Map 缺少 key/value：{rsdFile}");
+                fields[name] = $"Map<{key}, {value}>";
+                continue;
+            }
+
+            if (t.Equals("DynamicArray", StringComparison.OrdinalIgnoreCase))
+            {
+                var element = f.Attribute("element")?.Value?.Trim();
+                fields[name] = string.IsNullOrWhiteSpace(element) ? "DynamicArray" : $"DynamicArray<{element}>";
+                continue;
+            }
+
+            if (t.Equals("StaticArray", StringComparison.OrdinalIgnoreCase))
+            {
+                // 目前编辑器只需要知道“这是数组”，细节留给后续扩展。
+                // 尝试拼回旧式形式：StaticArray<T,N>（如果存在 element/count 属性）
+                var element = f.Attribute("element")?.Value?.Trim();
+                var count = f.Attribute("count")?.Value?.Trim() ?? f.Attribute("n")?.Value?.Trim();
+                if (!string.IsNullOrWhiteSpace(element) && !string.IsNullOrWhiteSpace(count))
+                    fields[name] = $"StaticArray<{element},{count}>";
+                else
+                    fields[name] = "StaticArray";
+                continue;
+            }
+
             fields[name] = type;
         }
 

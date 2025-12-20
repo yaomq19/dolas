@@ -9,6 +9,16 @@ namespace Dolas.AssetEditor.Services;
 
 public static class RsdAssetBinder
 {
+    public static JsonObject CreateDefaultAssetObject(RsdSchema schema)
+    {
+        var obj = new JsonObject();
+        foreach (var (fieldName, typeSpec) in schema.Fields)
+        {
+            obj[fieldName] = DefaultNodeForType(typeSpec);
+        }
+        return obj;
+    }
+
     public static (JsonObject root, JsonNodeViewModel viewModel, bool mutated, List<string> warnings) BindToSchema(
         JsonNode rootNode,
         RsdSchema schema,

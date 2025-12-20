@@ -1,0 +1,12 @@
+<asset>
+  <camera_perspective_type></camera_perspective_type>
+  <position x="0" y="0" z="0" />
+  <forward x="0" y="0" z="0" />
+  <up x="0" y="0" z="0" />
+  <near_plane>0</near_plane>
+  <far_plane>0</far_plane>
+  <fov>0</fov>
+  <aspect_ratio>0</aspect_ratio>
+  <window_width>0</window_width>
+  <window_height>0</window_height>
+</asset>
