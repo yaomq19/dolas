@@ -5,9 +5,6 @@
 #include <unordered_map>
 #include <vector>
 #include "base/dolas_base.h"
-#include "nlohmann/json.hpp"
-using json = nlohmann::json;
-#include "tinyxml2.h"
 
 #include "core/dolas_math.h"
 #include "rsd/camera.h"
@@ -61,15 +58,6 @@ namespace Dolas
         EntityRSD* GetEntityRSDAsset(const std::string& file_name);
         MaterialRSD* GetMaterialRSDAsset(const std::string& file_name);
     protected:
-        // 不对外暴露 XML：仅内部使用
-        Bool LoadXmlFile(const std::string& file_path, tinyxml2::XMLDocument& xml_doc);
-
-        // XML 版本（RSD 系统）
-        CameraRSD* parseXmlToCameraRSDAsset(const tinyxml2::XMLDocument& doc);
-        SceneRSD* parseXmlToSceneRSDAsset(const tinyxml2::XMLDocument& doc);
-        EntityRSD* parseXmlToEntityRSDAsset(const tinyxml2::XMLDocument& doc);
-        MaterialRSD* parseXmlToMaterialRSDAsset(const tinyxml2::XMLDocument& doc);
-
         std::unordered_map<std::string, CameraRSD> m_camera_rsd_asset_map;
         std::unordered_map<std::string, SceneRSD> m_scene_rsd_asset_map;
         std::unordered_map<std::string, EntityRSD> m_entity_rsd_asset_map;

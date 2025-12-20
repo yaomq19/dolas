@@ -65,3 +65,8 @@ add_subdirectory(asset_editor)
 
 # 添加 precompile（RSD -> C++ 头文件生成）
 add_subdirectory(precompile)
+
+# 让 Dolas 可执行目标依赖 Precompile（确保先生成 source/rsd/*.h）
+if(TARGET Dolas AND TARGET Precompile)
+    add_dependencies(Dolas Precompile)
+endif()

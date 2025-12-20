@@ -7,21 +7,27 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
+#include "rsd/rsd_field.h"
 
 namespace Dolas {
 
 struct SceneRSD
 {
     static constexpr const char* kFileSuffix = ".scene";
-    // XML 片段：每个 <entity> / <model> 节点的原始 XML 字符串
     std::vector<std::string> entities;
     std::vector<std::string> models;
+
+    static constexpr std::size_t kFieldCount = 2;
+    static const RsdFieldDesc kFields[kFieldCount];
+};
+
+inline const RsdFieldDesc SceneRSD::kFields[SceneRSD::kFieldCount] = {
+        {"entities", RsdFieldType::DynArrayXml, offsetof(SceneRSD, entities)},
+        {"models", RsdFieldType::DynArrayXml, offsetof(SceneRSD, models)},
 };
 
 } // namespace Dolas
-
-
-

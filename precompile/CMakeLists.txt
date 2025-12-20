@@ -26,10 +26,10 @@ foreach(rsd_file IN LISTS DOLAS_RSD_FILES)
     list(APPEND DOLAS_RSD_GENERATED_HEADERS "${out_h}")
 endforeach()
 
-# “precompile 工程”：构建它就会生成所有头文件
-add_custom_target(precompile DEPENDS ${DOLAS_RSD_GENERATED_HEADERS})
+# “Precompile 工程”：构建它就会生成所有头文件
+add_custom_target(Precompile DEPENDS ${DOLAS_RSD_GENERATED_HEADERS})
 
 # VS 解决方案里分组显示
-set_property(TARGET precompile PROPERTY FOLDER "precompile")
+set_property(TARGET Precompile PROPERTY FOLDER "precompile")
 
 
