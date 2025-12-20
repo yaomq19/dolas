@@ -263,6 +263,7 @@ string(APPEND _header "#include <string>\n")
 string(APPEND _header "#include <vector>\n")
 string(APPEND _header "#include <map>\n")
 string(APPEND _header "#include <set>\n")
+string(APPEND _header "#include <array>\n")
 string(APPEND _header "#include <cstddef>\n\n")
 
 if(_need_nlohmann_json)
@@ -271,16 +272,15 @@ endif()
 
 string(APPEND _header "#include \"base/dolas_base.h\"\n")
 string(APPEND _header "#include \"core/dolas_math.h\"\n")
-string(APPEND _header "#include \"rsd/rsd_field.h\"\n\n")
+string(APPEND _header "#include \"common/rsd_field.h\"\n\n")
 
 string(APPEND _header "namespace Dolas {\n\n")
 string(APPEND _header "struct ${_class_name}\n{\n")
 string(APPEND _header "    static constexpr const char* kFileSuffix = \"${_file_suffix}\";\n")
 string(APPEND _header "${_field_lines}")
-string(APPEND _header "\n    static constexpr std::size_t kFieldCount = ${_field_count};\n")
-string(APPEND _header "    static const RsdFieldDesc kFields[kFieldCount];\n")
+string(APPEND _header "\n    static const std::array<RsdFieldDesc, ${_field_count}> kFields;\n")
 string(APPEND _header "};\n\n")
-string(APPEND _header "inline const RsdFieldDesc ${_class_name}::kFields[${_class_name}::kFieldCount] = {\n${_field_desc_lines}};\n\n")
+string(APPEND _header "inline const std::array<RsdFieldDesc, ${_field_count}> ${_class_name}::kFields = {{\n${_field_desc_lines}}};\n\n")
 string(APPEND _header "} // namespace Dolas\n")
 
 # 仅当内容变化时才写文件，避免无意义的全量重编译

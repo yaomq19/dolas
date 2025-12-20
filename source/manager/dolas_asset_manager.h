@@ -30,36 +30,7 @@ namespace Dolas
         void Clear() override { map.clear(); }
     };
 
-    struct CameraAsset
-    {
-        std::string perspective_type;
-        Vector3 position;
-        Vector3 forward;
-        Vector3 up;
-        Float near_plane;
-        Float far_plane;
-        // only for perspective
-        Float fov;
-        Float aspect_ratio; // may be overwrite by client real width / height
-        // only for ortho
-        Float window_width;
-        Float window_height;
-    };
-
-	struct SceneEntity
-	{
-		std::string name;
-		std::string entity_file;
-		Vector3 position;
-        Quaternion rotation;
-		Vector3 scale;
-	};
-
-    struct SceneAsset
-    {
-		std::vector<SceneEntity> entities;
-        std::vector<std::string> model_names;
-    };
+    // 旧的 CameraAsset / SceneAsset 已废弃：渲染与管理全部改为直接依赖 CameraRSD / SceneRSD
 
     class AssetManager
     {
@@ -101,20 +72,29 @@ namespace Dolas
     template<class TRsd>
     TRsd* AssetManager::GetRsdAsset(const std::string& file_name)
     {
-        // 允许传入绝对路径；否则按 content 相对路径拼接
+		// Accepts an absolute path; otherwise, concatenates with the content's relative path.
+        // If an absolute path is provided, use it directly; otherwise, resolve it relative to the content directory.
         const std::string file_path = IsAbsolutePathLike(file_name) ? file_name : (PathUtils::GetContentDir() + file_name);
-
-        auto& cache = GetTypedCache<TRsd>().map;
+        std::unordered_map<std::string, TRsd>& cache = GetTypedCache<TRsd>().map;
         auto it = cache.find(file_path);
+
         if (it != cache.end())
-            return &it->second;
+        {
+            // Cache hit
+			return &it->second;
+        }
+        else
+        {
+            // Cache miss
+			TRsd value{};
+            if (!LoadAndParseRsdFile(file_path, &value, TRsd::kFields.data(), TRsd::kFields.size()))
+            {
+                return nullptr;
+            }
 
-        TRsd value{};
-        if (!LoadAndParseRsdFile(file_path, &value, TRsd::kFields, TRsd::kFieldCount))
-            return nullptr;
-
-        auto [ins, _] = cache.emplace(file_path, std::move(value));
-        return &ins->second;
+			auto [ins, _] = cache.emplace(file_path, std::move(value));
+			return &ins->second;
+        }
     }
 }
 #endif // DOLAS_ASSET_MANAGER_H

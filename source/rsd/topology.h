@@ -7,11 +7,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 #include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
-#include "rsd/rsd_field.h"
+#include "common/rsd_field.h"
 
 namespace Dolas {
 
@@ -19,11 +20,10 @@ struct TopologyRSD
 {
     static constexpr const char* kFileSuffix = ".topology";
 
-    static constexpr std::size_t kFieldCount = 0;
-    static const RsdFieldDesc kFields[kFieldCount];
+    static const std::array<RsdFieldDesc, 0> kFields;
 };
 
-inline const RsdFieldDesc TopologyRSD::kFields[TopologyRSD::kFieldCount] = {
-};
+inline const std::array<RsdFieldDesc, 0> TopologyRSD::kFields = {{
+}};
 
 } // namespace Dolas

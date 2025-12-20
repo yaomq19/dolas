@@ -7,11 +7,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 #include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
-#include "rsd/rsd_field.h"
+#include "common/rsd_field.h"
 
 namespace Dolas {
 
@@ -27,11 +28,10 @@ struct MeshRSD
     std::string topology;
     std::string material;
 
-    static constexpr std::size_t kFieldCount = 8;
-    static const RsdFieldDesc kFields[kFieldCount];
+    static const std::array<RsdFieldDesc, 8> kFields;
 };
 
-inline const RsdFieldDesc MeshRSD::kFields[MeshRSD::kFieldCount] = {
+inline const std::array<RsdFieldDesc, 8> MeshRSD::kFields = {{
         {"position", RsdFieldType::DynArrayFloat, offsetof(MeshRSD, position)},
         {"normal", RsdFieldType::DynArrayFloat, offsetof(MeshRSD, normal)},
         {"uv0", RsdFieldType::DynArrayFloat, offsetof(MeshRSD, uv0)},
@@ -40,6 +40,6 @@ inline const RsdFieldDesc MeshRSD::kFields[MeshRSD::kFieldCount] = {
         {"indices", RsdFieldType::DynArrayUInt, offsetof(MeshRSD, indices)},
         {"topology", RsdFieldType::Unsupported, offsetof(MeshRSD, topology)},
         {"material", RsdFieldType::Unsupported, offsetof(MeshRSD, material)},
-};
+}};
 
 } // namespace Dolas

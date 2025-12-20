@@ -7,11 +7,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 #include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
-#include "rsd/rsd_field.h"
+#include "common/rsd_field.h"
 
 namespace Dolas {
 
@@ -29,11 +30,10 @@ struct CameraRSD
     Float window_width;
     Float window_height;
 
-    static constexpr std::size_t kFieldCount = 10;
-    static const RsdFieldDesc kFields[kFieldCount];
+    static const std::array<RsdFieldDesc, 10> kFields;
 };
 
-inline const RsdFieldDesc CameraRSD::kFields[CameraRSD::kFieldCount] = {
+inline const std::array<RsdFieldDesc, 10> CameraRSD::kFields = {{
         {"camera_perspective_type", RsdFieldType::String, offsetof(CameraRSD, camera_perspective_type)},
         {"position", RsdFieldType::Vector3, offsetof(CameraRSD, position)},
         {"forward", RsdFieldType::Vector3, offsetof(CameraRSD, forward)},
@@ -44,6 +44,6 @@ inline const RsdFieldDesc CameraRSD::kFields[CameraRSD::kFieldCount] = {
         {"aspect_ratio", RsdFieldType::FloatValue, offsetof(CameraRSD, aspect_ratio)},
         {"window_width", RsdFieldType::FloatValue, offsetof(CameraRSD, window_width)},
         {"window_height", RsdFieldType::FloatValue, offsetof(CameraRSD, window_height)},
-};
+}};
 
 } // namespace Dolas

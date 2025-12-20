@@ -7,11 +7,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 #include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
-#include "rsd/rsd_field.h"
+#include "common/rsd_field.h"
 
 namespace Dolas {
 
@@ -25,17 +26,16 @@ struct MaterialRSD
     std::map<std::string, std::string> pixel_shader_texture;
     std::map<std::string, Float> parameter;
 
-    static constexpr std::size_t kFieldCount = 6;
-    static const RsdFieldDesc kFields[kFieldCount];
+    static const std::array<RsdFieldDesc, 6> kFields;
 };
 
-inline const RsdFieldDesc MaterialRSD::kFields[MaterialRSD::kFieldCount] = {
+inline const std::array<RsdFieldDesc, 6> MaterialRSD::kFields = {{
         {"vertex_shader", RsdFieldType::String, offsetof(MaterialRSD, vertex_shader)},
         {"pixel_shader", RsdFieldType::String, offsetof(MaterialRSD, pixel_shader)},
         {"vertex_shader_global_variables", RsdFieldType::MapStringVector4, offsetof(MaterialRSD, vertex_shader_global_variables)},
         {"pixel_shader_global_variables", RsdFieldType::MapStringVector4, offsetof(MaterialRSD, pixel_shader_global_variables)},
         {"pixel_shader_texture", RsdFieldType::MapStringString, offsetof(MaterialRSD, pixel_shader_texture)},
         {"parameter", RsdFieldType::MapStringFloat, offsetof(MaterialRSD, parameter)},
-};
+}};
 
 } // namespace Dolas

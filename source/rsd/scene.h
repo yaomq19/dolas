@@ -7,11 +7,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <array>
 #include <cstddef>
 
 #include "base/dolas_base.h"
 #include "core/dolas_math.h"
-#include "rsd/rsd_field.h"
+#include "common/rsd_field.h"
 
 namespace Dolas {
 
@@ -21,13 +22,12 @@ struct SceneRSD
     std::vector<std::string> entities;
     std::vector<std::string> models;
 
-    static constexpr std::size_t kFieldCount = 2;
-    static const RsdFieldDesc kFields[kFieldCount];
+    static const std::array<RsdFieldDesc, 2> kFields;
 };
 
-inline const RsdFieldDesc SceneRSD::kFields[SceneRSD::kFieldCount] = {
+inline const std::array<RsdFieldDesc, 2> SceneRSD::kFields = {{
         {"entities", RsdFieldType::DynArrayXml, offsetof(SceneRSD, entities)},
         {"models", RsdFieldType::DynArrayXml, offsetof(SceneRSD, models)},
-};
+}};
 
 } // namespace Dolas

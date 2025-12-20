@@ -40,6 +40,42 @@ namespace Dolas
         return ret == tinyxml2::XML_SUCCESS;
     }
 
+    /**
+     * Parse a single field described by RSD reflection metadata from an XML document into a C++ struct.
+     *
+     * This function is the core of the "generic RSD loader" path. Precompile generates, for each RSD
+     * struct (e.g. CameraRSD), a static table `kFields[]` where each entry describes:
+     * - the XML field name (`RsdFieldDesc::name`)
+     * - the logical field type (`RsdFieldDesc::type`, an enum RsdFieldType)
+     * - the byte offset of the field within the struct (`RsdFieldDesc::offset`, computed with offsetof)
+     *
+     * Given a base pointer to an output struct instance (outBase), we compute:
+     *     char* base = reinterpret_cast<char*>(outBase);
+     * and then write to the field location via `base + offset`.
+     *
+     * Safety / assumptions:
+     * - `outBase` must point to a fully constructed TRsd instance (not nullptr).
+     * - `f.offset` must match the memory layout of that TRsd type.
+     * - The field type in `f.type` must match the actual C++ member type at that offset
+     *   (e.g. String -> std::string, Vector3 -> Dolas::Vector3, MapStringVector4 -> std::map<std::string, Vector4>, etc.).
+     *   If these drift, behavior is undefined (reinterpret_cast into the wrong type).
+     *
+     * Parsing rules:
+     * - For scalar text nodes (String/Bool/Int/UInt/Float): we read the element text and convert.
+     * - For Vector3/Vector4: we read numeric attributes x/y/z(/w) on the element.
+     * - For DynamicArray<Xml> (DynArrayXml): we serialize each child element back into an XML fragment string.
+     * - For Map<String, Vector4>: expects `<vec4 name="..." x=".." y=".." z=".." w=".."/>` children.
+     * - For Map<String, String>: expects `<texture name="..." file="..."/>` children.
+     * - For Map<String, Float>: expects `<float name="..." value="..."/>` children.
+     *
+     * Return value:
+     * - Returns true if parsing succeeded for this field.
+     * - Returns false when a field is present but malformed in a way we treat as a hard failure
+     *   (currently mainly vector attribute parsing).
+     * - For unsupported/unknown field types we return true (no-op) to keep the loader forward-compatible.
+     *
+     * Note: Missing elements for many field kinds are treated as "keep default value" and return true.
+     */
     static bool ParseFieldInto(void* outBase, const RsdFieldDesc& f, const tinyxml2::XMLElement* root)
     {
         const tinyxml2::XMLElement* el = root ? root->FirstChildElement(f.name) : nullptr;
@@ -168,7 +204,7 @@ namespace Dolas
     static bool ParseRsdFromXml(const tinyxml2::XMLElement* root, TRsd& out)
     {
         bool ok = true;
-        for (std::size_t i = 0; i < TRsd::kFieldCount; i++)
+        for (std::size_t i = 0; i < TRsd::kFields.size(); i++)
         {
             const auto& f = TRsd::kFields[i];
             if (!ParseFieldInto(&out, f, root))
@@ -197,7 +233,9 @@ namespace Dolas
         for (std::size_t i = 0; i < fieldCount; i++)
         {
             if (!ParseFieldInto(outBase, fields[i], root))
+            {
                 ok = false;
+            }
         }
         if (!ok)
         {

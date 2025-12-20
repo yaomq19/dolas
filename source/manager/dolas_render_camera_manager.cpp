@@ -8,11 +8,9 @@
 #include <iostream>
 #include <algorithm>
 #include "manager/dolas_asset_manager.h"
-#include "nlohmann/json.hpp"
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
-using json = nlohmann::json;
 namespace Dolas
 {
     RenderCameraManager::RenderCameraManager()
@@ -96,37 +94,23 @@ namespace Dolas
         CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(PathUtils::GetCameraDir() + file_name);
         DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
 
-        // 为了最小改动，先把 RSD 数据映射回旧的 CameraAsset 结构，复用现有 BuildFromAsset。
-        CameraAsset camera_asset_tmp{};
-        camera_asset_tmp.perspective_type = camera_rsd->camera_perspective_type;
-        camera_asset_tmp.position = camera_rsd->position;
-        camera_asset_tmp.forward = camera_rsd->forward;
-        camera_asset_tmp.up = camera_rsd->up;
-        camera_asset_tmp.near_plane = camera_rsd->near_plane;
-        camera_asset_tmp.far_plane = camera_rsd->far_plane;
-        camera_asset_tmp.fov = camera_rsd->fov;
-        camera_asset_tmp.aspect_ratio = camera_rsd->aspect_ratio;
-        camera_asset_tmp.window_width = camera_rsd->window_width;
-        camera_asset_tmp.window_height = camera_rsd->window_height;
-
-        CameraAsset* camera_asset = &camera_asset_tmp;
 		RenderCamera* render_camera = nullptr;
 
-		if (camera_asset->perspective_type == "perspective")
+		if (camera_rsd->camera_perspective_type == "perspective")
 		{
             RenderCameraPerspective* perspective_render_camera = DOLAS_NEW(RenderCameraPerspective);
-            perspective_render_camera->BuildFromAsset(camera_asset);
+            perspective_render_camera->BuildFromRsd(camera_rsd);
             render_camera = perspective_render_camera;
 		}
-		else if (camera_asset->perspective_type == "orthographic")
+		else if (camera_rsd->camera_perspective_type == "orthographic")
 		{
 			RenderCameraOrthographic* ortho_render_camera = DOLAS_NEW(RenderCameraOrthographic);
-			ortho_render_camera->BuildFromAsset(camera_asset);
+			ortho_render_camera->BuildFromRsd(camera_rsd);
             render_camera = ortho_render_camera;
 		}
 		else
 		{
-			LOG_ERROR("Unknown camera perspective type: {0}", camera_asset->perspective_type);
+			LOG_ERROR("Unknown camera perspective type: {0}", camera_rsd->camera_perspective_type);
 			return false;
 		}
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);

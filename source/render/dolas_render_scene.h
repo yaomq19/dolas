@@ -20,7 +20,7 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        void BuildFromAsset(struct SceneAsset* scene_asset);
+        // SceneRSD 的解析/实体创建由 RenderSceneManager 完成（RenderSceneManager 是 friend）
 		const std::vector<RenderEntityID>& GetRenderEntities() const { return m_render_entities; }
     private:
         std::vector<RenderEntityID> m_render_entities;

@@ -4,7 +4,7 @@
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_entity.h"
-#include "manager/dolas_asset_manager.h"
+#include "manager/dolas_asset_manager.h" // GetRsdAsset<>
 #include "manager/dolas_render_primitive_manager.h"
 namespace Dolas
 {
@@ -38,15 +38,18 @@ namespace Dolas
         return true;
     }
 #pragma optimize("", off)
-    RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const SceneEntity& scene_entity)
+    RenderEntityID RenderEntityManager::CreateRenderEntityFromFile(const std::string& entity_file_name,
+                                                                   const Vector3& position,
+                                                                   const Quaternion& rotation,
+                                                                   const Vector3& scale)
     {
         RenderEntityID result_id = RENDER_ENTITY_ID_EMPTY;
 		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
 		MaterialID material_id = MATERIAL_ID_EMPTY;
 
-        std::string render_entity_file_path = PathUtils::GetEntityDir() + scene_entity.entity_file;
+        std::string render_entity_file_path = PathUtils::GetEntityDir() + entity_file_name;
 
-        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(PathUtils::GetEntityDir() + scene_entity.entity_file);
+        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(PathUtils::GetEntityDir() + entity_file_name);
         if (entity_rsd == nullptr)
             return result_id;
 
@@ -120,9 +123,9 @@ namespace Dolas
             render_entity->m_file_id = HashConverter::StringHash(render_entity_file_path);
             render_entity->m_render_primitive_id = render_primitive_id;
             render_entity->m_material_id = material_id;
-            render_entity->m_pose.m_postion = scene_entity.position;
-            render_entity->m_pose.m_rotation = scene_entity.rotation;
-            render_entity->m_pose.m_scale = scene_entity.scale;
+            render_entity->m_pose.m_postion = position;
+            render_entity->m_pose.m_rotation = rotation;
+            render_entity->m_pose.m_scale = scale;
 
             m_render_entities[render_entity->m_file_id] = render_entity;
             result_id = render_entity->m_file_id;

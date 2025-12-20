@@ -362,14 +362,15 @@ namespace Dolas
             -m_near_plane);
     }
 
-    void RenderCameraPerspective::BuildFromAsset(CameraAsset* camera_asset)
+    void RenderCameraPerspective::BuildFromRsd(const CameraRSD* camera_rsd)
     {
-		SetPosition(camera_asset->position);
-		SetForwardAndUp(camera_asset->forward, camera_asset->up);
-		SetNearPlane(camera_asset->near_plane);
-		SetFarPlane(camera_asset->far_plane);
-		SetFov(camera_asset->fov);
-		SetAspectRatio(camera_asset->aspect_ratio);
+        if (!camera_rsd) return;
+		SetPosition(camera_rsd->position);
+		SetForwardAndUp(camera_rsd->forward, camera_rsd->up);
+		SetNearPlane(camera_rsd->near_plane);
+		SetFarPlane(camera_rsd->far_plane);
+		SetFov(camera_rsd->fov);
+		SetAspectRatio(camera_rsd->aspect_ratio);
     }
 
     /* Render Camera Orthographic */
@@ -450,13 +451,14 @@ namespace Dolas
             -m_near_plane);
     }
 
-    void RenderCameraOrthographic::BuildFromAsset(struct CameraAsset* camera_asset)
+    void RenderCameraOrthographic::BuildFromRsd(const CameraRSD* camera_rsd)
     {
-		SetPosition(camera_asset->position);
-		SetForwardAndUp(camera_asset->forward, camera_asset->up);
-		SetNearPlane(camera_asset->near_plane);
-		SetFarPlane(camera_asset->far_plane);
-		SetWindowWidth(camera_asset->window_width);
-		SetWindowHeight(camera_asset->window_height);
+        if (!camera_rsd) return;
+		SetPosition(camera_rsd->position);
+		SetForwardAndUp(camera_rsd->forward, camera_rsd->up);
+		SetNearPlane(camera_rsd->near_plane);
+		SetFarPlane(camera_rsd->far_plane);
+		SetWindowWidth(camera_rsd->window_width);
+		SetWindowHeight(camera_rsd->window_height);
     }
 } // namespace Dolas 

@@ -5,6 +5,7 @@
 #include <string>
 #include "common/dolas_hash.h"
 #include "core/dolas_math.h"
+#include "rsd/camera.h"
 namespace Dolas
 {
     enum class CameraPerspectiveType
@@ -46,7 +47,7 @@ namespace Dolas
         void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
                                 bool move_up, bool move_down, Float delta_time);
 
-        virtual void BuildFromAsset(struct CameraAsset* camera_asset) = 0;
+        virtual void BuildFromRsd(const CameraRSD* camera_rsd) = 0;
 
         void PrintDebugInfo();
         protected:
@@ -87,7 +88,7 @@ namespace Dolas
         Float GetFov() const;
 
         virtual void UpdateProjectionMatrix() override;
-        virtual void BuildFromAsset(struct CameraAsset* camera_asset) override;
+        virtual void BuildFromRsd(const CameraRSD* camera_rsd) override;
 
         protected:
         Float m_aspect_ratio;
@@ -111,7 +112,7 @@ namespace Dolas
         Float GetWindowHeight() const;
 
         virtual void UpdateProjectionMatrix() override;
-		virtual void BuildFromAsset(struct CameraAsset* camera_asset) override;
+		virtual void BuildFromRsd(const CameraRSD* camera_rsd) override;
 
         protected:
         Float m_window_width;

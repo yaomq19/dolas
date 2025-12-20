@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "common/dolas_hash.h"
-#include "manager/dolas_asset_manager.h"
+#include "core/dolas_math.h"
 namespace Dolas
 {
     class RenderEntity;
@@ -16,7 +16,10 @@ namespace Dolas
         bool Initialize();
         bool Clear();
 
-		RenderEntityID CreateRenderEntityFromFile(const SceneEntity& scene_entity);
+		RenderEntityID CreateRenderEntityFromFile(const std::string& entity_file_name,
+                                                  const Vector3& position,
+                                                  const Quaternion& rotation,
+                                                  const Vector3& scale);
 		RenderEntity* GetRenderEntityByID(RenderEntityID render_entity_id);
         RenderEntity* GetRenderEntityByFileName(const std::string& render_entity_file_name);
     protected:
