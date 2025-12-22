@@ -64,7 +64,7 @@ namespace Dolas
      * Parsing rules:
      * - For scalar text nodes (String/Bool/Int/UInt/Float): we read the element text and convert.
      * - For Vector3/Vector4: we read numeric attributes x/y/z(/w) on the element.
-     * - For DynamicArray<Xml> (DynArrayXml): we serialize each child element back into an XML fragment string.
+     * - For DynamicArray<RawReference> (DynArrayRawReference): we serialize each child element back into an XML fragment string.
      * - For Map<String, Vector4>: expects `<vec4 name="..." x=".." y=".." z=".." w=".."/>` children.
      * - For Map<String, String>: expects `<texture name="..." file="..."/>` children.
      * - For Map<String, Float>: expects `<float name="..." value="..."/>` children.
@@ -196,7 +196,7 @@ namespace Dolas
             *p = Vector4((Float)x,(Float)y,(Float)z,(Float)w);
             return true;
         }
-        case RsdFieldType::DynArrayXml:
+        case RsdFieldType::DynArrayRawReference:
         {
             auto* p = reinterpret_cast<std::vector<std::string>*>(base + f.offset);
             if (!el) return true;
@@ -205,6 +205,48 @@ namespace Dolas
                 tinyxml2::XMLPrinter pr;
                 child->Accept(&pr);
                 p->emplace_back(pr.CStr());
+            }
+            return true;
+        }
+        case RsdFieldType::DynArrayString:
+        {
+            auto* p = reinterpret_cast<std::vector<std::string>*>(base + f.offset);
+            if (!el) return true;
+            for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
+            {
+                // Prefer attribute form (<item file="..."/>) then inner text (<item>...</item>)
+                const char* v = child->Attribute("file");
+                if (!v) v = child->GetText();
+                if (v) p->emplace_back(v);
+            }
+            return true;
+        }
+        case RsdFieldType::DynArrayVector3:
+        {
+            auto* p = reinterpret_cast<std::vector<Vector3>*>(base + f.offset);
+            if (!el) return true;
+            for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
+            {
+                double x=0,y=0,z=0;
+                if (child->QueryDoubleAttribute("x",&x)!=tinyxml2::XML_SUCCESS) continue;
+                if (child->QueryDoubleAttribute("y",&y)!=tinyxml2::XML_SUCCESS) continue;
+                if (child->QueryDoubleAttribute("z",&z)!=tinyxml2::XML_SUCCESS) continue;
+                p->emplace_back(Vector3((Float)x,(Float)y,(Float)z));
+            }
+            return true;
+        }
+        case RsdFieldType::DynArrayVector4:
+        {
+            auto* p = reinterpret_cast<std::vector<Vector4>*>(base + f.offset);
+            if (!el) return true;
+            for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
+            {
+                double x=0,y=0,z=0,w=0;
+                if (child->QueryDoubleAttribute("x",&x)!=tinyxml2::XML_SUCCESS) continue;
+                if (child->QueryDoubleAttribute("y",&y)!=tinyxml2::XML_SUCCESS) continue;
+                if (child->QueryDoubleAttribute("z",&z)!=tinyxml2::XML_SUCCESS) continue;
+                if (child->QueryDoubleAttribute("w",&w)!=tinyxml2::XML_SUCCESS) continue;
+                p->emplace_back(Vector4((Float)x,(Float)y,(Float)z,(Float)w));
             }
             return true;
         }

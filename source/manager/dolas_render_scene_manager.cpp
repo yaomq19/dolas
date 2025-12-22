@@ -57,64 +57,31 @@ namespace Dolas
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);
 
         // 直接从 SceneRSD 构建 RenderScene（不再依赖旧 SceneAsset/SceneEntity）
-        for (const auto& entity_xml : scene_rsd->entities)
+        const std::size_t n = scene_rsd->entities.size();
+        if (scene_rsd->entity_positions.size() != n ||
+            scene_rsd->entity_rotations.size() != n ||
+            scene_rsd->entity_scales.size() != n)
         {
-            tinyxml2::XMLDocument d;
-            if (d.Parse(entity_xml.c_str()) != tinyxml2::XML_SUCCESS)
-            {
-                LOG_ERROR("Invalid scene entity xml fragment!");
-                continue;
-            }
+            LOG_ERROR("SceneRSD arrays size mismatch: entities={0}, positions={1}, rotations={2}, scales={3}",
+                (UInt)n,
+                (UInt)scene_rsd->entity_positions.size(),
+                (UInt)scene_rsd->entity_rotations.size(),
+                (UInt)scene_rsd->entity_scales.size());
+        }
 
-            const tinyxml2::XMLElement* e = d.RootElement();
-            if (!e || std::string(e->Name()) != "entity")
-            {
-                LOG_ERROR("Invalid scene entity xml root!");
-                continue;
-            }
-
-            const char* entity_file = e->Attribute("entity_file");
-            if (!entity_file)
-            {
-                LOG_ERROR("Scene entity xml missing entity_file attribute!");
-                continue;
-            }
-
-            auto read_vec3 = [&](const char* key, Vector3& out) -> bool
-            {
-                const tinyxml2::XMLElement* el = e->FirstChildElement(key);
-                if (!el) return false;
-                double x = 0, y = 0, z = 0;
-                if (el->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) return false;
-                if (el->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) return false;
-                if (el->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) return false;
-                out = Vector3((Float)x, (Float)y, (Float)z);
-                return true;
-            };
-
-            auto read_quat = [&](const char* key, Quaternion& out) -> bool
-            {
-                const tinyxml2::XMLElement* el = e->FirstChildElement(key);
-                if (!el) return false;
-                double w = 1, x = 0, y = 0, z = 0;
-                if (el->QueryDoubleAttribute("w", &w) != tinyxml2::XML_SUCCESS) return false;
-                if (el->QueryDoubleAttribute("x", &x) != tinyxml2::XML_SUCCESS) return false;
-                if (el->QueryDoubleAttribute("y", &y) != tinyxml2::XML_SUCCESS) return false;
-                if (el->QueryDoubleAttribute("z", &z) != tinyxml2::XML_SUCCESS) return false;
-                out = Quaternion((Float)w, (Float)x, (Float)y, (Float)z);
-                return true;
-            };
+        for (std::size_t i = 0; i < n; i++)
+        {
+            const std::string& entity_file = scene_rsd->entities[i];
 
             Vector3 position{};
-            Quaternion rotation{};
             Vector3 scale{ 1.0f, 1.0f, 1.0f };
-            if (!read_vec3("position", position) ||
-                !read_quat("rotation", rotation) ||
-                !read_vec3("scale", scale))
-            {
-                LOG_ERROR("Scene entity xml missing position/rotation/scale!");
-                continue;
-            }
+            Vector4 rotv{ 0.0f, 0.0f, 0.0f, 1.0f }; // (x,y,z,w)
+
+            if (i < scene_rsd->entity_positions.size()) position = scene_rsd->entity_positions[i];
+            if (i < scene_rsd->entity_scales.size()) scale = scene_rsd->entity_scales[i];
+            if (i < scene_rsd->entity_rotations.size()) rotv = scene_rsd->entity_rotations[i];
+
+            const Quaternion rotation(rotv.w, rotv.x, rotv.y, rotv.z);
 
             RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file, position, rotation, scale);
             if (render_entity_id != RENDER_ENTITY_ID_EMPTY)

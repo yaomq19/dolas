@@ -146,7 +146,39 @@ public sealed class RsdSchemaRegistry
             if (t.Equals("DynamicArray", StringComparison.OrdinalIgnoreCase))
             {
                 var element = f.Attribute("element")?.Value?.Trim();
-                fields[name] = string.IsNullOrWhiteSpace(element) ? "DynamicArray" : $"DynamicArray<{element}>";
+                if (string.IsNullOrWhiteSpace(element))
+                {
+                    fields[name] = "DynamicArray";
+                    continue;
+                }
+
+                // Support attribute form for nested AssetReference to avoid XML entities:
+                //   <field type="DynamicArray" element="AssetReference" target="EntityRSD" />
+                if (string.Equals(element, "AssetReference", StringComparison.OrdinalIgnoreCase))
+                {
+                    var target = f.Attribute("target")?.Value?.Trim();
+                    if (string.IsNullOrWhiteSpace(target))
+                        throw new InvalidOperationException($"RSD <field> type=DynamicArray element=AssetReference 缺少 target：{rsdFile}");
+                    fields[name] = $"DynamicArray<AssetReference<{target}>>";
+                    continue;
+                }
+
+                fields[name] = $"DynamicArray<{element}>";
+                continue;
+            }
+
+            if (t.Equals("AssetReference", StringComparison.OrdinalIgnoreCase))
+            {
+                var target = f.Attribute("target")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(target))
+                    throw new InvalidOperationException($"RSD <field> type=AssetReference 缺少 target：{rsdFile}");
+                fields[name] = $"AssetReference<{target}>";
+                continue;
+            }
+
+            if (t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
+            {
+                fields[name] = "RawReference";
                 continue;
             }
 

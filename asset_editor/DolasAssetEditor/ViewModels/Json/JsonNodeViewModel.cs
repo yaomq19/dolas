@@ -312,9 +312,14 @@ public sealed class JsonNodeViewModel : ViewModelBase
             }
 
             // fallback：当作字符串
+            if (v.TryGetValue<string>(out var s))
+                return (JsonEditorType.String, s ?? string.Empty, false, "0", "0", "0", "0");
             return (JsonEditorType.String, v.ToJsonString(), false, "0", "0", "0", "0");
         }
 
+        // 兜底：保持 String 编辑时不显示两侧引号
+        if (node is JsonValue v2 && v2.TryGetValue<string>(out var s2))
+            return (JsonEditorType.String, s2 ?? string.Empty, false, "0", "0", "0", "0");
         return (JsonEditorType.String, node.ToJsonString(), false, "0", "0", "0", "0");
     }
 

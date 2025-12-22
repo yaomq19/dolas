@@ -1,5 +1,6 @@
 <asset>
   <type>mesh</type>
   <mesh>cube.mesh</mesh>
+  <base_geometry></base_geometry>
   <material>plain_color.material</material>
 </asset>

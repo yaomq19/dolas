@@ -1,11 +1,11 @@
 <asset>
   <vertex_shader>solid/solid_vs.hlsl</vertex_shader>
   <pixel_shader>solid/solid_ps.hlsl</pixel_shader>
-
+  <vertex_shader_global_variables />
+  <pixel_shader_global_variables />
   <pixel_shader_texture>
     <texture name="albedo_map" file="albedo.dds" />
   </pixel_shader_texture>
-
   <parameter>
     <float name="intensity" value="1" />
   </parameter>

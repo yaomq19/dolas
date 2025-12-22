@@ -1,5 +1,6 @@
 <asset>
   <type>mesh</type>
   <mesh>plane.mesh</mesh>
+  <base_geometry></base_geometry>
   <material>solid.material</material>
 </asset>

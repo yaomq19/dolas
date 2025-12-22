@@ -174,6 +174,9 @@ static std::string FieldEnumForSpec(const std::string& typeSpecIn)
 {
     const std::string t = Trim(typeSpecIn);
     if (t.rfind("Enum<", 0) == 0) return "RsdFieldType::EnumUInt";
+    // AssetReference<T> / RawReference are represented as string in C++.
+    if (t.rfind("AssetReference<", 0) == 0) return "RsdFieldType::String";
+    if (t == "RawReference") return "RsdFieldType::String";
     if (t == "String") return "RsdFieldType::String";
     if (t == "Bool") return "RsdFieldType::BoolValue";
     if (t == "Int") return "RsdFieldType::IntValue";
@@ -181,7 +184,11 @@ static std::string FieldEnumForSpec(const std::string& typeSpecIn)
     if (t == "Float") return "RsdFieldType::FloatValue";
     if (t == "Vector3") return "RsdFieldType::Vector3";
     if (t == "Vector4") return "RsdFieldType::Vector4";
-    if (t == "DynamicArray<Xml>") return "RsdFieldType::DynArrayXml";
+    // Arrays
+    if (t == "DynamicArray<RawReference>") return "RsdFieldType::DynArrayRawReference";
+    if (t == "DynamicArray<String>" || t.rfind("DynamicArray<AssetReference<", 0) == 0) return "RsdFieldType::DynArrayString";
+    if (t == "DynamicArray<Vector3>") return "RsdFieldType::DynArrayVector3";
+    if (t == "DynamicArray<Vector4>") return "RsdFieldType::DynArrayVector4";
     if (t == "DynamicArray<Float>") return "RsdFieldType::DynArrayFloat";
     if (t == "DynamicArray<UInt>") return "RsdFieldType::DynArrayUInt";
     if (t == "Map<String, Vector4>") return "RsdFieldType::MapStringVector4";
@@ -212,7 +219,16 @@ static std::string CanonicalizeTypeSpec(const tinyxml2::XMLElement* fieldEl)
     {
         const char* e = fieldEl->Attribute("element");
         if (!e) throw std::runtime_error(type + " field requires element attribute");
-        return type + "<" + Trim(e) + ">";
+        std::string elem = Trim(e);
+        // Support attribute form for nested AssetReference to avoid XML entities:
+        //   <field type="DynamicArray" element="AssetReference" target="EntityRSD" />
+        if (elem == "AssetReference")
+        {
+            const char* t = fieldEl->Attribute("target");
+            if (!t) throw std::runtime_error(type + " element=AssetReference requires target attribute");
+            elem = "AssetReference<" + Trim(t) + ">";
+        }
+        return type + "<" + elem + ">";
     }
     if (type == "StaticArray")
     {
@@ -228,6 +244,11 @@ static std::string CanonicalizeTypeSpec(const tinyxml2::XMLElement* fieldEl)
         const char* t = fieldEl->Attribute("target");
         if (!t) throw std::runtime_error("AssetReference field requires target attribute");
         return "AssetReference<" + Trim(t) + ">";
+    }
+
+    if (type == "RawReference")
+    {
+        return "RawReference";
     }
 
     // Old form is already in type attribute (tinyxml2 will decode &lt; &gt;).

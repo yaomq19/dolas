@@ -9,6 +9,25 @@ namespace Dolas.AssetEditor.Services;
 
 public static class XmlAssetCodec
 {
+    private static string ExtractDynamicArrayElementSpec(string t)
+    {
+        // DynamicArray<T>
+        var lt = t.IndexOf('<');
+        var gt = t.LastIndexOf('>');
+        if (lt < 0 || gt <= lt) return string.Empty;
+        return t.Substring(lt + 1, gt - lt - 1).Trim();
+    }
+
+    private static bool IsAssetRefSpec(string elemSpec)
+        => elemSpec.StartsWith("AssetReference<", StringComparison.OrdinalIgnoreCase);
+
+    private static double ReadAttrDoubleOr0(XElement el, string attr)
+    {
+        var a = el.Attribute(attr)?.Value;
+        if (a is null) return 0;
+        return double.TryParse(a, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 0;
+    }
+
     public static JsonObject LoadAssetAsJsonObject(string filePath, RsdSchema schema)
     {
         var doc = XDocument.Load(filePath, LoadOptions.PreserveWhitespace);
@@ -27,10 +46,55 @@ public static class XmlAssetCodec
                 var container = root.Element(fieldName);
                 if (container is null) continue;
 
+                var elemSpec = ExtractDynamicArrayElementSpec(t);
                 var arr = new JsonArray();
+
+                // Array of strings: DynamicArray<String> / DynamicArray<AssetReference<...>> / DynamicArray<RawReference>
+                if (elemSpec.Equals("String", StringComparison.OrdinalIgnoreCase) ||
+                    elemSpec.Equals("RawReference", StringComparison.OrdinalIgnoreCase) ||
+                    IsAssetRefSpec(elemSpec))
+                {
+                    foreach (var child in container.Elements())
+                    {
+                        // support <item>text</item> or <item file="..."/>
+                        var s = (string?)child.Attribute("file") ?? child.Value;
+                        arr.Add(s ?? string.Empty);
+                    }
+                    obj[fieldName] = arr;
+                    continue;
+                }
+
+                // Array of vectors: DynamicArray<Vector3/Vector4> as <item x="" y="" z="" (w="") />
+                if (elemSpec.Equals("Vector3", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var child in container.Elements())
+                    {
+                        arr.Add(new JsonArray(
+                            ReadAttrDoubleOr0(child, "x"),
+                            ReadAttrDoubleOr0(child, "y"),
+                            ReadAttrDoubleOr0(child, "z")));
+                    }
+                    obj[fieldName] = arr;
+                    continue;
+                }
+                if (elemSpec.Equals("Vector4", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var child in container.Elements())
+                    {
+                        arr.Add(new JsonArray(
+                            ReadAttrDoubleOr0(child, "x"),
+                            ReadAttrDoubleOr0(child, "y"),
+                            ReadAttrDoubleOr0(child, "z"),
+                            ReadAttrDoubleOr0(child, "w")));
+                    }
+                    obj[fieldName] = arr;
+                    continue;
+                }
+
+                // Fallback: keep each child element as raw XML fragment string
                 foreach (var child in container.Elements())
                 {
-                    arr.Add(child.ToString(SaveOptions.DisableFormatting));
+                    arr.Add(child.ToString(SaveOptions.None));
                 }
                 obj[fieldName] = arr;
                 continue;
@@ -92,7 +156,7 @@ public static class XmlAssetCodec
                 }
             }
 
-            if (t == "String")
+            if (t == "String" || t.Equals("RawReference", StringComparison.OrdinalIgnoreCase) || t.StartsWith("AssetReference<", StringComparison.OrdinalIgnoreCase))
             {
                 obj[fieldName] = el.Value;
             }
@@ -136,14 +200,15 @@ public static class XmlAssetCodec
                     ReadAttrDouble(el, "z"),
                     ReadAttrDouble(el, "w"));
             }
-            else if (t == "Xml")
+            else if (t.Equals("RawReference", StringComparison.OrdinalIgnoreCase) || t == "Xml")
             {
-                obj[fieldName] = el.ToString(SaveOptions.DisableFormatting);
+                // 用格式化输出，便于在编辑器里阅读/编辑
+                obj[fieldName] = el.ToString(SaveOptions.None);
             }
             else
             {
                 // 兜底：保留原始 xml 片段，避免丢数据
-                obj[fieldName] = el.ToString(SaveOptions.DisableFormatting);
+                obj[fieldName] = el.ToString(SaveOptions.None);
             }
         }
 
@@ -213,19 +278,48 @@ public static class XmlAssetCodec
                 var container = new XElement(fieldName);
                 if (node is JsonArray arr)
                 {
+                    var elemSpec = ExtractDynamicArrayElementSpec(t);
+
+                    // String-like arrays: emit <item>text</item>
+                    if (elemSpec.Equals("String", StringComparison.OrdinalIgnoreCase) ||
+                        elemSpec.Equals("RawReference", StringComparison.OrdinalIgnoreCase) ||
+                        IsAssetRefSpec(elemSpec))
+                    {
+                        foreach (var item in arr)
+                        {
+                            var itemText = item?.ToString() ?? string.Empty;
+                            container.Add(new XElement("item", itemText));
+                        }
+                        root.Add(container);
+                        continue;
+                    }
+
+                    // Vector arrays: emit <item x="" y="" z="" (w="") />
+                    if (elemSpec.Equals("Vector3", StringComparison.OrdinalIgnoreCase) ||
+                        elemSpec.Equals("Vector4", StringComparison.OrdinalIgnoreCase))
+                    {
+                        foreach (var item in arr)
+                        {
+                            if (item is not JsonArray vArr) continue;
+                            var el = new XElement("item");
+                            if (vArr.Count > 0) el.SetAttributeValue("x", vArr[0]?.ToString() ?? "0");
+                            if (vArr.Count > 1) el.SetAttributeValue("y", vArr[1]?.ToString() ?? "0");
+                            if (vArr.Count > 2) el.SetAttributeValue("z", vArr[2]?.ToString() ?? "0");
+                            if (elemSpec.Equals("Vector4", StringComparison.OrdinalIgnoreCase) && vArr.Count > 3)
+                                el.SetAttributeValue("w", vArr[3]?.ToString() ?? "0");
+                            container.Add(el);
+                        }
+                        root.Add(container);
+                        continue;
+                    }
+
+                    // Fallback: try parse as XML fragment, else save as <item>text</item>
                     foreach (var item in arr)
                     {
                         if (item is JsonValue v && v.TryGetValue<string>(out var xmlFragment))
                         {
-                            try
-                            {
-                                container.Add(XElement.Parse(xmlFragment, LoadOptions.PreserveWhitespace));
-                            }
-                            catch
-                            {
-                                // 如果不是合法 xml，就当文本保存
-                                container.Add(new XElement("item", xmlFragment));
-                            }
+                            try { container.Add(XElement.Parse(xmlFragment, LoadOptions.PreserveWhitespace)); }
+                            catch { container.Add(new XElement("item", xmlFragment)); }
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 <asset>
   <type>base_geometry</type>
+  <mesh></mesh>
   <base_geometry>cube</base_geometry>
   <material>ground_plane.material</material>
 </asset>

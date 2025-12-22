@@ -171,7 +171,10 @@ public static class RsdAssetBinder
         if (s.StartsWith("Set", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Array;
         if (s.StartsWith("Map", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
         if (s.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Enum;
+        if (s.StartsWith("AssetReference<", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.String;
+        if (s.Equals("RawReference", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.String;
         if (s.Equals("Json", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.Object;
+        // Xml 已废弃：用 RawReference 替代
         if (s.Equals("Xml", StringComparison.OrdinalIgnoreCase)) return JsonEditorType.String;
 
         return s switch

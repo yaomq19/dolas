@@ -134,6 +134,9 @@
                                                         <!-- String / Int / Float -->
                                                         <TextBox MinWidth="200"
                                                                  Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                 AcceptsReturn="True"
+                                                                 TextWrapping="Wrap"
+                                                                 VerticalScrollBarVisibility="Auto"
                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=String}" />
                                                         <TextBox MinWidth="200"
                                                                  Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
@@ -148,7 +151,7 @@
                                                         <!-- Enum -->
                                                         <ComboBox MinWidth="200"
                                                                   ItemsSource="{Binding EnumValues}"
-                                                                  DisplayMemberPath="Display"
+                                                                  DisplayMemberPath="Name"
                                                                   SelectedValuePath="Name"
                                                                   SelectedValue="{Binding EnumSelectedName, UpdateSourceTrigger=PropertyChanged}"
                                                                   Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Enum}" />

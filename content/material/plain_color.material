@@ -1,9 +1,10 @@
 <asset>
   <vertex_shader>plain_color/plain_color_vs.hlsl</vertex_shader>
   <pixel_shader>plain_color/plain_color_ps.hlsl</pixel_shader>
-
   <vertex_shader_global_variables />
   <pixel_shader_global_variables>
-    <vec4 name="g_PlainColor" x="0.2" y="0.54" z="0.76" w="1.0" />
+    <vec4 name="g_PlainColor" x="0.2" y="0.54" z="0.76" w="1" />
   </pixel_shader_global_variables>
+  <pixel_shader_texture />
+  <parameter />
 </asset>
