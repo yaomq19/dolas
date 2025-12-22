@@ -96,7 +96,6 @@ vcpkg upgrade
         "directxtex",      // DirectX 纹理处理
         "spdlog",          // 日志库
         "fmt",             // 格式化库
-        "nlohmann-json",   // JSON 解析
         "boost",           // Boost 库
         "glm",             // 数学库
         "imgui",           // GUI 库

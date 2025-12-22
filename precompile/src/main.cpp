@@ -91,7 +91,6 @@ struct IncludeNeeds
     bool needVector = false;
     bool needMap = false;
     bool needSet = false;
-    bool needNlohmannJson = false;
 };
 
 static CppType CppTypeForSpec(const std::string& specIn, IncludeNeeds& needs);
@@ -115,10 +114,7 @@ static CppType CppTypeForSpec(const std::string& specIn, IncludeNeeds& needs)
     }
 
     if (spec == "Json")
-    {
-        needs.needNlohmannJson = true;
-        return { "nlohmann::json", "" };
-    }
+        throw std::runtime_error("Type 'Json' has been removed from this project. Use RawReference/String/structured RSD instead.");
 
     const auto lt = spec.find('<');
     const auto gt = spec.rfind('>');
@@ -468,7 +464,6 @@ static std::string GenerateHeader(const Schema& s)
     if (needs.needSet) h << "#include <set>\n";
     h << "#include <array>\n";
     h << "#include <cstddef>\n";
-    if (needs.needNlohmannJson) h << "#include <nlohmann/json.hpp>\n";
 
     h << "#include \"base/dolas_base.h\"\n";
     h << "#include \"core/dolas_math.h\"\n";

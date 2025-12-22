@@ -130,7 +130,6 @@ script\utility\quick_start.bat
 | 库名 | 版本 | 用途 | 许可证 |
 |------|------|------|--------|
 | [spdlog](https://github.com/gabime/spdlog) | 1.16.0 | 快速日志库 | MIT |
-| [nlohmann-json](https://github.com/nlohmann/json) | 3.12.0 | JSON 解析 | MIT |
 | [assimp](https://github.com/assimp/assimp) | 6.0.2 | 3D 模型加载 | BSD-3-Clause |
 | [DirectXTex](https://github.com/microsoft/DirectXTex) | 2025-07-10 | DirectX 纹理处理 | MIT |
 | [Tracy](https://github.com/wolfpld/tracy) | 0.11.1 | 性能分析工具 | BSD-3-Clause |

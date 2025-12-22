@@ -1,14 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text.Json.Nodes;
 using System.Windows;
 using Microsoft.Win32;
 using System.Windows.Input;
 using Dolas.AssetEditor.Commands;
 using Dolas.AssetEditor.Models;
 using Dolas.AssetEditor.Services;
-using Dolas.AssetEditor.ViewModels.Json;
 
 namespace Dolas.AssetEditor.ViewModels;
 
@@ -24,8 +22,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _selectedAssetName = "（未选择）";
     private string _selectedAssetPath = string.Empty;
     private bool _isDirty;
-    private JsonNode? _jsonRootNode;
-    private JsonNodeViewModel? _jsonRoot;
+    private AssetNodeViewModel? _assetRoot;
 
     public MainWindowViewModel()
         : this(CreateDefaultAssetDatabase())
@@ -109,10 +106,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => SetField(ref _selectedAssetPath, value);
     }
 
-    public JsonNodeViewModel? JsonRoot
+    public AssetNodeViewModel? AssetRoot
     {
-        get => _jsonRoot;
-        private set => SetField(ref _jsonRoot, value);
+        get => _assetRoot;
+        private set => SetField(ref _assetRoot, value);
     }
 
     public bool IsDirty
@@ -126,11 +123,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public bool HasSelectedJsonAsset => JsonRoot is not null;
+    public bool HasSelectedAsset => AssetRoot is not null;
 
-    public bool CanSave => HasSelectedJsonAsset && IsDirty && !string.IsNullOrWhiteSpace(SelectedAssetPath);
+    public bool CanSave => HasSelectedAsset && IsDirty && !string.IsNullOrWhiteSpace(SelectedAssetPath);
 
-    public bool CanReload => HasSelectedJsonAsset && !string.IsNullOrWhiteSpace(SelectedAssetPath);
+    public bool CanReload => HasSelectedAsset && !string.IsNullOrWhiteSpace(SelectedAssetPath);
 
     public bool CanCreateNewAsset => _repoRoot is not null && _rsdRegistry is not null && AvailableSchemas.Count > 0;
 
@@ -160,11 +157,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         if (item.IsDirectory)
         {
-            JsonRoot = null;
-            _jsonRootNode = null;
+            AssetRoot = null;
             _matchedSchema = null;
             IsDirty = false;
-            OnPropertyChanged(nameof(HasSelectedJsonAsset));
+            OnPropertyChanged(nameof(HasSelectedAsset));
             (ReloadCommand as RelayCommand)?.RaiseCanExecuteChanged();
             return;
         }
@@ -213,13 +209,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _matchedSchema = schema;
 
-            // XML on disk -> JsonObject in memory（复用现有类型化编辑 UI）
-            var rootObj = XmlAssetCodec.LoadAssetAsJsonObject(filePath, schema);
-            var (boundRoot, vm, mutated, warnings) = RsdAssetBinder.BindToSchema(rootObj, schema, MarkDirty);
-            _jsonRootNode = boundRoot;
-            JsonRoot = vm;
+            var vm = XmlAssetCodec.LoadAssetAsViewModel(filePath, schema, MarkDirty, out var mutated, out var warnings);
+            AssetRoot = vm;
 
-            if (!mutated) IsDirty = false;
+            // 如果加载过程中发现缺失字段/无法解析并回退到默认值，则视为“未保存的改动”
+            IsDirty = mutated;
             StatusText = $"已加载（{schema.ClassName} / {schema.FileSuffix}）";
             Logs.Add($"加载资产：{filePath} -> schema: {schema.ClassName} ({schema.FileSuffix})");
             foreach (var w in warnings)
@@ -227,8 +221,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            JsonRoot = null;
-            _jsonRootNode = null;
+            AssetRoot = null;
             _matchedSchema = null;
             IsDirty = false;
             StatusText = "加载失败";
@@ -236,7 +229,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            OnPropertyChanged(nameof(HasSelectedJsonAsset));
+            OnPropertyChanged(nameof(HasSelectedAsset));
             (ReloadCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (SaveCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
@@ -246,17 +239,15 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void SaveSelectedAsset()
     {
-        if (_jsonRootNode is null || string.IsNullOrWhiteSpace(SelectedAssetPath))
+        if (AssetRoot is null || string.IsNullOrWhiteSpace(SelectedAssetPath))
             return;
 
         try
         {
             if (_matchedSchema is null)
                 throw new InvalidOperationException("未匹配到 schema，无法保存。");
-            if (_jsonRootNode is not JsonObject obj)
-                throw new InvalidOperationException("根节点不是 object，无法保存。");
 
-            XmlAssetCodec.SaveAssetFromJsonObject(SelectedAssetPath, _matchedSchema, obj);
+            XmlAssetCodec.SaveAssetFromViewModel(SelectedAssetPath, _matchedSchema, AssetRoot);
             IsDirty = false;
             StatusText = "已保存";
             Logs.Add($"保存成功：{SelectedAssetPath}");
@@ -332,9 +323,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (!string.IsNullOrWhiteSpace(dir))
                 Directory.CreateDirectory(dir);
 
-            // 用 schema 默认值生成一个可编辑对象，并写入磁盘（XML）
-            var defaultObj = RsdAssetBinder.CreateDefaultAssetObject(schema);
-            XmlAssetCodec.SaveAssetFromJsonObject(filePath, schema, defaultObj);
+            // 用 schema 默认值生成一个可编辑 ViewModel，并写入磁盘（XML）
+            var defaultVm = XmlAssetCodec.CreateDefaultAssetViewModel(schema, MarkDirty);
+            XmlAssetCodec.SaveAssetFromViewModel(filePath, schema, defaultVm);
 
             // 刷新左侧树并打开新资产
             RefreshAssetTree();

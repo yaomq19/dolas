@@ -1,6 +1,6 @@
-namespace Dolas.AssetEditor.ViewModels.Json;
+namespace Dolas.AssetEditor.ViewModels;
 
-public enum JsonEditorType
+public enum EditorType
 {
     Object,
     Array,

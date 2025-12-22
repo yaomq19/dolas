@@ -10,14 +10,12 @@
 #include "manager/dolas_buffer_manager.h"
 #include "render/dolas_render_primitive.h"
 #include "base/dolas_paths.h"
-#include "nlohmann/json.hpp"
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_log_system_manager.h"
 #include "core/dolas_rhi_common.h"
 #include "manager/dolas_log_system_manager.h"
 namespace Dolas
 {
-    using json = nlohmann::json;
     RenderPrimitiveManager::RenderPrimitiveManager()
     {
     }
