@@ -35,7 +35,7 @@ public static class XmlAssetCodec
         return schema.Enums.TryGetValue(enumName, out var def) ? def.Values : null;
     }
 
-    private static EditorType TypeSpecToEditorType(string typeSpec)
+    private static EditorType TypeSpecToEditorType(string typeSpec, RsdSchemaRegistry? registry)
     {
         var s = typeSpec.Trim();
         if (s.StartsWith("DynamicArray", StringComparison.OrdinalIgnoreCase)) return EditorType.Array;
@@ -45,6 +45,8 @@ public static class XmlAssetCodec
         if (s.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase)) return EditorType.Enum;
         if (IsAssetRefSpec(s)) return EditorType.String;
         if (s.Equals("RawReference", StringComparison.OrdinalIgnoreCase)) return EditorType.String;
+        if (registry?.TryGetByClassName(s, out var objSchema) == true && objSchema is not null)
+            return EditorType.Object;
 
         return s switch
         {
@@ -59,12 +61,12 @@ public static class XmlAssetCodec
         };
     }
 
-    public static AssetNodeViewModel CreateDefaultAssetViewModel(RsdSchema schema, Action? markDirty)
+    public static AssetNodeViewModel CreateDefaultAssetViewModel(RsdSchema schema, RsdSchemaRegistry? registry, Action? markDirty)
     {
         var root = new AssetNodeViewModel(schema.ClassName, EditorType.Object, markDirty);
         foreach (var (fieldName, typeSpec) in schema.Fields)
         {
-            root.Children.Add(CreateDefaultField(schema, fieldName, typeSpec, markDirty));
+            root.Children.Add(CreateDefaultField(schema, registry, fieldName, typeSpec, markDirty));
         }
         return root;
     }
@@ -72,6 +74,7 @@ public static class XmlAssetCodec
     public static AssetNodeViewModel LoadAssetAsViewModel(
         string filePath,
         RsdSchema schema,
+        RsdSchemaRegistry? registry,
         Action? markDirty,
         out bool mutated,
         out List<string> warnings)
@@ -86,15 +89,15 @@ public static class XmlAssetCodec
 
         foreach (var (fieldName, typeSpec) in schema.Fields)
         {
-            var vm = CreateDefaultField(schema, fieldName, typeSpec, markDirty);
-            ApplyFromXml(rootEl, schema, fieldName, typeSpec, vm, markDirty, ref mutated, warnings);
+            var vm = CreateDefaultField(schema, registry, fieldName, typeSpec, markDirty);
+            ApplyFromXml(rootEl, schema, registry, fieldName, typeSpec, vm, markDirty, ref mutated, warnings);
             rootVm.Children.Add(vm);
         }
 
         return rootVm;
     }
 
-    public static void SaveAssetFromViewModel(string filePath, RsdSchema schema, AssetNodeViewModel rootVm)
+    public static void SaveAssetFromViewModel(string filePath, RsdSchema schema, RsdSchemaRegistry? registry, AssetNodeViewModel rootVm)
     {
         var root = new XElement("asset");
 
@@ -106,7 +109,7 @@ public static class XmlAssetCodec
             if (!byName.TryGetValue(fieldName, out var vm))
                 continue;
 
-            WriteField(schema, fieldName, typeSpec, vm, root);
+            WriteField(schema, registry, fieldName, typeSpec, vm, root);
         }
 
         var doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
@@ -115,10 +118,10 @@ public static class XmlAssetCodec
 
     // ----------------- Build VM -----------------
 
-    private static AssetNodeViewModel CreateDefaultField(RsdSchema schema, string fieldName, string typeSpec, Action? markDirty)
+    private static AssetNodeViewModel CreateDefaultField(RsdSchema schema, RsdSchemaRegistry? registry, string fieldName, string typeSpec, Action? markDirty)
     {
         var t = typeSpec.Trim();
-        var et = TypeSpecToEditorType(t);
+        var et = TypeSpecToEditorType(t, registry);
         var vm = new AssetNodeViewModel(fieldName, et, markDirty);
 
         if (et == EditorType.Enum)
@@ -143,6 +146,12 @@ public static class XmlAssetCodec
         if (et == EditorType.Object)
         {
             vm.SetAs(EditorType.Object);
+            if (registry?.TryGetByClassName(t, out var sub) == true && sub is not null)
+            {
+                vm.Children.Clear();
+                foreach (var (fn, ts) in sub.Fields)
+                    vm.Children.Add(CreateDefaultField(sub, registry, fn, ts, markDirty));
+            }
             return vm;
         }
 
@@ -156,6 +165,7 @@ public static class XmlAssetCodec
     private static void ApplyFromXml(
         XElement root,
         RsdSchema schema,
+        RsdSchemaRegistry? registry,
         string fieldName,
         string typeSpec,
         AssetNodeViewModel vm,
@@ -211,6 +221,24 @@ public static class XmlAssetCodec
                     var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.Vector4, markDirty);
                     itemVm.SetVector4(ReadAttrDoubleOr0(child, "x"), ReadAttrDoubleOr0(child, "y"), ReadAttrDoubleOr0(child, "z"), ReadAttrDoubleOr0(child, "w"));
                     vm.Children.Add(itemVm);
+                }
+                return;
+            }
+
+            // Array of object type: DynamicArray<OneEntity>
+            if (registry?.TryGetByClassName(elemSpec, out var itemSchema) == true && itemSchema is not null)
+            {
+                var idx = 0;
+                foreach (var child in container.Elements())
+                {
+                    var objVm = new AssetNodeViewModel($"[{idx++}]", EditorType.Object, markDirty);
+                    foreach (var (fn, ts) in itemSchema.Fields)
+                    {
+                        var fvm = CreateDefaultField(itemSchema, registry, fn, ts, markDirty);
+                        ApplyFromXml(child, itemSchema, registry, fn, ts, fvm, markDirty, ref mutated, warnings);
+                        objVm.Children.Add(fvm);
+                    }
+                    vm.Children.Add(objVm);
                 }
                 return;
             }
@@ -339,7 +367,7 @@ public static class XmlAssetCodec
 
     // ----------------- VM -> XML -----------------
 
-    private static void WriteField(RsdSchema schema, string fieldName, string typeSpec, AssetNodeViewModel vm, XElement root)
+    private static void WriteField(RsdSchema schema, RsdSchemaRegistry? registry, string fieldName, string typeSpec, AssetNodeViewModel vm, XElement root)
     {
         var t = typeSpec.Trim();
 
@@ -383,6 +411,25 @@ public static class XmlAssetCodec
                     el.SetAttributeValue("z", item.ZText);
                     el.SetAttributeValue("w", item.WText);
                     container.Add(el);
+                }
+                root.Add(container);
+                return;
+            }
+
+            // Array of object type
+            if (registry?.TryGetByClassName(elemSpec, out var itemSchema) == true && itemSchema is not null)
+            {
+                foreach (var item in vm.Children)
+                {
+                    var itemEl = new XElement("item");
+                    var byName = item.Children.ToDictionary(c => c.Name, StringComparer.Ordinal);
+                    foreach (var (fn, ts) in itemSchema.Fields)
+                    {
+                        if (!byName.TryGetValue(fn, out var childVm))
+                            continue;
+                        WriteField(itemSchema, registry, fn, ts, childVm, itemEl);
+                    }
+                    container.Add(itemEl);
                 }
                 root.Add(container);
                 return;

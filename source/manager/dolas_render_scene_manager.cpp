@@ -57,30 +57,14 @@ namespace Dolas
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);
 
         // 直接从 SceneRSD 构建 RenderScene（不再依赖旧 SceneAsset/SceneEntity）
-        const std::size_t n = scene_rsd->entities.size();
-        if (scene_rsd->entity_positions.size() != n ||
-            scene_rsd->entity_rotations.size() != n ||
-            scene_rsd->entity_scales.size() != n)
+        for (const auto& item : scene_rsd->entities)
         {
-            LOG_ERROR("SceneRSD arrays size mismatch: entities={0}, positions={1}, rotations={2}, scales={3}",
-                (UInt)n,
-                (UInt)scene_rsd->entity_positions.size(),
-                (UInt)scene_rsd->entity_rotations.size(),
-                (UInt)scene_rsd->entity_scales.size());
-        }
+            const std::string& entity_file = item.entities;
+            const Vector3 position = item.entity_positions;
+            const Vector3 scale = item.entity_scales;
 
-        for (std::size_t i = 0; i < n; i++)
-        {
-            const std::string& entity_file = scene_rsd->entities[i];
-
-            Vector3 position{};
-            Vector3 scale{ 1.0f, 1.0f, 1.0f };
-            Vector4 rotv{ 0.0f, 0.0f, 0.0f, 1.0f }; // (x,y,z,w)
-
-            if (i < scene_rsd->entity_positions.size()) position = scene_rsd->entity_positions[i];
-            if (i < scene_rsd->entity_scales.size()) scale = scene_rsd->entity_scales[i];
-            if (i < scene_rsd->entity_rotations.size()) rotv = scene_rsd->entity_rotations[i];
-
+            // Rotation stored as Vector4(x,y,z,w) in XML; Quaternion ctor is (w,x,y,z).
+            const Vector4 rotv = item.entity_rotations;
             const Quaternion rotation(rotv.w, rotv.x, rotv.y, rotv.z);
 
             RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file, position, rotation, scale);

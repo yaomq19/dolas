@@ -1,26 +1,16 @@
 <asset>
   <entities>
-    <item>ground_plane.entity</item>
-    <item>sphere_0.entity</item>
+    <item>
+      <entities>ground_plane.entity</entities>
+      <entity_positions x="0.0" y="0.0" z="0.0" />
+      <entity_rotations x="0.0" y="0.0" z="0.0" w="1.0" />
+      <entity_scales x="1.5" y="1.5" z="0.1" />
+    </item>
+    <item>
+      <entities>sphere_0.entity</entities>
+      <entity_positions x="0.0" y="0.0" z="2.0" />
+      <entity_rotations x="0.0" y="0.0" z="0.0" w="1.0" />
+      <entity_scales x="0.75" y="0.75" z="0.75" />
+    </item>
   </entities>
-
-  <entity_positions>
-    <item x="0.0" y="0.0" z="0.0" />
-    <item x="0.0" y="0.0" z="2.0" />
-  </entity_positions>
-
-  <!-- rotation stored as Vector4(x,y,z,w) -->
-  <entity_rotations>
-    <item x="0.0" y="0.0" z="0.0" w="1.0" />
-    <item x="0.0" y="0.0" z="0.0" w="1.0" />
-  </entity_rotations>
-
-  <entity_scales>
-    <item x="1.5" y="1.5" z="0.1" />
-    <item x="0.75" y="0.75" z="0.75" />
-  </entity_scales>
-
-  <models>
-    <item>backpack/backpack.obj</item>
-  </models>
 </asset>

@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 struct Field
 {
     std::string name;
-    std::string typeSpec; // canonical spec string, e.g. "Vector3", "Map<String, Vector4>", "DynamicArray<Xml>"
+    std::string typeSpec; // canonical spec string, e.g. "Vector3", "Map<String, Vector4>", "DynamicArray<OneEntity>"
 };
 
 struct EnumValue
@@ -34,16 +34,23 @@ struct EnumDef
     std::vector<EnumValue> values;
 };
 
-struct Schema
+struct StructDef
 {
-    std::string rsdFileName; // e.g. "camera.rsd"
-    std::string stem;        // e.g. "camera"
-    std::string className;   // e.g. "CameraRSD"
-    std::string fileSuffix;  // e.g. ".camera"
+    std::string className;  // e.g. "CameraRSD" / "OneEntity"
+    std::string fileSuffix; // optional; empty means "not an asset schema"
     std::vector<Field> fields;
+};
+
+struct RsdFile
+{
+    std::string rsdFileName; // e.g. "scene.rsd"
+    std::string stem;        // e.g. "scene"
 
     // Optional enums declared in the same .rsd file (rsd_file format).
     std::vector<EnumDef> enums;
+
+    // One file can declare multiple <rsd> blocks (e.g. object types + asset type).
+    std::vector<StructDef> structs;
 };
 
 static inline std::string Trim(std::string s)
@@ -91,6 +98,7 @@ struct IncludeNeeds
     bool needVector = false;
     bool needMap = false;
     bool needSet = false;
+    bool needTinyxml2 = false; // only needed when generating DynArrayObject parse helpers
 };
 
 static CppType CppTypeForSpec(const std::string& specIn, IncludeNeeds& needs);
@@ -296,55 +304,17 @@ static EnumDef LoadEnum(const tinyxml2::XMLElement* enumEl)
     return e;
 }
 
-static Schema LoadSchema(const fs::path& rsdPath)
+static StructDef LoadOneRsdStruct(
+    const fs::path& rsdPath,
+    const tinyxml2::XMLElement* rsdRoot,
+    const std::unordered_set<std::string>& enumNames)
 {
-    tinyxml2::XMLDocument doc;
-    if (doc.LoadFile(rsdPath.string().c_str()) != tinyxml2::XML_SUCCESS)
-        throw std::runtime_error("Failed to load RSD: " + rsdPath.string());
-
-    const tinyxml2::XMLElement* root = doc.RootElement();
-    if (!root)
-        throw std::runtime_error("RSD XML has no root element: " + rsdPath.string());
-
-    // Supported formats:
-    // - legacy:   <rsd class_name="X" file_suffix=".x">...</rsd>
-    // - extended: <rsd_file><enum ...>...</enum><rsd ...>...</rsd></rsd_file>
-    const tinyxml2::XMLElement* rsdRoot = nullptr;
-    std::vector<EnumDef> enums;
-
-    const std::string rootName = root->Name();
-    if (rootName == "rsd")
-    {
-        rsdRoot = root;
-    }
-    else if (rootName == "rsd_file")
-    {
-        for (auto* e = root->FirstChildElement("enum"); e; e = e->NextSiblingElement("enum"))
-            enums.push_back(LoadEnum(e));
-
-        rsdRoot = root->FirstChildElement("rsd");
-        if (!rsdRoot)
-            throw std::runtime_error("<rsd_file> missing <rsd> element: " + rsdPath.string());
-    }
-    else
-    {
-        throw std::runtime_error("RSD root must be <rsd> or <rsd_file>: " + rsdPath.string());
-    }
-
     const char* className = rsdRoot->Attribute("class_name");
     const char* fileSuffix = rsdRoot->Attribute("file_suffix");
     if (!className || !*className) throw std::runtime_error("RSD missing class_name: " + rsdPath.string());
-    if (!fileSuffix || !*fileSuffix) throw std::runtime_error("RSD missing file_suffix: " + rsdPath.string());
-
-    Schema s;
-    s.rsdFileName = rsdPath.filename().string();
-    s.stem = rsdPath.stem().string();
+    StructDef s;
     s.className = Trim(className);
-    s.fileSuffix = Trim(fileSuffix);
-    s.enums = std::move(enums);
-
-    std::unordered_set<std::string> enumNames;
-    for (const auto& e : s.enums) enumNames.insert(e.name);
+    s.fileSuffix = (fileSuffix && *fileSuffix) ? Trim(fileSuffix) : std::string();
 
     for (auto* f = rsdRoot->FirstChildElement("field"); f; f = f->NextSiblingElement("field"))
     {
@@ -363,6 +333,50 @@ static Schema LoadSchema(const fs::path& rsdPath)
     }
 
     return s;
+}
+
+static RsdFile LoadRsdFile(const fs::path& rsdPath)
+{
+    tinyxml2::XMLDocument doc;
+    if (doc.LoadFile(rsdPath.string().c_str()) != tinyxml2::XML_SUCCESS)
+        throw std::runtime_error("Failed to load RSD: " + rsdPath.string());
+
+    const tinyxml2::XMLElement* root = doc.RootElement();
+    if (!root)
+        throw std::runtime_error("RSD XML has no root element: " + rsdPath.string());
+
+    RsdFile file;
+    file.rsdFileName = rsdPath.filename().string();
+    file.stem = rsdPath.stem().string();
+
+    const std::string rootName = root->Name();
+    if (rootName == "rsd")
+    {
+        const char* fileSuffix = root->Attribute("file_suffix");
+        if (!fileSuffix || !*fileSuffix)
+            throw std::runtime_error("Legacy <rsd> missing required file_suffix: " + rsdPath.string());
+
+        std::unordered_set<std::string> enumNames;
+        file.structs.push_back(LoadOneRsdStruct(rsdPath, root, enumNames));
+        return file;
+    }
+
+    if (rootName != "rsd_file")
+        throw std::runtime_error("RSD root must be <rsd> or <rsd_file>: " + rsdPath.string());
+
+    for (auto* e = root->FirstChildElement("enum"); e; e = e->NextSiblingElement("enum"))
+        file.enums.push_back(LoadEnum(e));
+
+    std::unordered_set<std::string> enumNames;
+    for (const auto& e : file.enums) enumNames.insert(e.name);
+
+    for (auto* rsd = root->FirstChildElement("rsd"); rsd; rsd = rsd->NextSiblingElement("rsd"))
+        file.structs.push_back(LoadOneRsdStruct(rsdPath, rsd, enumNames));
+
+    if (file.structs.empty())
+        throw std::runtime_error("<rsd_file> has no <rsd> entries: " + rsdPath.string());
+
+    return file;
 }
 
 static std::string ReadAllText(const fs::path& p)
@@ -384,17 +398,21 @@ static void WriteAllTextIfChanged(const fs::path& p, const std::string& text)
     out << text;
 }
 
-static std::string GenerateHeader(const Schema& s)
+static std::string GenerateHeader(const RsdFile& file)
 {
     IncludeNeeds needs;
 
     std::ostringstream fieldLines;
     std::ostringstream descLines;
+    std::ostringstream body;
 
     // Enum declarations + enum mapping tables (only for rsd_file format).
     std::ostringstream enumDecls;
     std::ostringstream enumTables;
-    bool hasEnums = !s.enums.empty();
+    bool hasEnums = !file.enums.empty();
+
+    // Helpers for parsing DynArrayObject fields (need typed vector<T>).
+    std::ostringstream dynArrayObjectParsers;
 
     auto escapeForCxx = [](const std::string& str) {
         std::string out;
@@ -409,7 +427,7 @@ static std::string GenerateHeader(const Schema& s)
 
     if (hasEnums)
     {
-        for (const auto& e : s.enums)
+        for (const auto& e : file.enums)
         {
             enumDecls << "enum class " << e.name << " : " << e.underlying << "\n{\n";
             for (const auto& v : e.values)
@@ -429,39 +447,146 @@ static std::string GenerateHeader(const Schema& s)
         }
     }
 
-    for (const auto& f : s.fields)
+    std::ostringstream enumSection;
+    if (hasEnums)
     {
-        CppType ct = CppTypeForSpec(f.typeSpec, needs);
-        fieldLines << "    " << ct.type << " " << f.name << ct.suffix << ";\n";
-
-        const std::string e = FieldEnumForSpec(f.typeSpec);
-        if (e == "RsdFieldType::EnumUInt")
-        {
-            // typeSpec is "Enum<EnumName>"
-            const auto lt = f.typeSpec.find('<');
-            const auto gt = f.typeSpec.rfind('>');
-            const std::string enumName = (lt != std::string::npos && gt != std::string::npos && gt > lt)
-                ? Trim(f.typeSpec.substr(lt + 1, gt - lt - 1))
-                : std::string();
-            descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
-                      << "), kEnum_" << enumName << ".data(), kEnum_" << enumName << ".size()},\n";
-        }
-        else
-        {
-            descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
-                      << "), nullptr, 0},\n";
-        }
+        enumSection << enumDecls.str();
+        enumSection << enumTables.str();
     }
+
+    std::unordered_set<std::string> structNames;
+    for (const auto& st : file.structs) structNames.insert(st.className);
+
+    // We must emit in this order to satisfy C++ name lookup:
+    // 1) struct declarations
+    // 2) DynArrayObject parse helpers (need complete inner type to reference Inner::kFields)
+    // 3) kFields definitions
+    std::ostringstream structDecls;
+    std::ostringstream structDefs;
+
+    for (const auto& s : file.structs)
+    {
+        fieldLines.str("");
+        fieldLines.clear();
+
+        for (const auto& f : s.fields)
+        {
+            CppType ct = CppTypeForSpec(f.typeSpec, needs);
+            fieldLines << "    " << ct.type << " " << f.name << ct.suffix << ";\n";
+        }
+
+        structDecls << "struct " << s.className << ";\n";
+
+        structDefs << "struct " << s.className << "\n{\n";
+        if (!s.fileSuffix.empty())
+            structDefs << "    static constexpr const char* kFileSuffix = \"" << s.fileSuffix << "\";\n";
+        structDefs << fieldLines.str();
+        structDefs << "\n    static const std::array<RsdFieldDesc, " << s.fields.size() << "> kFields;\n";
+        structDefs << "};\n\n";
+    }
+
+    // Generate helpers and kFields defs
+    for (const auto& s : file.structs)
+    {
+        descLines.str("");
+        descLines.clear();
+
+        for (const auto& f : s.fields)
+        {
+            std::string e = FieldEnumForSpec(f.typeSpec);
+            const std::string t = Trim(f.typeSpec);
+
+            if (e == "RsdFieldType::Unsupported")
+            {
+                // Object
+                if (structNames.contains(t))
+                    e = "RsdFieldType::Object";
+
+                // DynamicArray<Object>
+                if (t.rfind("DynamicArray<", 0) == 0)
+                {
+                    const auto lt = t.find('<');
+                    const auto gt = t.rfind('>');
+                    const std::string inner = (lt != std::string::npos && gt != std::string::npos && gt > lt)
+                        ? Trim(t.substr(lt + 1, gt - lt - 1))
+                        : std::string();
+                    if (structNames.contains(inner))
+                        e = "RsdFieldType::DynArrayObject";
+                }
+            }
+
+            if (e == "RsdFieldType::EnumUInt")
+            {
+                const auto lt = f.typeSpec.find('<');
+                const auto gt = f.typeSpec.rfind('>');
+                const std::string enumName = (lt != std::string::npos && gt != std::string::npos && gt > lt)
+                    ? Trim(f.typeSpec.substr(lt + 1, gt - lt - 1))
+                    : std::string();
+                descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
+                          << "), kEnum_" << enumName << ".data(), kEnum_" << enumName << ".size(), nullptr, 0, nullptr},\n";
+            }
+            else if (e == "RsdFieldType::Object")
+            {
+                descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
+                          << "), nullptr, 0, " << t << "::kFields.data(), " << t << "::kFields.size(), nullptr},\n";
+            }
+            else if (e == "RsdFieldType::DynArrayObject")
+            {
+                const auto lt = t.find('<');
+                const auto gt = t.rfind('>');
+                const std::string inner = (lt != std::string::npos && gt != std::string::npos && gt > lt)
+                    ? Trim(t.substr(lt + 1, gt - lt - 1))
+                    : std::string();
+
+                needs.needTinyxml2 = true;
+                needs.needVector = true;
+                dynArrayObjectParsers
+                    << "inline bool ParseDynArrayObject_" << s.className << "_" << f.name
+                    << "(void* vecMember, const tinyxml2::XMLElement* container)\n{\n"
+                    << "    auto* v = reinterpret_cast<std::vector<" << inner << ">*>(vecMember);\n"
+                    << "    if (!container) return true;\n"
+                    << "    for (auto* child = container->FirstChildElement(); child; child = child->NextSiblingElement())\n"
+                    << "    {\n"
+                    << "        " << inner << " tmp{};\n"
+                    << "        ParseRsdObjectFromXmlElement(child, &tmp, " << inner << "::kFields.data(), " << inner << "::kFields.size());\n"
+                    << "        v->push_back(tmp);\n"
+                    << "    }\n"
+                    << "    return true;\n"
+                    << "}\n\n";
+
+                descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
+                          << "), nullptr, 0, " << inner << "::kFields.data(), " << inner << "::kFields.size(), &ParseDynArrayObject_" << s.className << "_" << f.name << "},\n";
+            }
+            else
+            {
+                descLines << "        {\"" << f.name << "\", " << e << ", offsetof(" << s.className << ", " << f.name
+                          << "), nullptr, 0, nullptr, 0, nullptr},\n";
+            }
+        }
+
+        body << "inline const std::array<RsdFieldDesc, " << s.fields.size() << "> " << s.className << "::kFields = {{\n";
+        body << descLines.str();
+        body << "}};\n\n";
+    }
+
+    std::ostringstream ns;
+    ns << enumSection.str();
+    ns << structDecls.str() << "\n";
+    ns << structDefs.str();
+    if (!dynArrayObjectParsers.str().empty())
+        ns << dynArrayObjectParsers.str();
+    ns << body.str();
 
     std::ostringstream h;
     h << "// Auto-generated by precompile (RSD -> .h). DO NOT EDIT.\n";
-    h << "// Source: " << s.rsdFileName << "\n\n";
+    h << "// Source: " << file.rsdFileName << "\n\n";
     h << "#pragma once\n\n";
 
     if (needs.needString) h << "#include <string>\n";
     if (needs.needVector) h << "#include <vector>\n";
     if (needs.needMap) h << "#include <map>\n";
     if (needs.needSet) h << "#include <set>\n";
+    if (needs.needTinyxml2) h << "#include <tinyxml2.h>\n";
     h << "#include <array>\n";
     h << "#include <cstddef>\n";
 
@@ -470,21 +595,7 @@ static std::string GenerateHeader(const Schema& s)
     h << "#include \"common/rsd_field.h\"\n\n";
 
     h << "namespace Dolas {\n\n";
-
-    if (hasEnums)
-    {
-        h << enumDecls.str();
-        h << enumTables.str();
-    }
-
-    h << "struct " << s.className << "\n{\n";
-    h << "    static constexpr const char* kFileSuffix = \"" << s.fileSuffix << "\";\n";
-    h << fieldLines.str();
-    h << "\n    static const std::array<RsdFieldDesc, " << s.fields.size() << "> kFields;\n";
-    h << "};\n\n";
-    h << "inline const std::array<RsdFieldDesc, " << s.fields.size() << "> " << s.className << "::kFields = {{\n";
-    h << descLines.str();
-    h << "}};\n\n";
+    h << ns.str();
     h << "} // namespace Dolas\n";
 
     return h.str();
@@ -564,7 +675,7 @@ int main(int argc, char** argv)
 
         for (const auto& p : rsdFiles)
         {
-            Schema s = LoadSchema(p);
+            RsdFile s = LoadRsdFile(p);
             expectedStems.insert(s.stem);
 
             const fs::path outH = outDir / (s.stem + ".h");

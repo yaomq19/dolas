@@ -1,11 +1,13 @@
-<rsd class_name="SceneRSD" file_suffix=".scene">
-  <!-- entities: array of references to .entity assets -->
-  <field name="entities" type="DynamicArray" element="AssetReference" target="EntityRSD" />
+<rsd_file>
+  <rsd class_name="OneEntity">
+    <field name="entities" type="AssetReference" target="EntityRSD" />
+    <field name="entity_positions" type="Vector3" />
+    <field name="entity_rotations" type="Vector4" />
+    <field name="entity_scales" type="Vector3" />
+  </rsd>
 
-  <!-- Per-entity transforms (indices must align with `entities`) -->
-  <field name="entity_positions" type="DynamicArray" element="Vector3" />
-  <field name="entity_rotations" type="DynamicArray" element="Vector4" />
-  <field name="entity_scales" type="DynamicArray" element="Vector3" />
-</rsd>
-
+  <rsd class_name="SceneRSD" file_suffix=".scene">
+    <field name="entities" type="DynamicArray" element="OneEntity" />
+  </rsd>
+</rsd_file>
 

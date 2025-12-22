@@ -55,7 +55,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         NewAssetFromSchemaCommand = new RelayCommand<RsdSchema>(CreateNewAssetFromSchema, _ => CanCreateNewAsset);
 
         AssetRoots = new ObservableCollection<AssetItem>(_assetDatabase.GetRootItems());
-        AvailableSchemas = new ObservableCollection<RsdSchema>(_rsdRegistry?.AllSchemas ?? Array.Empty<RsdSchema>());
+        AvailableSchemas = new ObservableCollection<RsdSchema>(_rsdRegistry?.AllAssetSchemas ?? Array.Empty<RsdSchema>());
         Logs = new ObservableCollection<string>
         {
             "DolasAssetEditor 启动完成。",
@@ -209,13 +209,13 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _matchedSchema = schema;
 
-            var vm = XmlAssetCodec.LoadAssetAsViewModel(filePath, schema, MarkDirty, out var mutated, out var warnings);
+            var vm = XmlAssetCodec.LoadAssetAsViewModel(filePath, schema, _rsdRegistry, MarkDirty, out var mutated, out var warnings);
             AssetRoot = vm;
 
             // 如果加载过程中发现缺失字段/无法解析并回退到默认值，则视为“未保存的改动”
             IsDirty = mutated;
-            StatusText = $"已加载（{schema.ClassName} / {schema.FileSuffix}）";
-            Logs.Add($"加载资产：{filePath} -> schema: {schema.ClassName} ({schema.FileSuffix})");
+            StatusText = $"已加载（{schema.ClassName} / {schema.FileSuffix ?? "（无后缀）"}）";
+            Logs.Add($"加载资产：{filePath} -> schema: {schema.ClassName} ({schema.FileSuffix ?? "（无后缀）"})");
             foreach (var w in warnings)
                 Logs.Add($"提示：{w}");
         }
@@ -247,7 +247,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (_matchedSchema is null)
                 throw new InvalidOperationException("未匹配到 schema，无法保存。");
 
-            XmlAssetCodec.SaveAssetFromViewModel(SelectedAssetPath, _matchedSchema, AssetRoot);
+            XmlAssetCodec.SaveAssetFromViewModel(SelectedAssetPath, _matchedSchema, _rsdRegistry, AssetRoot);
             IsDirty = false;
             StatusText = "已保存";
             Logs.Add($"保存成功：{SelectedAssetPath}");
@@ -305,14 +305,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         try
         {
             var contentRoot = RepoLocator.TryFindContentRoot();
+            var suffix = schema.FileSuffix ?? string.Empty;
             var dlg = new SaveFileDialog
             {
                 Title = "新建资产 - 选择保存路径与文件名",
                 AddExtension = true,
-                DefaultExt = schema.FileSuffix,
-                Filter = $"{schema.FileSuffix} 资产|*{schema.FileSuffix}|所有文件|*.*",
+                DefaultExt = suffix,
+                Filter = $"{suffix} 资产|*{suffix}|所有文件|*.*",
                 InitialDirectory = contentRoot ?? _repoRoot ?? Environment.CurrentDirectory,
-                FileName = $"new{schema.FileSuffix}"
+                FileName = $"new{suffix}"
             };
 
             if (dlg.ShowDialog() != true)
@@ -324,8 +325,8 @@ public sealed class MainWindowViewModel : ViewModelBase
                 Directory.CreateDirectory(dir);
 
             // 用 schema 默认值生成一个可编辑 ViewModel，并写入磁盘（XML）
-            var defaultVm = XmlAssetCodec.CreateDefaultAssetViewModel(schema, MarkDirty);
-            XmlAssetCodec.SaveAssetFromViewModel(filePath, schema, defaultVm);
+            var defaultVm = XmlAssetCodec.CreateDefaultAssetViewModel(schema, _rsdRegistry, MarkDirty);
+            XmlAssetCodec.SaveAssetFromViewModel(filePath, schema, _rsdRegistry, defaultVm);
 
             // 刷新左侧树并打开新资产
             RefreshAssetTree();

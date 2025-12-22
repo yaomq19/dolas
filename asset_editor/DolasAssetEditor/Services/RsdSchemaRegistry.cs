@@ -10,17 +10,26 @@ namespace Dolas.AssetEditor.Services;
 public sealed class RsdSchemaRegistry
 {
     private readonly Dictionary<string, RsdSchema> _bySuffix;
+    private readonly Dictionary<string, RsdSchema> _byClassName;
     private readonly List<RsdSchema> _all;
+    private readonly List<RsdSchema> _assets;
 
     private RsdSchemaRegistry(List<RsdSchema> schemas)
     {
         _all = schemas;
-        _bySuffix = schemas
-            .GroupBy(s => NormalizeSuffix(s.FileSuffix))
+        _assets = schemas.Where(s => s.IsAssetSchema).ToList();
+
+        _bySuffix = _assets
+            .GroupBy(s => NormalizeSuffix(s.FileSuffix!))
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        _byClassName = schemas
+            .GroupBy(s => s.ClassName, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
     }
 
     public IReadOnlyList<RsdSchema> AllSchemas => new ReadOnlyCollection<RsdSchema>(_all);
+    public IReadOnlyList<RsdSchema> AllAssetSchemas => new ReadOnlyCollection<RsdSchema>(_assets);
 
     public static RsdSchemaRegistry LoadFromRepoRoot(string repoRoot)
     {
@@ -31,7 +40,7 @@ public sealed class RsdSchemaRegistry
         var schemas = new List<RsdSchema>();
         foreach (var file in Directory.EnumerateFiles(rsdDir, "*.rsd").OrderBy(Path.GetFileName))
         {
-            schemas.Add(LoadOne(file));
+            schemas.AddRange(LoadMany(file));
         }
 
         if (schemas.Count == 0)
@@ -47,6 +56,14 @@ public sealed class RsdSchemaRegistry
         return _bySuffix.TryGetValue(key, out schema);
     }
 
+    public bool TryGetByClassName(string className, out RsdSchema? schema)
+    {
+        schema = null;
+        var key = className?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        return _byClassName.TryGetValue(key, out schema);
+    }
+
     private static string NormalizeSuffix(string s)
     {
         s = s.Trim();
@@ -54,24 +71,18 @@ public sealed class RsdSchemaRegistry
         return s.ToLowerInvariant();
     }
 
-    private static RsdSchema LoadOne(string rsdFile)
+    private static IReadOnlyList<RsdSchema> LoadMany(string rsdFile)
     {
         var doc = XDocument.Load(rsdFile, LoadOptions.PreserveWhitespace);
         var root = doc.Root ?? throw new InvalidOperationException($"RSD XML 没有根节点：{rsdFile}");
-        XElement rsdRoot;
 
         // Supported formats:
         // - legacy:   <rsd class_name="X" file_suffix=".x">...</rsd>
-        // - extended: <rsd_file><enum .../><rsd .../></rsd_file>
+        // - extended: <rsd_file><enum .../>...<rsd .../> <rsd .../> ...</rsd_file>
         var enums = new Dictionary<string, RsdEnumDef>(StringComparer.Ordinal);
-        if (string.Equals(root.Name.LocalName, "rsd", StringComparison.OrdinalIgnoreCase))
+        void loadEnums(XElement fileRoot)
         {
-            rsdRoot = root;
-        }
-        else if (string.Equals(root.Name.LocalName, "rsd_file", StringComparison.OrdinalIgnoreCase))
-        {
-            // Load enums first
-            foreach (var e in root.Elements("enum"))
+            foreach (var e in fileRoot.Elements("enum"))
             {
                 var enumName = e.Attribute("class_name")?.Value?.Trim();
                 if (string.IsNullOrWhiteSpace(enumName))
@@ -103,115 +114,115 @@ public sealed class RsdSchemaRegistry
                     Values = values
                 };
             }
-
-            rsdRoot = root.Element("rsd") ?? throw new InvalidOperationException($"RSD <rsd_file> 缺少 <rsd>：{rsdFile}");
-        }
-        else
-        {
-            throw new InvalidOperationException($"RSD 根节点必须是 <rsd> 或 <rsd_file>：{rsdFile}");
         }
 
-        var className = rsdRoot.Attribute("class_name")?.Value?.Trim();
-        var fileSuffix = rsdRoot.Attribute("file_suffix")?.Value?.Trim();
-        if (string.IsNullOrWhiteSpace(className))
-            throw new InvalidOperationException($"RSD 缺少必需属性 class_name：{rsdFile}");
-        if (string.IsNullOrWhiteSpace(fileSuffix))
-            throw new InvalidOperationException($"RSD 缺少必需属性 file_suffix：{rsdFile}");
-
-        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var f in rsdRoot.Elements("field"))
+        RsdSchema parseOneRsd(XElement rsdRoot)
         {
-            var name = f.Attribute("name")?.Value?.Trim();
-            var type = f.Attribute("type")?.Value?.Trim();
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(type))
-                throw new InvalidOperationException($"RSD <field> 缺少 name/type：{rsdFile}");
+            var className = rsdRoot.Attribute("class_name")?.Value?.Trim();
+            var fileSuffix = rsdRoot.Attribute("file_suffix")?.Value?.Trim(); // optional for object types
+            if (string.IsNullOrWhiteSpace(className))
+                throw new InvalidOperationException($"RSD 缺少必需属性 class_name：{rsdFile}");
 
-            // 兼容新版 XML 语法：
-            //   <field name="xxx" type="Map" key="String" value="Vector4" />
-            //   <field name="xxx" type="DynamicArray" element="Xml" />
-            // 并统一转换为旧式 typeSpec 字符串，供现有编辑器/codec 继续工作：
-            //   "Map<String, Vector4>"
-            //   "DynamicArray<Xml>"
-            var t = type.Trim();
-            if (t.Equals("Map", StringComparison.OrdinalIgnoreCase))
+            var fields = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var f in rsdRoot.Elements("field"))
             {
-                var key = f.Attribute("key")?.Value?.Trim();
-                var value = f.Attribute("value")?.Value?.Trim();
-                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
-                    throw new InvalidOperationException($"RSD <field> type=Map 缺少 key/value：{rsdFile}");
-                fields[name] = $"Map<{key}, {value}>";
-                continue;
-            }
+                var name = f.Attribute("name")?.Value?.Trim();
+                var type = f.Attribute("type")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(type))
+                    throw new InvalidOperationException($"RSD <field> 缺少 name/type：{rsdFile}");
 
-            if (t.Equals("DynamicArray", StringComparison.OrdinalIgnoreCase))
-            {
-                var element = f.Attribute("element")?.Value?.Trim();
-                if (string.IsNullOrWhiteSpace(element))
+                var t = type.Trim();
+                if (t.Equals("Map", StringComparison.OrdinalIgnoreCase))
                 {
-                    fields[name] = "DynamicArray";
+                    var key = f.Attribute("key")?.Value?.Trim();
+                    var value = f.Attribute("value")?.Value?.Trim();
+                    if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                        throw new InvalidOperationException($"RSD <field> type=Map 缺少 key/value：{rsdFile}");
+                    fields[name] = $"Map<{key}, {value}>";
                     continue;
                 }
 
-                // Support attribute form for nested AssetReference to avoid XML entities:
-                //   <field type="DynamicArray" element="AssetReference" target="EntityRSD" />
-                if (string.Equals(element, "AssetReference", StringComparison.OrdinalIgnoreCase))
+                if (t.Equals("DynamicArray", StringComparison.OrdinalIgnoreCase))
+                {
+                    var element = f.Attribute("element")?.Value?.Trim();
+                    if (string.IsNullOrWhiteSpace(element))
+                    {
+                        fields[name] = "DynamicArray";
+                        continue;
+                    }
+
+                    if (string.Equals(element, "AssetReference", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var target = f.Attribute("target")?.Value?.Trim();
+                        if (string.IsNullOrWhiteSpace(target))
+                            throw new InvalidOperationException($"RSD <field> type=DynamicArray element=AssetReference 缺少 target：{rsdFile}");
+                        fields[name] = $"DynamicArray<AssetReference<{target}>>";
+                        continue;
+                    }
+
+                    fields[name] = $"DynamicArray<{element}>";
+                    continue;
+                }
+
+                if (t.Equals("AssetReference", StringComparison.OrdinalIgnoreCase))
                 {
                     var target = f.Attribute("target")?.Value?.Trim();
                     if (string.IsNullOrWhiteSpace(target))
-                        throw new InvalidOperationException($"RSD <field> type=DynamicArray element=AssetReference 缺少 target：{rsdFile}");
-                    fields[name] = $"DynamicArray<AssetReference<{target}>>";
+                        throw new InvalidOperationException($"RSD <field> type=AssetReference 缺少 target：{rsdFile}");
+                    fields[name] = $"AssetReference<{target}>";
                     continue;
                 }
 
-                fields[name] = $"DynamicArray<{element}>";
-                continue;
+                if (t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
+                {
+                    fields[name] = "RawReference";
+                    continue;
+                }
+
+                if (t.Equals("StaticArray", StringComparison.OrdinalIgnoreCase))
+                {
+                    var element = f.Attribute("element")?.Value?.Trim();
+                    var count = f.Attribute("count")?.Value?.Trim() ?? f.Attribute("n")?.Value?.Trim();
+                    if (!string.IsNullOrWhiteSpace(element) && !string.IsNullOrWhiteSpace(count))
+                        fields[name] = $"StaticArray<{element},{count}>";
+                    else
+                        fields[name] = "StaticArray";
+                    continue;
+                }
+
+                if (enums.ContainsKey(t))
+                {
+                    fields[name] = $"Enum<{t}>";
+                    continue;
+                }
+
+                fields[name] = type;
             }
 
-            if (t.Equals("AssetReference", StringComparison.OrdinalIgnoreCase))
+            return new RsdSchema
             {
-                var target = f.Attribute("target")?.Value?.Trim();
-                if (string.IsNullOrWhiteSpace(target))
-                    throw new InvalidOperationException($"RSD <field> type=AssetReference 缺少 target：{rsdFile}");
-                fields[name] = $"AssetReference<{target}>";
-                continue;
-            }
-
-            if (t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
-            {
-                fields[name] = "RawReference";
-                continue;
-            }
-
-            if (t.Equals("StaticArray", StringComparison.OrdinalIgnoreCase))
-            {
-                // 目前编辑器只需要知道“这是数组”，细节留给后续扩展。
-                // 尝试拼回旧式形式：StaticArray<T,N>（如果存在 element/count 属性）
-                var element = f.Attribute("element")?.Value?.Trim();
-                var count = f.Attribute("count")?.Value?.Trim() ?? f.Attribute("n")?.Value?.Trim();
-                if (!string.IsNullOrWhiteSpace(element) && !string.IsNullOrWhiteSpace(count))
-                    fields[name] = $"StaticArray<{element},{count}>";
-                else
-                    fields[name] = "StaticArray";
-                continue;
-            }
-
-            // Enum: if type refers to a local enum, normalize to "Enum<EnumName>" so UI can render it as a dropdown.
-            if (enums.ContainsKey(t))
-            {
-                fields[name] = $"Enum<{t}>";
-                continue;
-            }
-
-            fields[name] = type;
+                ClassName = className.Trim(),
+                FileSuffix = string.IsNullOrWhiteSpace(fileSuffix) ? null : fileSuffix.Trim(),
+                Fields = fields,
+                Enums = enums
+            };
         }
 
-        return new RsdSchema
+        if (string.Equals(root.Name.LocalName, "rsd", StringComparison.OrdinalIgnoreCase))
         {
-            ClassName = className.Trim(),
-            FileSuffix = fileSuffix.Trim(),
-            Fields = fields,
-            Enums = enums
-        };
+            return new[] { parseOneRsd(root) };
+        }
+
+        if (string.Equals(root.Name.LocalName, "rsd_file", StringComparison.OrdinalIgnoreCase))
+        {
+            loadEnums(root);
+            var rsds = root.Elements("rsd").ToList();
+            if (rsds.Count == 0)
+                throw new InvalidOperationException($"RSD <rsd_file> 缺少 <rsd>：{rsdFile}");
+            return rsds.Select(parseOneRsd).ToList();
+        }
+
+        throw new InvalidOperationException($"RSD 根节点必须是 <rsd> 或 <rsd_file>：{rsdFile}");
     }
 }
 

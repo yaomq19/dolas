@@ -4,11 +4,20 @@
 #include <cstddef>
 #include <cstdint>
 
+namespace tinyxml2 { class XMLElement; }
+
 namespace Dolas {
+
+struct RsdFieldDesc;
+
+// Generic helper used by generated code to parse a nested object from an XML element.
+// Implemented in the engine (AssetManager) compilation unit.
+bool ParseRsdObjectFromXmlElement(const tinyxml2::XMLElement* root, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount);
 
 enum class RsdFieldType : std::uint8_t
 {
     Unsupported = 0,
+    Object,
     String,
     BoolValue,
     IntValue,
@@ -17,6 +26,7 @@ enum class RsdFieldType : std::uint8_t
     Vector3,
     Vector4,
     EnumUInt,
+    DynArrayObject,
     DynArrayRawReference,
     DynArrayString,
     DynArrayVector3,
@@ -48,6 +58,9 @@ struct RsdFieldDesc
     std::size_t offset;
     const RsdEnumItemDesc* enumItems; // nullptr unless type==EnumUInt
     std::size_t enumItemCount;
+    const RsdFieldDesc* objectFields; // for Object / DynArrayObject element
+    std::size_t objectFieldCount;
+    bool (*dynArrayObjectParse)(void* vecMember, const tinyxml2::XMLElement* container); // for DynArrayObject
 };
 
 } // namespace Dolas
