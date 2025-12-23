@@ -35,6 +35,41 @@ public static class XmlAssetCodec
         return schema.Enums.TryGetValue(enumName, out var def) ? def.Values : null;
     }
 
+    private static string ReadScalarTextCompat(XElement el)
+    {
+        var url = el.Element("url")?.Value;
+        if (!string.IsNullOrWhiteSpace(url)) return url.Trim();
+        var v = el.Element("value")?.Value;
+        if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
+        return (el.Value ?? string.Empty).Trim();
+    }
+
+    private static double ReadVectorComp(XElement el, string name)
+    {
+        var a = (string?)el.Attribute(name);
+        if (!string.IsNullOrWhiteSpace(a) && double.TryParse(a, NumberStyles.Float, CultureInfo.InvariantCulture, out var av))
+            return av;
+        var c = el.Element(name)?.Value;
+        if (!string.IsNullOrWhiteSpace(c) && double.TryParse(c, NumberStyles.Float, CultureInfo.InvariantCulture, out var cv))
+            return cv;
+        return 0.0;
+    }
+
+    private static XElement WriteVector3New(string fieldName, AssetNodeViewModel vm)
+        => new XElement(fieldName,
+            new XAttribute("type", "Vector3"),
+            new XElement("x", vm.XText ?? "0"),
+            new XElement("y", vm.YText ?? "0"),
+            new XElement("z", vm.ZText ?? "0"));
+
+    private static XElement WriteVector4New(string fieldName, AssetNodeViewModel vm)
+        => new XElement(fieldName,
+            new XAttribute("type", "Vector4"),
+            new XElement("x", vm.XText ?? "0"),
+            new XElement("y", vm.YText ?? "0"),
+            new XElement("z", vm.ZText ?? "0"),
+            new XElement("w", vm.WText ?? "0"));
+
     private static EditorType TypeSpecToEditorType(string typeSpec, RsdSchemaRegistry? registry)
     {
         var s = typeSpec.Trim();
@@ -193,7 +228,7 @@ public static class XmlAssetCodec
                 var idx = 0;
                 foreach (var child in container.Elements())
                 {
-                    var v = (string?)child.Attribute("file") ?? child.Value ?? string.Empty;
+                    var v = (string?)child.Attribute("file") ?? ReadScalarTextCompat(child);
                     var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.String, markDirty);
                     itemVm.SetScalar(v, EditorType.String);
                     vm.Children.Add(itemVm);
@@ -207,7 +242,7 @@ public static class XmlAssetCodec
                 foreach (var child in container.Elements())
                 {
                     var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.Vector3, markDirty);
-                    itemVm.SetVector3(ReadAttrDoubleOr0(child, "x"), ReadAttrDoubleOr0(child, "y"), ReadAttrDoubleOr0(child, "z"));
+                    itemVm.SetVector3(ReadVectorComp(child, "x"), ReadVectorComp(child, "y"), ReadVectorComp(child, "z"));
                     vm.Children.Add(itemVm);
                 }
                 return;
@@ -219,7 +254,7 @@ public static class XmlAssetCodec
                 foreach (var child in container.Elements())
                 {
                     var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.Vector4, markDirty);
-                    itemVm.SetVector4(ReadAttrDoubleOr0(child, "x"), ReadAttrDoubleOr0(child, "y"), ReadAttrDoubleOr0(child, "z"), ReadAttrDoubleOr0(child, "w"));
+                    itemVm.SetVector4(ReadVectorComp(child, "x"), ReadVectorComp(child, "y"), ReadVectorComp(child, "z"), ReadVectorComp(child, "w"));
                     vm.Children.Add(itemVm);
                 }
                 return;
@@ -258,9 +293,17 @@ public static class XmlAssetCodec
             var container = root.Element(fieldName);
             if (container is null) return;
 
-            // Map<String, Vector4>: <vec4 name="..." x="" y="" z="" w=""/>
+            // New style: <item key="..."><x>..</x><y>..</y><z>..</z><w>..</w></item>
             if (t.Contains("Vector4", StringComparison.OrdinalIgnoreCase))
             {
+                foreach (var it in container.Elements("item"))
+                {
+                    var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
+                    if (string.IsNullOrWhiteSpace(key)) continue;
+                    var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.Vector4, markDirty);
+                    itemVm.SetVector4(ReadVectorComp(it, "x"), ReadVectorComp(it, "y"), ReadVectorComp(it, "z"), ReadVectorComp(it, "w"));
+                    vm.Children.Add(itemVm);
+                }
                 foreach (var v in container.Elements("vec4"))
                 {
                     var key = v.Attribute("name")?.Value?.Trim();
@@ -272,9 +315,18 @@ public static class XmlAssetCodec
                 return;
             }
 
-            // Map<String, Float>: <float name="..." value="..."/>
+            // Map<String, Float>: old <float name="..." value="..."/> / new <item key="...">1.0</item>
             if (t.Contains("Float", StringComparison.OrdinalIgnoreCase))
             {
+                foreach (var it in container.Elements("item"))
+                {
+                    var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
+                    if (string.IsNullOrWhiteSpace(key)) continue;
+                    var val = (string?)it.Attribute("value") ?? ReadScalarTextCompat(it);
+                    var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.Float, markDirty);
+                    itemVm.SetScalar(string.IsNullOrWhiteSpace(val) ? "0" : val, EditorType.Float);
+                    vm.Children.Add(itemVm);
+                }
                 foreach (var f in container.Elements("float"))
                 {
                     var key = f.Attribute("name")?.Value?.Trim();
@@ -287,7 +339,16 @@ public static class XmlAssetCodec
                 return;
             }
 
-            // Map<String, String>: <texture name="..." file="..."/>
+            // Map<String, String>: old <texture name="..." file="..."/> / new <item key="..."><url>...</url></item>
+            foreach (var it in container.Elements("item"))
+            {
+                var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                var file = (string?)it.Attribute("file") ?? ReadScalarTextCompat(it);
+                var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.String, markDirty);
+                itemVm.SetScalar(file, EditorType.String);
+                vm.Children.Add(itemVm);
+            }
             foreach (var tex in container.Elements("texture"))
             {
                 var key = tex.Attribute("name")?.Value?.Trim();
@@ -317,13 +378,13 @@ public static class XmlAssetCodec
 
         if (t == "String" || IsAssetRefSpec(t) || t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
         {
-            vm.SetScalar(el.Value ?? string.Empty, EditorType.String);
+            vm.SetScalar(ReadScalarTextCompat(el), EditorType.String);
             return;
         }
 
         if (t == "Bool")
         {
-            if (bool.TryParse(el.Value, out var b)) vm.SetBool(b);
+            if (bool.TryParse(ReadScalarTextCompat(el), out var b)) vm.SetBool(b);
             else
             {
                 mutated = true;
@@ -333,31 +394,34 @@ public static class XmlAssetCodec
         }
         if (t == "Int")
         {
-            if (long.TryParse(el.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)) vm.SetScalar(i.ToString(CultureInfo.InvariantCulture), EditorType.Int);
-            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 Int，实际 '{el.Value}'（已使用默认值）"); }
+            var raw = ReadScalarTextCompat(el);
+            if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)) vm.SetScalar(i.ToString(CultureInfo.InvariantCulture), EditorType.Int);
+            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 Int，实际 '{raw}'（已使用默认值）"); }
             return;
         }
         if (t == "UInt")
         {
-            if (ulong.TryParse(el.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var u)) vm.SetScalar(u.ToString(CultureInfo.InvariantCulture), EditorType.UInt);
-            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 UInt，实际 '{el.Value}'（已使用默认值）"); }
+            var raw = ReadScalarTextCompat(el);
+            if (ulong.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var u)) vm.SetScalar(u.ToString(CultureInfo.InvariantCulture), EditorType.UInt);
+            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 UInt，实际 '{raw}'（已使用默认值）"); }
             return;
         }
         if (t == "Float")
         {
-            if (double.TryParse(el.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)) vm.SetScalar(f.ToString(CultureInfo.InvariantCulture), EditorType.Float);
-            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 Float，实际 '{el.Value}'（已使用默认值）"); }
+            var raw = ReadScalarTextCompat(el);
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)) vm.SetScalar(f.ToString(CultureInfo.InvariantCulture), EditorType.Float);
+            else { mutated = true; warnings.Add($"字段解析失败：{fieldName} 期望 Float，实际 '{raw}'（已使用默认值）"); }
             return;
         }
 
         if (t == "Vector3")
         {
-            vm.SetVector3(ReadAttrDoubleOr0(el, "x"), ReadAttrDoubleOr0(el, "y"), ReadAttrDoubleOr0(el, "z"));
+            vm.SetVector3(ReadVectorComp(el, "x"), ReadVectorComp(el, "y"), ReadVectorComp(el, "z"));
             return;
         }
         if (t == "Vector4")
         {
-            vm.SetVector4(ReadAttrDoubleOr0(el, "x"), ReadAttrDoubleOr0(el, "y"), ReadAttrDoubleOr0(el, "z"), ReadAttrDoubleOr0(el, "w"));
+            vm.SetVector4(ReadVectorComp(el, "x"), ReadVectorComp(el, "y"), ReadVectorComp(el, "z"), ReadVectorComp(el, "w"));
             return;
         }
 
@@ -375,6 +439,8 @@ public static class XmlAssetCodec
         {
             var container = new XElement(fieldName);
             var elemSpec = ExtractGenericArg(t, "DynamicArray");
+            container.SetAttributeValue("type", "DynamicArray");
+            container.SetAttributeValue("element", elemSpec);
             var isStringLike = elemSpec.Equals("String", StringComparison.OrdinalIgnoreCase) ||
                                elemSpec.Equals("RawReference", StringComparison.OrdinalIgnoreCase) ||
                                IsAssetRefSpec(elemSpec);
@@ -382,7 +448,7 @@ public static class XmlAssetCodec
             if (isStringLike)
             {
                 foreach (var item in vm.Children)
-                    container.Add(new XElement("item", item.ScalarText ?? string.Empty));
+                    container.Add(new XElement("item", new XElement("value", item.ScalarText ?? string.Empty)));
                 root.Add(container);
                 return;
             }
@@ -391,11 +457,11 @@ public static class XmlAssetCodec
             {
                 foreach (var item in vm.Children)
                 {
-                    var el = new XElement("item");
-                    el.SetAttributeValue("x", item.XText);
-                    el.SetAttributeValue("y", item.YText);
-                    el.SetAttributeValue("z", item.ZText);
-                    container.Add(el);
+                    container.Add(new XElement("item",
+                        new XAttribute("type", "Vector3"),
+                        new XElement("x", item.XText ?? "0"),
+                        new XElement("y", item.YText ?? "0"),
+                        new XElement("z", item.ZText ?? "0")));
                 }
                 root.Add(container);
                 return;
@@ -405,12 +471,12 @@ public static class XmlAssetCodec
             {
                 foreach (var item in vm.Children)
                 {
-                    var el = new XElement("item");
-                    el.SetAttributeValue("x", item.XText);
-                    el.SetAttributeValue("y", item.YText);
-                    el.SetAttributeValue("z", item.ZText);
-                    el.SetAttributeValue("w", item.WText);
-                    container.Add(el);
+                    container.Add(new XElement("item",
+                        new XAttribute("type", "Vector4"),
+                        new XElement("x", item.XText ?? "0"),
+                        new XElement("y", item.YText ?? "0"),
+                        new XElement("z", item.ZText ?? "0"),
+                        new XElement("w", item.WText ?? "0")));
                 }
                 root.Add(container);
                 return;
@@ -443,18 +509,19 @@ public static class XmlAssetCodec
         if (t.StartsWith("Map<", StringComparison.OrdinalIgnoreCase))
         {
             var container = new XElement(fieldName);
+            container.SetAttributeValue("type", "Map");
 
             if (t.Contains("Vector4", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var item in vm.Children)
                 {
-                    var v = new XElement("vec4");
-                    v.SetAttributeValue("name", item.Name);
-                    v.SetAttributeValue("x", item.XText);
-                    v.SetAttributeValue("y", item.YText);
-                    v.SetAttributeValue("z", item.ZText);
-                    v.SetAttributeValue("w", item.WText);
-                    container.Add(v);
+                    container.Add(new XElement("item",
+                        new XAttribute("key", item.Name),
+                        new XAttribute("type", "Vector4"),
+                        new XElement("x", item.XText ?? "0"),
+                        new XElement("y", item.YText ?? "0"),
+                        new XElement("z", item.ZText ?? "0"),
+                        new XElement("w", item.WText ?? "0")));
                 }
                 root.Add(container);
                 return;
@@ -464,10 +531,10 @@ public static class XmlAssetCodec
             {
                 foreach (var item in vm.Children)
                 {
-                    var f = new XElement("float");
-                    f.SetAttributeValue("name", item.Name);
-                    f.SetAttributeValue("value", item.ScalarText ?? "0");
-                    container.Add(f);
+                    container.Add(new XElement("item",
+                        new XAttribute("key", item.Name),
+                        new XAttribute("type", "Float"),
+                        new XElement("value", item.ScalarText ?? "0")));
                 }
                 root.Add(container);
                 return;
@@ -476,10 +543,10 @@ public static class XmlAssetCodec
             // Map<String,String>
             foreach (var item in vm.Children)
             {
-                var tex = new XElement("texture");
-                tex.SetAttributeValue("name", item.Name);
-                tex.SetAttributeValue("file", item.ScalarText ?? string.Empty);
-                container.Add(tex);
+                container.Add(new XElement("item",
+                    new XAttribute("key", item.Name),
+                    new XAttribute("type", "String"),
+                    new XElement("url", item.ScalarText ?? string.Empty)));
             }
             root.Add(container);
             return;
@@ -487,39 +554,44 @@ public static class XmlAssetCodec
 
         if (t.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase))
         {
-            root.Add(new XElement(fieldName, vm.EnumSelectedName ?? string.Empty));
+            root.Add(new XElement(fieldName,
+                new XAttribute("type", "Enum"),
+                new XElement("value", vm.EnumSelectedName ?? string.Empty)));
+            return;
+        }
+
+        if (IsAssetRefSpec(t))
+        {
+            root.Add(new XElement(fieldName,
+                new XAttribute("type", "AssetReference"),
+                new XElement("url", vm.ScalarText ?? string.Empty)));
             return;
         }
 
         if (t == "Vector3")
         {
-            var el = new XElement(fieldName);
-            el.SetAttributeValue("x", vm.XText);
-            el.SetAttributeValue("y", vm.YText);
-            el.SetAttributeValue("z", vm.ZText);
-            root.Add(el);
+            root.Add(WriteVector3New(fieldName, vm));
             return;
         }
 
         if (t == "Vector4")
         {
-            var el = new XElement(fieldName);
-            el.SetAttributeValue("x", vm.XText);
-            el.SetAttributeValue("y", vm.YText);
-            el.SetAttributeValue("z", vm.ZText);
-            el.SetAttributeValue("w", vm.WText);
-            root.Add(el);
+            root.Add(WriteVector4New(fieldName, vm));
             return;
         }
 
         if (t == "Bool")
         {
-            root.Add(new XElement(fieldName, vm.BoolValue ? "true" : "false"));
+            root.Add(new XElement(fieldName,
+                new XAttribute("type", "Bool"),
+                new XElement("value", vm.BoolValue ? "true" : "false")));
             return;
         }
 
         // String-like & scalar text types
-        root.Add(new XElement(fieldName, vm.ScalarText ?? string.Empty));
+        root.Add(new XElement(fieldName,
+            new XAttribute("type", t),
+            new XElement("value", vm.ScalarText ?? string.Empty)));
     }
 
     private static double ReadAttrDoubleOr0(XElement el, string attr)

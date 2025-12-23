@@ -1,6 +1,6 @@
 <asset>
-  <type>base_geometry</type>
-  <mesh></mesh>
-  <base_geometry>sphere</base_geometry>
-  <material>sphere_0.material</material>
+  <type type="String"><value>base_geometry</value></type>
+  <mesh type="String"><value></value></mesh>
+  <base_geometry type="String"><value>sphere</value></base_geometry>
+  <material type="String"><value>sphere_0.material</value></material>
 </asset>

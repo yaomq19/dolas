@@ -1,6 +1,6 @@
 <asset>
-  <type>mesh</type>
-  <mesh>cube.mesh</mesh>
-  <base_geometry></base_geometry>
-  <material>solid.material</material>
+  <type type="String"><value>mesh</value></type>
+  <mesh type="String"><value>cube.mesh</value></mesh>
+  <base_geometry type="String"><value></value></base_geometry>
+  <material type="String"><value>solid.material</value></material>
 </asset>

@@ -1,12 +1,26 @@
 <asset>
-  <camera_perspective_type>perspective</camera_perspective_type>
-  <position x="1.939003" y="-4.5596633" z="2.3117614" />
-  <forward x="-0.27318278" y="0.9228391" z="-0.2715497" />
-  <up x="-0.0770801" y="0.2603803" z="0.9624244" />
-  <near_plane>0.1</near_plane>
-  <far_plane>2000.0</far_plane>
-  <fov>90.0</fov>
-  <aspect_ratio>1.77</aspect_ratio>
-  <window_width>5</window_width>
-  <window_height>5</window_height>
+  <camera_perspective_type type="Enum">
+    <value>perspective</value>
+  </camera_perspective_type>
+  <position type="Vector3">
+    <x>1.939003</x>
+    <y>-4.5596633</y>
+    <z>2.3117614</z>
+  </position>
+  <forward type="Vector3">
+    <x>-0.27318278</x>
+    <y>0.9228391</y>
+    <z>-0.2715497</z>
+  </forward>
+  <up type="Vector3">
+    <x>-0.0770801</x>
+    <y>0.2603803</y>
+    <z>0.9624244</z>
+  </up>
+  <near_plane type="Float"><value>0.1</value></near_plane>
+  <far_plane type="Float"><value>2000.0</value></far_plane>
+  <fov type="Float"><value>90.0</value></fov>
+  <aspect_ratio type="Float"><value>1.77</value></aspect_ratio>
+  <window_width type="Float"><value>5</value></window_width>
+  <window_height type="Float"><value>5</value></window_height>
 </asset>

@@ -1,12 +1,26 @@
 <asset>
-  <camera_perspective_type>Orthographic</camera_perspective_type>
-  <position x="163" y="0" z="0" />
-  <forward x="0" y="0" z="0" />
-  <up x="0" y="0" z="0" />
-  <near_plane>0</near_plane>
-  <far_plane>0</far_plane>
-  <fov>0</fov>
-  <aspect_ratio>0</aspect_ratio>
-  <window_width>0</window_width>
-  <window_height>0</window_height>
+  <camera_perspective_type type="Enum">
+    <value>Orthographic</value>
+  </camera_perspective_type>
+  <position type="Vector3">
+    <x>163</x>
+    <y>0</y>
+    <z>0</z>
+  </position>
+  <forward type="Vector3">
+    <x>0</x>
+    <y>0</y>
+    <z>0</z>
+  </forward>
+  <up type="Vector3">
+    <x>0</x>
+    <y>0</y>
+    <z>0</z>
+  </up>
+  <near_plane type="Float"><value>0</value></near_plane>
+  <far_plane type="Float"><value>0</value></far_plane>
+  <fov type="Float"><value>0</value></fov>
+  <aspect_ratio type="Float"><value>0</value></aspect_ratio>
+  <window_width type="Float"><value>0</value></window_width>
+  <window_height type="Float"><value>0</value></window_height>
 </asset>
