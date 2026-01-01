@@ -1,6 +1,6 @@
-<asset>
-  <vertex_shader type="String"><value>blinn_phong/blinn_phong_vs.hlsl</value></vertex_shader>
-  <pixel_shader type="String"><value>blinn_phong/blinn_phong_ps.hlsl</value></pixel_shader>
+﻿<asset>
+  <vertex_shader type="String">blinn_phong/blinn_phong_vs.hlsl</vertex_shader>
+  <pixel_shader type="String">blinn_phong/blinn_phong_ps.hlsl</pixel_shader>
   <vertex_shader_global_variables type="Map" />
   <pixel_shader_global_variables type="Map">
     <item key="k_a" type="Vector4"><x>0.2</x><y>0.54</y><z>0.76</z><w>1</w></item>

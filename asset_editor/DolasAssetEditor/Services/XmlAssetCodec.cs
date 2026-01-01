@@ -37,10 +37,6 @@ public static class XmlAssetCodec
 
     private static string ReadScalarTextCompat(XElement el)
     {
-        var url = el.Element("url")?.Value;
-        if (!string.IsNullOrWhiteSpace(url)) return url.Trim();
-        var v = el.Element("value")?.Value;
-        if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
         return (el.Value ?? string.Empty).Trim();
     }
 
@@ -228,7 +224,7 @@ public static class XmlAssetCodec
                 var idx = 0;
                 foreach (var child in container.Elements())
                 {
-                    var v = (string?)child.Attribute("file") ?? ReadScalarTextCompat(child);
+                    var v = ReadScalarTextCompat(child);
                     var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.String, markDirty);
                     itemVm.SetScalar(v, EditorType.String);
                     vm.Children.Add(itemVm);
@@ -304,57 +300,31 @@ public static class XmlAssetCodec
                     itemVm.SetVector4(ReadVectorComp(it, "x"), ReadVectorComp(it, "y"), ReadVectorComp(it, "z"), ReadVectorComp(it, "w"));
                     vm.Children.Add(itemVm);
                 }
-                foreach (var v in container.Elements("vec4"))
-                {
-                    var key = v.Attribute("name")?.Value?.Trim();
-                    if (string.IsNullOrWhiteSpace(key)) continue;
-                    var itemVm = new AssetNodeViewModel(key, EditorType.Vector4, markDirty);
-                    itemVm.SetVector4(ReadAttrDoubleOr0(v, "x"), ReadAttrDoubleOr0(v, "y"), ReadAttrDoubleOr0(v, "z"), ReadAttrDoubleOr0(v, "w"));
-                    vm.Children.Add(itemVm);
-                }
                 return;
             }
 
-            // Map<String, Float>: old <float name="..." value="..."/> / new <item key="...">1.0</item>
+            // Map<String, Float>: new <item key="...">1.0</item>
             if (t.Contains("Float", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var it in container.Elements("item"))
                 {
                     var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
                     if (string.IsNullOrWhiteSpace(key)) continue;
-                    var val = (string?)it.Attribute("value") ?? ReadScalarTextCompat(it);
+                    var val = ReadScalarTextCompat(it);
                     var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.Float, markDirty);
                     itemVm.SetScalar(string.IsNullOrWhiteSpace(val) ? "0" : val, EditorType.Float);
-                    vm.Children.Add(itemVm);
-                }
-                foreach (var f in container.Elements("float"))
-                {
-                    var key = f.Attribute("name")?.Value?.Trim();
-                    var val = f.Attribute("value")?.Value?.Trim() ?? "0";
-                    if (string.IsNullOrWhiteSpace(key)) continue;
-                    var itemVm = new AssetNodeViewModel(key, EditorType.Float, markDirty);
-                    itemVm.SetScalar(val, EditorType.Float);
                     vm.Children.Add(itemVm);
                 }
                 return;
             }
 
-            // Map<String, String>: old <texture name="..." file="..."/> / new <item key="..."><url>...</url></item>
+            // Map<String, String>: new <item key="...">val</item>
             foreach (var it in container.Elements("item"))
             {
                 var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
                 if (string.IsNullOrWhiteSpace(key)) continue;
-                var file = (string?)it.Attribute("file") ?? ReadScalarTextCompat(it);
+                var file = ReadScalarTextCompat(it);
                 var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.String, markDirty);
-                itemVm.SetScalar(file, EditorType.String);
-                vm.Children.Add(itemVm);
-            }
-            foreach (var tex in container.Elements("texture"))
-            {
-                var key = tex.Attribute("name")?.Value?.Trim();
-                var file = tex.Attribute("file")?.Value?.Trim() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(key)) continue;
-                var itemVm = new AssetNodeViewModel(key, EditorType.String, markDirty);
                 itemVm.SetScalar(file, EditorType.String);
                 vm.Children.Add(itemVm);
             }
@@ -448,7 +418,7 @@ public static class XmlAssetCodec
             if (isStringLike)
             {
                 foreach (var item in vm.Children)
-                    container.Add(new XElement("item", new XElement("value", item.ScalarText ?? string.Empty)));
+                    container.Add(new XElement("item", item.ScalarText ?? string.Empty));
                 root.Add(container);
                 return;
             }
@@ -534,7 +504,7 @@ public static class XmlAssetCodec
                     container.Add(new XElement("item",
                         new XAttribute("key", item.Name),
                         new XAttribute("type", "Float"),
-                        new XElement("value", item.ScalarText ?? "0")));
+                        item.ScalarText ?? "0"));
                 }
                 root.Add(container);
                 return;
@@ -546,7 +516,7 @@ public static class XmlAssetCodec
                 container.Add(new XElement("item",
                     new XAttribute("key", item.Name),
                     new XAttribute("type", "String"),
-                    new XElement("url", item.ScalarText ?? string.Empty)));
+                    item.ScalarText ?? string.Empty));
             }
             root.Add(container);
             return;
@@ -556,7 +526,7 @@ public static class XmlAssetCodec
         {
             root.Add(new XElement(fieldName,
                 new XAttribute("type", "Enum"),
-                new XElement("value", vm.EnumSelectedName ?? string.Empty)));
+                vm.EnumSelectedName ?? string.Empty));
             return;
         }
 
@@ -564,7 +534,7 @@ public static class XmlAssetCodec
         {
             root.Add(new XElement(fieldName,
                 new XAttribute("type", "AssetReference"),
-                new XElement("url", vm.ScalarText ?? string.Empty)));
+                vm.ScalarText ?? string.Empty));
             return;
         }
 
@@ -584,14 +554,14 @@ public static class XmlAssetCodec
         {
             root.Add(new XElement(fieldName,
                 new XAttribute("type", "Bool"),
-                new XElement("value", vm.BoolValue ? "true" : "false")));
+                vm.BoolValue ? "true" : "false"));
             return;
         }
 
         // String-like & scalar text types
         root.Add(new XElement(fieldName,
             new XAttribute("type", t),
-            new XElement("value", vm.ScalarText ?? string.Empty)));
+            vm.ScalarText ?? string.Empty));
     }
 
     private static double ReadAttrDoubleOr0(XElement el, string attr)

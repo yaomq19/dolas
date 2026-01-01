@@ -1,7 +1,5 @@
-<asset>
-  <camera_perspective_type type="Enum">
-    <value>perspective</value>
-  </camera_perspective_type>
+﻿<asset>
+  <camera_perspective_type type="Enum">perspective</camera_perspective_type>
   <position type="Vector3">
     <x>1.939003</x>
     <y>-4.5596633</y>
@@ -17,10 +15,10 @@
     <y>0.2603803</y>
     <z>0.9624244</z>
   </up>
-  <near_plane type="Float"><value>0.1</value></near_plane>
-  <far_plane type="Float"><value>2000.0</value></far_plane>
-  <fov type="Float"><value>90.0</value></fov>
-  <aspect_ratio type="Float"><value>1.77</value></aspect_ratio>
-  <window_width type="Float"><value>5</value></window_width>
-  <window_height type="Float"><value>5</value></window_height>
+  <near_plane type="Float">0.1</near_plane>
+  <far_plane type="Float">2000.0</far_plane>
+  <fov type="Float">90.0</fov>
+  <aspect_ratio type="Float">1.77</aspect_ratio>
+  <window_width type="Float">5</window_width>
+  <window_height type="Float">5</window_height>
 </asset>

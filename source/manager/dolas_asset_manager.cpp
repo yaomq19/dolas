@@ -44,10 +44,7 @@ namespace Dolas
     static const char* GetScalarTextCompat(const tinyxml2::XMLElement* el)
     {
         if (!el) return nullptr;
-        if (auto* url = el->FirstChildElement("url"); url && url->GetText()) return url->GetText();
-        if (auto* v = el->FirstChildElement("value"); v && v->GetText()) return v->GetText();
-        if (el->GetText()) return el->GetText();
-        return nullptr;
+        return el->GetText();
     }
 
     static bool ReadDoubleCompat(const tinyxml2::XMLElement* el, const char* attrOrChildName, double& out)
@@ -253,10 +250,8 @@ namespace Dolas
             if (!el) return true;
             for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
             {
-                // Prefer attribute form (<item file="..."/>) then inner text (<item>...</item>)
-                const char* v = child->Attribute("file");
-                if (!v) v = GetScalarTextCompat(child);
-                if (v) p->emplace_back(v);
+                if (const char* v = GetScalarTextCompat(child))
+                    p->emplace_back(v);
             }
             return true;
         }
@@ -293,7 +288,6 @@ namespace Dolas
         {
             auto* p = reinterpret_cast<std::map<std::string, Vector4>*>(base + f.offset);
             if (!el) return true;
-            // New style: <item key="..."><x>..</x><y>..</y><z>..</z><w>..</w></item>
             for (auto* it = el->FirstChildElement("item"); it; it = it->NextSiblingElement("item"))
             {
                 const char* key = it->Attribute("key");
@@ -306,38 +300,19 @@ namespace Dolas
                 if (!ReadDoubleCompat(it, "w", w)) continue;
                 (*p)[std::string(key)] = Vector4((Float)x,(Float)y,(Float)z,(Float)w);
             }
-            for (auto* v = el->FirstChildElement("vec4"); v; v = v->NextSiblingElement("vec4"))
-            {
-                const char* n = v->Attribute("name");
-                if (!n) continue;
-                double x=0,y=0,z=0,w=0;
-                if (v->QueryDoubleAttribute("x",&x)!=tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("y",&y)!=tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("z",&z)!=tinyxml2::XML_SUCCESS) continue;
-                if (v->QueryDoubleAttribute("w",&w)!=tinyxml2::XML_SUCCESS) continue;
-                (*p)[std::string(n)] = Vector4((Float)x,(Float)y,(Float)z,(Float)w);
-            }
             return true;
         }
         case RsdFieldType::MapStringString:
         {
             auto* p = reinterpret_cast<std::map<std::string, std::string>*>(base + f.offset);
             if (!el) return true;
-            // New style: <item key="..."><url>...</url></item> or <item key="...">text</item>
             for (auto* it = el->FirstChildElement("item"); it; it = it->NextSiblingElement("item"))
             {
                 const char* key = it->Attribute("key");
                 if (!key) key = it->Attribute("name");
                 if (!key) continue;
-                const char* v = it->Attribute("file");
-                if (!v) v = GetScalarTextCompat(it);
-                if (v) (*p)[std::string(key)] = std::string(v);
-            }
-            for (auto* t = el->FirstChildElement("texture"); t; t = t->NextSiblingElement("texture"))
-            {
-                const char* n = t->Attribute("name");
-                const char* f2 = t->Attribute("file");
-                if (n && f2) (*p)[std::string(n)] = std::string(f2);
+                if (const char* v = GetScalarTextCompat(it))
+                    (*p)[std::string(key)] = std::string(v);
             }
             return true;
         }
@@ -345,21 +320,13 @@ namespace Dolas
         {
             auto* p = reinterpret_cast<std::map<std::string, Float>*>(base + f.offset);
             if (!el) return true;
-            // New style: <item key="...">1.0</item> or <item key="..."><value>1.0</value></item>
             for (auto* it = el->FirstChildElement("item"); it; it = it->NextSiblingElement("item"))
             {
                 const char* key = it->Attribute("key");
                 if (!key) key = it->Attribute("name");
                 if (!key) continue;
-                const char* v = it->Attribute("value");
-                if (!v) v = GetScalarTextCompat(it);
-                if (v) (*p)[std::string(key)] = (Float)std::atof(v);
-            }
-            for (auto* t = el->FirstChildElement("float"); t; t = t->NextSiblingElement("float"))
-            {
-                const char* n = t->Attribute("name");
-                const char* v = t->Attribute("value");
-                if (n && v) (*p)[std::string(n)] = (Float)std::atof(v);
+                if (const char* v = GetScalarTextCompat(it))
+                    (*p)[std::string(key)] = (Float)std::atof(v);
             }
             return true;
         }

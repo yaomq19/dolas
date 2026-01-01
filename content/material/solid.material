@@ -1,12 +1,12 @@
-<asset>
-  <vertex_shader type="String"><value>solid/solid_vs.hlsl</value></vertex_shader>
-  <pixel_shader type="String"><value>solid/solid_ps.hlsl</value></pixel_shader>
+﻿<asset>
+  <vertex_shader type="String">solid/solid_vs.hlsl</vertex_shader>
+  <pixel_shader type="String">solid/solid_ps.hlsl</pixel_shader>
   <vertex_shader_global_variables type="Map" />
   <pixel_shader_global_variables type="Map" />
   <pixel_shader_texture type="Map">
-    <item key="albedo_map" type="String"><url>albedo.dds</url></item>
+    <item key="albedo_map" type="String">albedo.dds</item>
   </pixel_shader_texture>
   <parameter type="Map">
-    <item key="intensity" type="Float"><value>1</value></item>
+    <item key="intensity" type="Float">1</item>
   </parameter>
 </asset>

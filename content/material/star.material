@@ -1,4 +1,4 @@
-﻿<asset>
+<asset>
   <vertex_shader type="String">plain_color/plain_color_vs.hlsl</vertex_shader>
   <pixel_shader type="String">plain_color/plain_color_ps.hlsl</pixel_shader>
   <vertex_shader_global_variables type="Map" />
