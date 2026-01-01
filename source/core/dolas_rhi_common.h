@@ -129,6 +129,7 @@ namespace Dolas
 	enum PrimitiveTopology : UInt
 	{
 		PrimitiveTopology_TriangleList,
+		PrimitiveTopology_TriangleStrip,
 		PrimitiveTopology_Count
 	};
 

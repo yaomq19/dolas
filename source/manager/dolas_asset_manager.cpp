@@ -284,6 +284,28 @@ namespace Dolas
             }
             return true;
         }
+        case RsdFieldType::DynArrayFloat:
+        {
+            auto* p = reinterpret_cast<std::vector<Float>*>(base + f.offset);
+            if (!el) return true;
+            for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
+            {
+                if (const char* v = GetScalarTextCompat(child))
+                    p->push_back((Float)std::atof(v));
+            }
+            return true;
+        }
+        case RsdFieldType::DynArrayUInt:
+        {
+            auto* p = reinterpret_cast<std::vector<UInt>*>(base + f.offset);
+            if (!el) return true;
+            for (auto* child = el->FirstChildElement(); child; child = child->NextSiblingElement())
+            {
+                if (const char* v = GetScalarTextCompat(child))
+                    p->push_back((UInt)std::strtoul(v, nullptr, 10));
+            }
+            return true;
+        }
         case RsdFieldType::MapStringVector4:
         {
             auto* p = reinterpret_cast<std::map<std::string, Vector4>*>(base + f.offset);

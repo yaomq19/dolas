@@ -873,6 +873,7 @@ namespace Dolas
 	void DolasRHI::InitializePrimitiveTopology()
 	{
 		m_d3d11_primitive_topology[PrimitiveTopology_TriangleList] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		m_d3d11_primitive_topology[PrimitiveTopology_TriangleStrip] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 	}
 
 	void DolasRHI::InitializeInputLayoutDescs()

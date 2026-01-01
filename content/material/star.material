@@ -1,9 +1,11 @@
 <asset>
-  <vertex_shader type="String">plain_color/plain_color_vs.hlsl</vertex_shader>
-  <pixel_shader type="String">plain_color/plain_color_ps.hlsl</pixel_shader>
+  <vertex_shader type="String">blinn_phong/blinn_phong_vs.hlsl</vertex_shader>
+  <pixel_shader type="String">blinn_phong/blinn_phong_ps.hlsl</pixel_shader>
   <vertex_shader_global_variables type="Map" />
   <pixel_shader_global_variables type="Map">
-    <item key="g_PlainColor" type="Vector4"><x>0.2</x><y>0.54</y><z>0.76</z><w>1</w></item>
+    <item key="k_a" type="Vector4"><x>0.2</x><y>0.54</y><z>0.76</z><w>1</w></item>
+    <item key="k_d" type="Vector4"><x>0.32</x><y>0</y><z>1</z><w>1</w></item>
+    <item key="k_s_shininess" type="Vector4"><x>0.2</x><y>0.54</y><z>0.76</z><w>64</w></item>
   </pixel_shader_global_variables>
   <pixel_shader_texture type="Map" />
   <parameter type="Map" />

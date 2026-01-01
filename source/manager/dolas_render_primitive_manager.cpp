@@ -14,6 +14,7 @@
 #include "manager/dolas_log_system_manager.h"
 #include "core/dolas_rhi_common.h"
 #include "manager/dolas_log_system_manager.h"
+#include "rsd/mesh.h"
 namespace Dolas
 {
     RenderPrimitiveManager::RenderPrimitiveManager()
@@ -55,204 +56,84 @@ namespace Dolas
 
     RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name)
     {
-  //      std::string mesh_file_path = PathUtils::GetMeshDir() + mesh_file_name;
+        std::string mesh_asset_path = "mesh/" + mesh_file_name;
+        MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_asset_path);
+        if (!mesh_rsd)
+        {
+            LOG_ERROR("Failed to load mesh file: {0}", mesh_asset_path);
+            return RENDER_PRIMITIVE_ID_EMPTY;
+        }
 
-  //      json json_data;
-  //      Bool ret = g_dolas_engine.m_asset_manager->LoadJsonFile(mesh_file_path, json_data);
-  //      DOLAS_RETURN_FALSE_IF_FALSE(ret);
+        RenderPrimitiveID primitive_id = HashConverter::StringHash(mesh_asset_path);
 
-  //      RenderPrimitiveID primitive_id = HashConverter::StringHash(mesh_file_path);
+        // 如果已经创建过，直接返回
+        if (GetRenderPrimitiveByID(primitive_id) != nullptr)
+        {
+            return primitive_id;
+        }
 
-  //      // 验证顶点数量
-  //      if (!json_data.contains("vertex_count") || !json_data.contains("vertex_list"))
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: vertex_count or vertex_list not found in {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
+        // 确定输入布局类型
+        InputLayoutType layout_type = InputLayoutType::InputLayoutType_POS_3;
+        std::vector<std::vector<Float>> vertices;
 
-  //      int vertex_count = json_data["vertex_count"];
-  //      const auto& vertex_list = json_data["vertex_list"];
+        bool has_pos = !mesh_rsd->position.empty();
+        bool has_uv = !mesh_rsd->uv0.empty();
+        bool has_normal = !mesh_rsd->normal.empty();
 
-  //      if (vertex_count != vertex_list.size())
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: vertex_count mismatch in {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
+        if (has_pos && has_uv && has_normal)
+        {
+            layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3;
+            vertices.push_back(mesh_rsd->position);
+            vertices.push_back(mesh_rsd->uv0);
+            vertices.push_back(mesh_rsd->normal);
+        }
+        else if (has_pos && has_uv)
+        {
+            layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2;
+            vertices.push_back(mesh_rsd->position);
+            vertices.push_back(mesh_rsd->uv0);
+        }
+        else if (has_pos && has_normal)
+        {
+            layout_type = InputLayoutType::InputLayoutType_POS_3_NORM_3;
+            vertices.push_back(mesh_rsd->position);
+            vertices.push_back(mesh_rsd->normal);
+        }
+        else if (has_pos)
+        {
+            layout_type = InputLayoutType::InputLayoutType_POS_3;
+            vertices.push_back(mesh_rsd->position);
+        }
+        else
+        {
+            LOG_ERROR("Mesh file {0} has no position data", mesh_asset_path);
+            return RENDER_PRIMITIVE_ID_EMPTY;
+        }
 
-  //      // 解析 IA
-  //      if (!json_data.contains("input_layout"))
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: input_layout is Empty {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
-  //      const auto& input_layout = json_data["input_layout"];
-  //      Bool has_position = false;
-  //      Bool has_uv = false;
-  //      Bool has_normal = false;
-  //      int pos_element_count = 0;
-  //      int uv_element_count = 0;
-  //      int normal_element_count = 0;
+        PrimitiveTopology topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
+        if (mesh_rsd->topology == TopologyType::TriangleList)
+        {
+            topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
+        }
+        else if (mesh_rsd->topology == TopologyType::TriangleStrip)
+        {
+            topology = PrimitiveTopology::PrimitiveTopology_TriangleStrip;
+        }
 
-  //      if (input_layout.contains("position"))
-  //      {
-  //          has_position = true;
-  //          pos_element_count = input_layout["position"];
-  //      }
+        Bool success = CreateRenderPrimitive(
+            primitive_id,
+            topology,
+            layout_type,
+            vertices,
+            mesh_rsd->indices);
 
-  //      if (input_layout.contains("uv"))
-  //      {
-  //          has_uv = true;
-  //          uv_element_count = input_layout["uv"];
-  //      }
+        if (!success)
+        {
+            LOG_ERROR("Failed to create render primitive for {0}", mesh_asset_path);
+            return RENDER_PRIMITIVE_ID_EMPTY;
+        }
 
-  //      if (input_layout.contains("normal"))
-  //      {
-  //          has_normal = true;
-  //          normal_element_count = input_layout["normal"];
-  //      }
-
-  //      std::vector<std::vector<Float>> final_vertices;
-  //      InputLayoutType input_layout_type = InputLayoutType::InputLayoutType_POS_3;
-
-  //      if (has_position && has_uv && has_normal)
-  //      {
-  //          final_vertices.resize(3);
-  //          if (pos_element_count == 3 && uv_element_count == 2 && normal_element_count == 3)
-  //          {
-  //              input_layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3;
-  //              for (const auto& vertex : vertex_list)
-  //              {
-  //                  const auto& pos = vertex["position"];
-  //                  const auto& uv = vertex["uv"];
-  //                  const auto& normal = vertex["normal"];
-
-  //                  final_vertices[0].push_back(pos[0]);
-  //                  final_vertices[0].push_back(pos[1]);
-  //                  final_vertices[0].push_back(pos[2]);
-
-  //                  final_vertices[1].push_back(uv[0]);
-  //                  final_vertices[1].push_back(uv[1]);
-
-  //                  final_vertices[2].push_back(normal[0]);
-  //                  final_vertices[2].push_back(normal[1]);
-  //                  final_vertices[2].push_back(normal[2]);
-  //              }
-  //          }
-  //          else
-  //          {
-  //              LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: unsupported input_layout combination in {0}", mesh_file_path);
-  //              return RENDER_PRIMITIVE_ID_EMPTY;
-  //          }
-  //      }
-  //      else if (has_position && has_uv)
-  //      {
-  //          final_vertices.resize(2);
-  //          if (pos_element_count == 3 && uv_element_count == 2)
-  //          {
-  //              input_layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2;
-  //              for (const auto& vertex : vertex_list)
-  //              {
-  //                  const auto& pos = vertex["position"];
-  //                  const auto& uv = vertex["uv"];
-
-  //                  final_vertices[0].push_back(pos[0]);
-  //                  final_vertices[0].push_back(pos[1]);
-  //                  final_vertices[0].push_back(pos[2]);
-
-  //                  final_vertices[1].push_back(uv[0]);
-  //                  final_vertices[1].push_back(uv[1]);
-  //              }
-  //          }
-  //          else
-  //          {
-  //              LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: unsupported input_layout combination in {0}", mesh_file_path);
-  //              return RENDER_PRIMITIVE_ID_EMPTY;
-  //          }
-  //      }
-		//else if (has_position && has_normal)
-		//{
-		//	final_vertices.resize(2);
-		//	if (pos_element_count == 3 && normal_element_count == 3)
-		//	{
-		//		input_layout_type = InputLayoutType::InputLayoutType_POS_3_NORM_3;
-		//		for (const auto& vertex : vertex_list)
-		//		{
-		//			const auto& pos = vertex["position"];
-		//			const auto& normal = vertex["normal"];
-
-		//			final_vertices[0].push_back(pos[0]);
-		//			final_vertices[0].push_back(pos[1]);
-		//			final_vertices[0].push_back(pos[2]);
-
-		//			final_vertices[1].push_back(normal[0]);
-		//			final_vertices[1].push_back(normal[1]);
-		//			final_vertices[1].push_back(normal[2]);
-		//		}
-		//	}
-		//	else
-		//	{
-		//		LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: unsupported input_layout combination in {0}", mesh_file_path);
-		//		return RENDER_PRIMITIVE_ID_EMPTY;
-		//	}
-		//}
-		//else
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: input_layout missing required elements in {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
-
-  //      // 解析索引数据
-  //      std::vector<UInt> indices;
-  //      if (json_data.contains("index_count") && json_data.contains("index_list"))
-  //      {
-  //          int index_count = json_data["index_count"];
-  //          const auto& index_list = json_data["index_list"];
-
-  //          if (index_count != index_list.size())
-  //          {
-  //              LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: index_count mismatch in {0}", mesh_file_path);
-  //              return RENDER_PRIMITIVE_ID_EMPTY;
-  //          }
-
-  //          indices.reserve(index_count);
-  //          for (const auto& index : index_list)
-  //          {
-  //              indices.push_back(index);
-  //          }
-  //      }
-
-  //      // 解析 Primitive
-  //      if (!json_data.contains("primitive"))
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: primitive is Empty {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
-  //      const std::string& primitive_str = json_data["primitive"];
-  //      PrimitiveTopology primitive_topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
-  //      if (primitive_str == "TriangleList")
-  //      {
-  //          primitive_topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
-  //      }
-  //      else
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: unsupported primitive type in {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
-
-  //      Bool success = CreateRenderPrimitive(
-  //          primitive_id,
-  //          primitive_topology,
-  //          input_layout_type,
-  //          final_vertices,
-  //          indices);
-  //      if (!success)
-  //      {
-  //          LOG_ERROR("RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile: failed to create render primitive for {0}", mesh_file_path);
-  //          return RENDER_PRIMITIVE_ID_EMPTY;
-  //      }
-
-        /*return primitive_id;*/
-		return RENDER_PRIMITIVE_ID_EMPTY;
+        return primitive_id;
     }
 
 	Bool RenderPrimitiveManager::InitializeSphereGeometry()
@@ -379,7 +260,7 @@ namespace Dolas
 		// 保证 segments 在合理范围内
 		if (segments < 1 || segments > 100)
 		{
-			LOG_ERROR("Invalid segments value: {}, valid range is [1, 100]", segments);
+			LOG_ERROR("Invalid segments value: {0}, valid range is [1, 100]", segments);
 			return false;
 		}
 
@@ -486,13 +367,13 @@ namespace Dolas
 		vertices_data.clear();
 		indices.clear();
 
-		// ��Ӧ InputLayoutType_POS_3_UV_2��
+		// 对应 InputLayoutType_POS_3_UV_2
 		// stream 0: position (x, y, z)
 		// stream 1: uv       (u, v)
 		vertices_data.resize(2);
 
-		// �� XY ƽ���ϵĵ�λ�ı��Σ�������ԭ�㣬�泯 +Z ����
-		// ����˳��
+		// 在 XY 平面上的单位矩形，中心在原点，朝向 +Z 轴
+		// 顶点顺序
 		// 0: (-1, -1, 0)  uv (0, 1)
 		// 1: (-1,  1, 0)  uv (0, 0)
 		// 2: ( 1, -1, 0)  uv (1, 1)
@@ -528,9 +409,9 @@ namespace Dolas
 		vertices_data[1].push_back(1.0f); // v3
 		vertices_data[1].push_back(0.0f);
 
-		// ������TriangleList����ʱ�룬�泯 +Z��
-		// ������ 1: v0, v2, v1
-		// ������ 2: v2, v3, v1
+		// 索引为TriangleList，顺时针，朝向 +Z
+		// 三角形 1: v0, v2, v1
+		// 三角形 2: v2, v3, v1
 		indices.push_back(0);
 		indices.push_back(2);
 		indices.push_back(1);
@@ -880,7 +761,7 @@ namespace Dolas
             const std::size_t vc = (vertex_stride == 0) ? 0 : (vertices[stream_index].size() / vertex_stride);
             if (vc > (std::size_t)(std::numeric_limits<UInt>::max)())
             {
-                LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: vertex_count overflow ({})", vc);
+                LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: vertex_count overflow ({0})", vc);
                 return nullptr;
             }
 		    vertex_count = (UInt)vc;
@@ -900,7 +781,7 @@ namespace Dolas
         const std::size_t ic = indices.size();
         if (ic > (std::size_t)(std::numeric_limits<UInt>::max)())
         {
-            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index_count overflow ({})", ic);
+            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index_count overflow ({0})", ic);
             return nullptr;
         }
         UInt index_count = (UInt)ic;
@@ -908,7 +789,7 @@ namespace Dolas
         const std::size_t index_bytes_sz = ic * sizeof(UInt);
         if (index_bytes_sz > (std::size_t)(std::numeric_limits<std::uint32_t>::max)())
         {
-            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index buffer size overflow ({})", index_bytes_sz);
+            LOG_ERROR("RenderPrimitiveManager::BuildFromRawData: index buffer size overflow ({0})", index_bytes_sz);
             return nullptr;
         }
         BufferID index_buffer_id = g_dolas_engine.m_buffer_manager->CreateIndexBuffer((std::uint32_t)index_bytes_sz, indices.data());
@@ -962,5 +843,3 @@ namespace Dolas
         return nullptr;
     }
 }
-
-
