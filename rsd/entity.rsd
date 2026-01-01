@@ -1,8 +1,8 @@
-<rsd class_name="EntityRSD" file_suffix=".entity">
-  <field name="type" type="String" />
-  <field name="mesh" type="String" />
-  <field name="base_geometry" type="String" />
-  <field name="material" type="String" />
-</rsd>
-
-
+<rsd_file>
+  <rsd class_name="EntityRSD" file_suffix=".entity">
+    <field name="type" type="String" />
+    <field name="mesh" type="String" />
+    <field name="base_geometry" type="String" />
+    <field name="material" type="String" />
+  </rsd>
+</rsd_file>

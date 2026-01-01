@@ -66,6 +66,9 @@ add_subdirectory(asset_editor)
 # 添加 precompile（RSD -> C++ 头文件生成）
 add_subdirectory(precompile)
 
+# 添加模型导入器（WPF）
+add_subdirectory(model_importer)
+
 # 让 Dolas 可执行目标依赖 Precompile（确保先生成 source/rsd/*.h）
 if(TARGET Dolas AND TARGET Precompile)
     add_dependencies(Dolas Precompile)
