@@ -1,4 +1,6 @@
 {
+    "name": "dolas",
+    "version": "0.1.0",
     "dependencies": [
         "spdlog",
         "tinyxml2",

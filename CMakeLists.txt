@@ -1,5 +1,5 @@
-# 指定CMake的最低版本要求为3.10，确保使用的CMake功能可用
-cmake_minimum_required(VERSION 3.10)
+# 指定CMake的最低版本要求为3.15，确保 vcpkg manifest mode 和其他现代功能可用
+cmake_minimum_required(VERSION 3.15)
 
 # 定义项目名称为Dolas，版本为0.1.0，使用C++语言
 project(Dolas VERSION 0.1.0 LANGUAGES CXX)

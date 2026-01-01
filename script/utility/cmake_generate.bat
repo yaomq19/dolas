@@ -45,7 +45,9 @@ echo Configuring project without presets...
 
 cmake -S . -B build -G "%GEN%" ^
     -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
-    -DVCPKG_INSTALLED_DIR="%cd%\build\vcpkg_installed"
+    -DVCPKG_INSTALLED_DIR="%cd%\build\vcpkg_installed" ^
+    -DVCPKG_TARGET_TRIPLET=x64-windows ^
+    -DVCPKG_MANIFEST_MODE=ON
 
 if %errorlevel% neq 0 (
     echo Configuration failed!
