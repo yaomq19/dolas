@@ -13,11 +13,11 @@
     <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
     <Platforms>AnyCPU;x64</Platforms>
 
-    <!-- 源码目录由 CMake 写死注入 -->
+    <!-- 源码目录由 CMake 注入 -->
     <ModelImporterSourceDir>@MODEL_IMPORTER_SOURCE_DIR@</ModelImporterSourceDir>
   </PropertyGroup>
 
-  <!-- 让生成的 csproj 可以引用源代码目录下的文件 -->
+  <!-- 引用源码 -->
   <ItemGroup>
     <Compile Include="$(ModelImporterSourceDir)/**/*.cs"
              Exclude="$(ModelImporterSourceDir)/**/bin/**;$(ModelImporterSourceDir)/**/obj/**" />
@@ -25,10 +25,16 @@
     <Page Include="$(ModelImporterSourceDir)/MainWindow.xaml" />
   </ItemGroup>
 
+  <!-- 第三方 NuGet 包引用 -->
+  <ItemGroup>
+    <PackageReference Include="AssimpNet" Version="4.1.0" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <!-- 允许引用旧版 .NET Framework 的包 -->
+    <AssetTargetFallback>$(AssetTargetFallback);net45</AssetTargetFallback>
   </PropertyGroup>
 
 </Project>
-

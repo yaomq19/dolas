@@ -19,6 +19,17 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
         @ONLY
     )
 
+    # 自动化解决 C# 包引用问题：配置完成后立即执行 NuGet 还原
+    message(STATUS "Restoring NuGet packages for ModelImporter...")
+    execute_process(
+        COMMAND dotnet restore "${MODEL_IMPORTER_CSPROJ}"
+        WORKING_DIRECTORY "${MODEL_IMPORTER_GEN_DIR}"
+        RESULT_VARIABLE restore_result
+    )
+    if(NOT restore_result EQUAL 0)
+        message(WARNING "Failed to restore NuGet packages for ModelImporter. You may need to restore manually in VS.")
+    endif()
+
     if(COMMAND include_external_msproject)
         # 最简方式：仅把 csproj 挂进 VS 解决方案
         include_external_msproject(ModelImporter "${MODEL_IMPORTER_CSPROJ}")
