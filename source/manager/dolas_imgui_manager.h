@@ -37,13 +37,20 @@ namespace Dolas
         // 渲染主 DockSpace
         void RenderMainDockSpace();
         
-        // 渲染 3D 视口窗口
-        void RenderViewportWindow();
-        
         // 渲染调试工具窗口
         void RenderDebugToolsWindow();
         
+        // 渲染场景层级窗口
+        void RenderSceneHierarchyWindow();
+        
+        // 渲染属性面板窗口
+        void RenderPropertiesWindow();
+        
+        // 渲染资源浏览器窗口
+        void RenderContentBrowserWindow();
+        
         bool m_is_imgui_window_open;
+        bool m_dockspace_initialized;  // 用于初始化布局
         
         // 视口相关
         bool m_viewport_hovered;

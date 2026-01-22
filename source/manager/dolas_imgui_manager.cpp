@@ -2,6 +2,7 @@
 #include <imgui_impl_win32.h>  // Win32 后端
 #include <imgui_impl_dx11.h>   // Direct3D 11 后端
 #include <string>
+#include <algorithm>  // for std::max
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
 #include "manager/dolas_imgui_manager.h"
@@ -20,6 +21,7 @@ namespace Dolas
 
     ImGuiManager::ImGuiManager()
         : m_is_imgui_window_open(false)
+        , m_dockspace_initialized(false)
         , m_viewport_hovered(false)
         , m_viewport_focused(false)
         , m_viewport_size(0.0f, 0.0f)
@@ -101,8 +103,10 @@ namespace Dolas
         // 2. 渲染主 DockSpace（占据整个主窗口）
         RenderMainDockSpace();
         
-        // 3. 渲染 3D 视口窗口（可停靠）
-        RenderViewportWindow();
+        // 3. 渲染固定的编辑器窗口（不可关闭）
+        RenderSceneHierarchyWindow();
+        RenderPropertiesWindow();
+        RenderContentBrowserWindow();
         
         // 4. 渲染调试工具窗口（F11 切换）
         if (m_is_imgui_window_open)
@@ -177,9 +181,65 @@ namespace Dolas
         
         // 创建 DockSpace
         ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
         
-        // 顶部菜单栏（可选）
+        // 首次运行时初始化布局
+        if (!m_dockspace_initialized)
+        {
+            m_dockspace_initialized = true;
+            
+            // 清除之前的布局
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
+            
+            // 关键修复：使用绝对尺寸而不是比例分割
+            ImGuiID dock_id_left;
+            ImGuiID dock_id_right; 
+            ImGuiID dock_id_bottom;
+            ImGuiID dock_id_top;
+            ImGuiID dock_id_center;
+            
+            // 步骤1: 从整个 DockSpace 底部切出 25% 给 Content Browser
+            dock_id_bottom = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dock_id_top);
+            
+            // 步骤2: 从上半部分左侧切出 20% 给 Scene Hierarchy  
+            dock_id_left = ImGui::DockBuilderSplitNode(dock_id_top, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+            
+            // 步骤3: 从剩余部分右侧切出约 20% 给 Properties (0.2/0.8 = 0.25)
+            dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
+            
+            // 设置节点为不可调整大小，无标签栏
+            ImGuiDockNode* node_left = ImGui::DockBuilderGetNode(dock_id_left);
+            ImGuiDockNode* node_right = ImGui::DockBuilderGetNode(dock_id_right);
+            ImGuiDockNode* node_bottom = ImGui::DockBuilderGetNode(dock_id_bottom);
+            
+            if (node_left)
+            {
+                node_left->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
+                node_left->SetLocalFlags(node_left->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+            }
+            if (node_right)
+            {
+                node_right->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
+                node_right->SetLocalFlags(node_right->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+            }
+            if (node_bottom)
+            {
+                node_bottom->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
+                node_bottom->SetLocalFlags(node_bottom->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+            }
+            
+            // 停靠窗口到对应节点
+            ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_id_left);
+            ImGui::DockBuilderDockWindow("Properties", dock_id_right);
+            ImGui::DockBuilderDockWindow("Content Browser", dock_id_bottom);
+            
+            ImGui::DockBuilderFinish(dockspace_id);
+        }
+        
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+        
+        // 顶部菜单栏
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("File"))
@@ -194,6 +254,11 @@ namespace Dolas
             if (ImGui::BeginMenu("View"))
             {
                 ImGui::MenuItem("Debug Tools (F11)", nullptr, &m_is_imgui_window_open);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Reset Layout"))
+                {
+                    m_dockspace_initialized = false;
+                }
                 ImGui::EndMenu();
             }
             
@@ -243,67 +308,6 @@ namespace Dolas
 #endif
     }
     
-    void ImGuiManager::RenderViewportWindow()
-    {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("3D Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-        
-        // 获取可用区域
-        ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
-        m_viewport_size = viewport_panel_size;
-        m_viewport_pos = ImGui::GetCursorScreenPos();
-        
-        // 检查视口状态
-        m_viewport_hovered = ImGui::IsWindowHovered();
-        m_viewport_focused = ImGui::IsWindowFocused();
-        
-        // TODO: 这里将来要显示渲染到离屏纹理的 3D 场景
-        // 目前先显示一个占位符
-        ImGui::Text("3D Viewport");
-        ImGui::Text("Size: %.0f x %.0f", viewport_panel_size.x, viewport_panel_size.y);
-        ImGui::Text("Hovered: %s", m_viewport_hovered ? "Yes" : "No");
-        ImGui::Text("Focused: %s", m_viewport_focused ? "Yes" : "No");
-        
-        // 示例：绘制一个网格背景
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 canvas_p0 = m_viewport_pos;
-        ImVec2 canvas_sz = viewport_panel_size;
-        ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-        
-        // 绘制背景
-        draw_list->AddRectFilled(canvas_p0, canvas_p1, IM_COL32(50, 50, 50, 255));
-        
-        // 绘制网格
-        const float grid_step = 64.0f;
-        for (float x = fmodf(0.0f, grid_step); x < canvas_sz.x; x += grid_step)
-            draw_list->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
-        for (float y = fmodf(0.0f, grid_step); y < canvas_sz.y; y += grid_step)
-            draw_list->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
-        
-        // 当鼠标在视口内时，可以捕获鼠标输入
-        if (m_viewport_hovered)
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            
-            // 示例：显示鼠标位置（视口局部坐标）
-            ImVec2 mouse_pos_in_canvas = ImVec2(io.MousePos.x - canvas_p0.x, io.MousePos.y - canvas_p0.y);
-            if (mouse_pos_in_canvas.x >= 0 && mouse_pos_in_canvas.y >= 0 && 
-                mouse_pos_in_canvas.x < canvas_sz.x && mouse_pos_in_canvas.y < canvas_sz.y)
-            {
-                // 绘制鼠标位置指示器
-                draw_list->AddCircleFilled(io.MousePos, 5.0f, IM_COL32(255, 255, 0, 200));
-                
-                // 显示坐标
-                char buf[64];
-                sprintf_s(buf, "Mouse: (%.0f, %.0f)", mouse_pos_in_canvas.x, mouse_pos_in_canvas.y);
-                draw_list->AddText(ImVec2(canvas_p0.x + 10, canvas_p0.y + 10), IM_COL32(255, 255, 255, 255), buf);
-            }
-        }
-        
-        ImGui::End();
-        ImGui::PopStyleVar();
-    }
-    
     void ImGuiManager::RenderDebugToolsWindow()
     {
         SetFontStyle(FontStyle::BoldFont);
@@ -346,5 +350,253 @@ namespace Dolas
 
         UnsetFontStyle();
         ImGui::End();
+    }
+    
+    void ImGuiManager::RenderSceneHierarchyWindow()
+    {
+        // 强制窗口填充整个停靠区域，无标题栏
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+        
+        ImGui::Begin("Scene Hierarchy", nullptr, window_flags);
+        
+        ImGui::Text("SCENE HIERARCHY");
+        ImGui::Separator();
+        
+        // 示例：显示场景对象树
+        if (ImGui::TreeNode("Root Scene"))
+        {
+            // TODO: 从场景管理器获取实际的场景对象
+            if (ImGui::TreeNode("Main Camera"))
+            {
+                ImGui::Text("Type: Camera");
+                ImGui::TreePop();
+            }
+            
+            if (ImGui::TreeNode("Directional Light"))
+            {
+                ImGui::Text("Type: Light");
+                ImGui::TreePop();
+            }
+            
+            if (ImGui::TreeNode("Entities"))
+            {
+                // 示例实体
+                if (ImGui::Selectable("Ground Plane"))
+                {
+                    // TODO: 选中该实体
+                }
+                if (ImGui::Selectable("Sphere"))
+                {
+                    // TODO: 选中该实体
+                }
+                if (ImGui::Selectable("Hammer"))
+                {
+                    // TODO: 选中该实体
+                }
+                ImGui::TreePop();
+            }
+            
+            ImGui::TreePop();
+        }
+        
+        ImGui::Separator();
+        
+        // 添加/删除对象按钮
+        if (ImGui::Button("Add Entity"))
+        {
+            // TODO: 添加新实体
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Delete Selected"))
+        {
+            // TODO: 删除选中的实体
+        }
+        
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+    
+    void ImGuiManager::RenderPropertiesWindow()
+    {
+        // 强制窗口填充整个停靠区域，无标题栏
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+        
+        ImGui::Begin("Properties", nullptr, window_flags);
+        
+        ImGui::Text("PROPERTIES");
+        ImGui::Separator();
+        
+        // 示例：显示选中对象的属性
+        static char name[128] = "Selected Object";
+        ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
+        
+        ImGui::Spacing();
+        
+        // Transform 组件
+        if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            static float position[3] = { 0.0f, 0.0f, 0.0f };
+            static float rotation[3] = { 0.0f, 0.0f, 0.0f };
+            static float scale[3] = { 1.0f, 1.0f, 1.0f };
+            
+            ImGui::DragFloat3("Position", position, 0.1f);
+            ImGui::DragFloat3("Rotation", rotation, 1.0f);
+            ImGui::DragFloat3("Scale", scale, 0.1f);
+        }
+        
+        // Material 组件
+        if (ImGui::CollapsingHeader("Material"))
+        {
+            const char* materials[] = { "Default", "PBR", "Unlit", "Custom" };
+            static int current_material = 0;
+            ImGui::Combo("Material Type", &current_material, materials, IM_ARRAYSIZE(materials));
+            
+            static float albedo[3] = { 1.0f, 1.0f, 1.0f };
+            ImGui::ColorEdit3("Albedo", albedo);
+            
+            static float metallic = 0.0f;
+            ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
+            
+            static float roughness = 0.5f;
+            ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
+        }
+        
+        // Mesh 组件
+        if (ImGui::CollapsingHeader("Mesh Renderer"))
+        {
+            ImGui::Text("Mesh: cube.mesh");
+            if (ImGui::Button("Select Mesh..."))
+            {
+                // TODO: 打开资源选择器
+            }
+            
+            ImGui::Checkbox("Cast Shadows", nullptr);
+            ImGui::Checkbox("Receive Shadows", nullptr);
+        }
+        
+        ImGui::Separator();
+        
+        // 添加组件按钮
+        if (ImGui::Button("Add Component"))
+        {
+            ImGui::OpenPopup("add_component_popup");
+        }
+        
+        if (ImGui::BeginPopup("add_component_popup"))
+        {
+            ImGui::Text("Components");
+            ImGui::Separator();
+            if (ImGui::Selectable("Mesh Renderer")) {}
+            if (ImGui::Selectable("Light")) {}
+            if (ImGui::Selectable("Camera")) {}
+            if (ImGui::Selectable("Script")) {}
+            ImGui::EndPopup();
+        }
+        
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+    
+    void ImGuiManager::RenderContentBrowserWindow()
+    {
+        // 强制窗口填充整个停靠区域，无标题栏
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+        
+        ImGui::Begin("Content Browser", nullptr, window_flags);
+        
+        ImGui::Text("CONTENT BROWSER");
+        ImGui::Separator();
+        
+        // 目录树
+        ImGui::BeginChild("Directories", ImVec2(150, 0), true);
+        if (ImGui::TreeNode("content/"))
+        {
+            if (ImGui::TreeNode("scene/"))
+            {
+                ImGui::Selectable("default_scene/");
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("mesh/"))
+            {
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("texture/"))
+            {
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("shader/"))
+            {
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("material/"))
+            {
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+        ImGui::EndChild();
+        
+        ImGui::SameLine();
+        
+        // 文件列表
+        ImGui::BeginChild("Files", ImVec2(0, 0), true);
+        
+        // 工具栏
+        if (ImGui::Button("Import"))
+        {
+            // TODO: 导入资源
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Refresh"))
+        {
+            // TODO: 刷新资源列表
+        }
+        
+        ImGui::Separator();
+        
+        // 示例：网格视图显示资源
+        const float icon_size = 80.0f;
+        const float spacing = 10.0f;
+        float panel_width = ImGui::GetContentRegionAvail().x;
+        int columns = (int)(panel_width / (icon_size + spacing));
+        if (columns < 1) columns = 1;
+        
+        ImGui::Columns(columns, nullptr, false);
+        
+        // 示例资源图标
+        const char* assets[] = {
+            "cube.mesh", "sphere.mesh", "plane.mesh",
+            "default.material", "pbr.material",
+            "texture_001.png", "texture_002.png",
+            "shader.hlsl", "scene.scene"
+        };
+        
+        for (int i = 0; i < IM_ARRAYSIZE(assets); i++)
+        {
+            ImGui::PushID(i);
+            
+            // 绘制图标占位符
+            ImGui::Button(assets[i], ImVec2(icon_size, icon_size));
+            
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            {
+                // TODO: 双击打开资源
+            }
+            
+            // 显示文件名
+            ImGui::TextWrapped("%s", assets[i]);
+            
+            ImGui::PopID();
+            ImGui::NextColumn();
+        }
+        
+        ImGui::Columns(1);
+        ImGui::EndChild();
+        
+        ImGui::End();
+        ImGui::PopStyleVar();
     }
 }
