@@ -29,6 +29,8 @@ namespace Dolas
         // 获取视口信息
         bool IsViewportHovered() const { return m_viewport_hovered; }
         bool IsViewportFocused() const { return m_viewport_focused; }
+        ImVec2 GetViewportPos() const { return m_viewport_pos; }     // 相对于主窗口客户区(0,0)
+        ImVec2 GetViewportSize() const { return m_viewport_size; }   // 像素尺寸
         
     private:
         void SetFontStyle(FontStyle font_style);
@@ -51,6 +53,7 @@ namespace Dolas
         
         bool m_is_imgui_window_open;
         bool m_dockspace_initialized;  // 用于初始化布局
+        ImGuiID m_scene_viewport_node_id; // docking 中心节点 id（用于计算场景视口矩形）
         
         // 视口相关
         bool m_viewport_hovered;

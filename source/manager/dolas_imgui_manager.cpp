@@ -23,6 +23,7 @@ namespace Dolas
     ImGuiManager::ImGuiManager()
         : m_is_imgui_window_open(false)
         , m_dockspace_initialized(false)
+        , m_scene_viewport_node_id(0)
         , m_viewport_hovered(false)
         , m_viewport_focused(false)
         , m_viewport_size(0.0f, 0.0f)
@@ -157,6 +158,11 @@ namespace Dolas
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+        // 关键：避免 DockSpace 在中心区域绘制半透明背景，导致场景“变暗”
+        // 只在绘制 DockSpace Host 期间修改，不影响其他面板窗口的背景色。
+        ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_DockingPreview, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
         
         ImGui::Begin("DockSpace Main", nullptr, window_flags);
         ImGui::PopStyleVar(3);
@@ -221,11 +227,19 @@ namespace Dolas
                     | ImGuiDockNodeFlags_NoDockingOverMe
                     | ImGuiDockNodeFlags_NoDockingSplit;
             }
+
+            // 中心区域也隐藏 TabBar / 菜单按钮（中心区域用于承载“场景视口”）
+            if (ImGuiDockNode* node_center = ImGui::DockBuilderGetNode(dock_main_id))
+            {
+                node_center->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoWindowMenuButton;
+            }
             
             // 停靠窗口到对应节点
             ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_id_left);
             ImGui::DockBuilderDockWindow("Properties", dock_id_right);
             ImGui::DockBuilderDockWindow("Content Browser", dock_id_bottom);
+            // 记录中心节点 id，用于计算“场景视口”矩形（不创建任何额外窗口，避免叠加半透明背景导致变暗）
+            m_scene_viewport_node_id = dock_main_id;
             
             ImGui::DockBuilderFinish(dockspace_id);
         }
@@ -233,6 +247,22 @@ namespace Dolas
         // 让中央区域不画背景、鼠标可穿透（便于渲染画面作为主背景）
         ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+        // 计算中心“场景视口”矩形（直接从 docking 节点取，不创建窗口）
+        if (m_scene_viewport_node_id != 0)
+        {
+            if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(m_scene_viewport_node_id))
+            {
+                ImGuiViewport* main_vp = ImGui::GetMainViewport();
+                m_viewport_pos = ImVec2(node->Pos.x - main_vp->Pos.x, node->Pos.y - main_vp->Pos.y);
+                m_viewport_size = node->Size;
+
+                const ImVec2 p0 = node->Pos;
+                const ImVec2 p1 = ImVec2(node->Pos.x + node->Size.x, node->Pos.y + node->Size.y);
+                m_viewport_hovered = ImGui::IsMouseHoveringRect(p0, p1, false);
+                m_viewport_focused = m_viewport_hovered;
+            }
+        }
         
         // 顶部菜单栏
         if (ImGui::BeginMenuBar())
@@ -270,8 +300,9 @@ namespace Dolas
         }
         
         ImGui::End();
+        ImGui::PopStyleColor(2);
     }
-    
+
     void ImGuiManager::RenderDebugToolsWindow()
     {
         SetFontStyle(FontStyle::BoldFont);

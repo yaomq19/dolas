@@ -58,6 +58,34 @@ namespace Dolas
         rhi->UpdatePerFrameParameters();
 		RenderCamera* render_camera = TryGetRenderCamera();
 		DOLAS_RETURN_IF_NULL(render_camera);
+
+        // 仅在“中心视口”区域渲染场景（由 ImGui Dock 布局决定）
+        // 注意：该 rect 来自上一帧 ImGui 计算结果（ImGui 渲染发生在本帧末尾），因此会有 1 帧延迟，但交互上可接受。
+        ImVec2 vp_pos = g_dolas_engine.m_imgui_manager->GetViewportPos();
+        ImVec2 vp_size = g_dolas_engine.m_imgui_manager->GetViewportSize();
+        if (vp_size.x > 1.0f && vp_size.y > 1.0f)
+        {
+            m_viewport = ViewPort(vp_pos.x, vp_pos.y, vp_size.x, vp_size.y, 0.0f, 1.0f);
+
+            // 同步相机投影的宽高比
+            const Float aspect = (Float)(vp_size.x / vp_size.y);
+            if (render_camera->GetCameraPerspectiveType() == CameraPerspectiveType::Perspective)
+            {
+                if (auto* perspective_camera = dynamic_cast<RenderCameraPerspective*>(render_camera))
+                {
+                    perspective_camera->SetAspectRatio(aspect);
+                }
+            }
+            else if (render_camera->GetCameraPerspectiveType() == CameraPerspectiveType::Orthographic)
+            {
+                if (auto* ortho_camera = dynamic_cast<RenderCameraOrthographic*>(render_camera))
+                {
+                    ortho_camera->SetWindowWidth((Float)vp_size.x);
+                    ortho_camera->SetWindowHeight((Float)vp_size.y);
+                }
+            }
+        }
+
 		rhi->UpdatePerViewParameters(render_camera);
 
         ClearPass(rhi);
