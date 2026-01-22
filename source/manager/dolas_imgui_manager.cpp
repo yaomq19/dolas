@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <imgui_internal.h> // DockBuilder API (docking 分支)
 #include <imgui_impl_win32.h>  // Win32 后端
 #include <imgui_impl_dx11.h>   // Direct3D 11 后端
 #include <string>
@@ -59,21 +60,10 @@ namespace Dolas
         // 启用键盘导航
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         
-        // 启用停靠和多视口（方案C核心配置）
-        // 注意：需要 ImGui docking 分支支持，vcpkg 默认版本不支持
-        // 如果编译出错，请参考 docs/IMGUI_VIEWPORT_INTEGRATION.md
-#ifdef IMGUI_HAS_DOCK
+        // 启用 Docking（需要 imgui 的 docking 分支）
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-        
-        // 当启用 ViewportsEnable 时，调整窗口圆角以适应平台窗口
-        ImGuiStyle& style = ImGui::GetStyle();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
-#endif
+
+        // 注意：这里先不启用 ViewportsEnable（多窗口），避免面板被弹成独立系统窗口
         
         // 2. 设置 ImGui 样式
         ImGui::StyleColorsDark();  // 或 ImGui::StyleColorsLight();
@@ -117,16 +107,6 @@ namespace Dolas
         // 5. 渲染
         ImGui::Render();
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-        
-        // 6. 更新和渲染额外的平台窗口（多视口支持）
-#ifdef IMGUI_HAS_VIEWPORT
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
-#endif
     }
 
     void ImGuiManager::Tick()
@@ -160,13 +140,15 @@ namespace Dolas
 
     void ImGuiManager::RenderMainDockSpace()
     {
-#ifdef IMGUI_HAS_DOCK
         // 创建一个覆盖整个主窗口的 DockSpace
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
         
+        // 让 DockSpace Host 背景透明，中央区域透出 3D 渲染
+        ImGui::SetNextWindowBgAlpha(0.0f);
+
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
         window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
         window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
@@ -192,21 +174,23 @@ namespace Dolas
             ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
             ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
             
-            // 关键修复：使用绝对尺寸而不是比例分割
-            ImGuiID dock_id_left;
-            ImGuiID dock_id_right; 
-            ImGuiID dock_id_bottom;
-            ImGuiID dock_id_top;
-            ImGuiID dock_id_center;
+            // UE 风格固定布局：
+            // 1) 底部 Content Browser 横跨全宽
+            // 2) 上半部分左侧 Scene Hierarchy
+            // 3) 上半部分右侧 Properties
+            ImGuiID dock_main_id = dockspace_id;
+            ImGuiID dock_id_bottom = 0;
+            ImGuiID dock_id_left = 0;
+            ImGuiID dock_id_right = 0;
             
             // 步骤1: 从整个 DockSpace 底部切出 25% 给 Content Browser
-            dock_id_bottom = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dock_id_top);
+            dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
             
             // 步骤2: 从上半部分左侧切出 20% 给 Scene Hierarchy  
-            dock_id_left = ImGui::DockBuilderSplitNode(dock_id_top, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+            dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
             
             // 步骤3: 从剩余部分右侧切出约 20% 给 Properties (0.2/0.8 = 0.25)
-            dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
+            dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
             
             // 设置节点为不可调整大小，无标签栏
             ImGuiDockNode* node_left = ImGui::DockBuilderGetNode(dock_id_left);
@@ -215,18 +199,27 @@ namespace Dolas
             
             if (node_left)
             {
-                node_left->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
-                node_left->SetLocalFlags(node_left->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+                node_left->LocalFlags |= ImGuiDockNodeFlags_NoTabBar
+                    | ImGuiDockNodeFlags_NoResize
+                    | ImGuiDockNodeFlags_NoWindowMenuButton
+                    | ImGuiDockNodeFlags_NoDockingOverMe
+                    | ImGuiDockNodeFlags_NoDockingSplit;
             }
             if (node_right)
             {
-                node_right->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
-                node_right->SetLocalFlags(node_right->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+                node_right->LocalFlags |= ImGuiDockNodeFlags_NoTabBar
+                    | ImGuiDockNodeFlags_NoResize
+                    | ImGuiDockNodeFlags_NoWindowMenuButton
+                    | ImGuiDockNodeFlags_NoDockingOverMe
+                    | ImGuiDockNodeFlags_NoDockingSplit;
             }
             if (node_bottom)
             {
-                node_bottom->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
-                node_bottom->SetLocalFlags(node_bottom->LocalFlags | ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingSplitMe);
+                node_bottom->LocalFlags |= ImGuiDockNodeFlags_NoTabBar
+                    | ImGuiDockNodeFlags_NoResize
+                    | ImGuiDockNodeFlags_NoWindowMenuButton
+                    | ImGuiDockNodeFlags_NoDockingOverMe
+                    | ImGuiDockNodeFlags_NoDockingSplit;
             }
             
             // 停靠窗口到对应节点
@@ -237,7 +230,9 @@ namespace Dolas
             ImGui::DockBuilderFinish(dockspace_id);
         }
         
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+        // 让中央区域不画背景、鼠标可穿透（便于渲染画面作为主背景）
+        ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         
         // 顶部菜单栏
         if (ImGui::BeginMenuBar())
@@ -275,37 +270,6 @@ namespace Dolas
         }
         
         ImGui::End();
-#else
-        // 如果没有 docking 支持，显示简单的菜单栏
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("File"))
-            {
-                if (ImGui::MenuItem("Exit")) 
-                {
-                    PostQuitMessage(0);
-                }
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("View"))
-            {
-                ImGui::MenuItem("Debug Tools (F11)", nullptr, &m_is_imgui_window_open);
-                ImGui::EndMenu();
-            }
-            
-            if (ImGui::BeginMenu("Help"))
-            {
-                if (ImGui::MenuItem("About")) 
-                {
-                    // TODO: 显示关于对话框
-                }
-                ImGui::EndMenu();
-            }
-            
-            ImGui::EndMainMenuBar();
-        }
-#endif
     }
     
     void ImGuiManager::RenderDebugToolsWindow()
