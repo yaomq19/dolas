@@ -110,3 +110,5 @@ CMakeUserPresets.json
 
 # RSD -> .h auto-generated headers (precompile output)
 source/rsd/*.h
+
+imgui.ini
