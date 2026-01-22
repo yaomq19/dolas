@@ -1,13 +1,17 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Windows.Input;
+using Dolas.AssetEditor.Commands;
 using Dolas.AssetEditor.Services;
 
 namespace Dolas.AssetEditor.ViewModels;
 
 public sealed class AssetNodeViewModel : ViewModelBase
 {
+    private static string? _lastOpenedDirectory;
     private readonly Action? _markDirty;
 
     private string _scalarText = string.Empty;
@@ -18,6 +22,7 @@ public sealed class AssetNodeViewModel : ViewModelBase
     private string _yText = "0";
     private string _zText = "0";
     private string _wText = "0";
+    private string _targetRsdClassName = string.Empty;
 
     public AssetNodeViewModel(string name, EditorType editorType, Action? markDirty)
     {
@@ -25,11 +30,69 @@ public sealed class AssetNodeViewModel : ViewModelBase
         EditorType = editorType;
         _markDirty = markDirty;
         Children = new ObservableCollection<AssetNodeViewModel>();
+        BrowseCommand = new RelayCommand(Browse);
     }
 
     public string Name { get; }
 
     public EditorType EditorType { get; private set; }
+
+    public string TargetRsdClassName
+    {
+        get => _targetRsdClassName;
+        set => SetField(ref _targetRsdClassName, value);
+    }
+
+    public ICommand BrowseCommand { get; }
+
+    private void Browse()
+    {
+        var contentRoot = RepoLocator.TryFindContentRoot();
+        if (contentRoot == null)
+        {
+            System.Windows.MessageBox.Show("未找到引擎 content 目录，无法确定相对路径。", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            return;
+        }
+
+        var filter = "所有文件|*.*";
+        if (EditorType == EditorType.AssetReference && !string.IsNullOrWhiteSpace(TargetRsdClassName))
+        {
+            var repoRoot = RepoLocator.TryFindRepoRoot(AppContext.BaseDirectory);
+            if (repoRoot != null)
+            {
+                var registry = RsdSchemaRegistry.LoadFromRepoRoot(repoRoot);
+                if (registry.TryGetByClassName(TargetRsdClassName, out var schema) && schema?.FileSuffix != null)
+                {
+                    var suffix = schema.FileSuffix;
+                    filter = $"{TargetRsdClassName} 资产 (*{suffix})|*{suffix}|{filter}";
+                }
+            }
+        }
+
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = $"选择 {Name}",
+            Filter = filter,
+            InitialDirectory = (!string.IsNullOrEmpty(_lastOpenedDirectory) && Directory.Exists(_lastOpenedDirectory)) 
+                ? _lastOpenedDirectory 
+                : contentRoot
+        };
+
+        if (dlg.ShowDialog() == true)
+        {
+            var fullPath = dlg.FileName;
+            if (!fullPath.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                System.Windows.MessageBox.Show("选中的文件必须位于 content 目录或其子目录下。", "路径错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                return;
+            }
+
+            _lastOpenedDirectory = Path.GetDirectoryName(fullPath);
+
+            var relativePath = Path.GetRelativePath(contentRoot, fullPath).Replace('\\', '/');
+            ScalarText = relativePath;
+        }
+    }
 
     public ObservableCollection<AssetNodeViewModel> Children { get; }
 

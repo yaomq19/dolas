@@ -1,0 +1,12 @@
+<asset>
+  <vertex_shader type="RawReference">shader/opaque/opaque_vs.hlsl</vertex_shader>
+  <pixel_shader type="RawReference">shader/opaque/opaque_ps.hlsl</pixel_shader>
+  <vertex_shader_global_variables type="Map" />
+  <pixel_shader_global_variables type="Map">
+  </pixel_shader_global_variables>
+  <pixel_shader_texture type="Map">
+    <item key="albedo_map" type="RawReference">material/textures/mace01_BaseColor.png</item>
+    <item key="normal_map" type="RawReference">material/textures/mace01_NormalGL.png</item>
+  </pixel_shader_texture>
+  <parameter type="Map" />
+</asset>

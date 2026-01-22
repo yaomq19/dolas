@@ -32,30 +32,29 @@ namespace Dolas
 
     void RenderEntity::Draw(DolasRHI* rhi)
     {
-		Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(m_material_id);
-		DOLAS_RETURN_IF_NULL(material);
-
-        std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
-        DOLAS_RETURN_IF_NULL(vertex_context);
-
-        std::shared_ptr<PixelContext> pixel_context = material->GetPixelContext();
-        DOLAS_RETURN_IF_NULL(pixel_context);
-        
         rhi->UpdatePerObjectParameters(m_pose);
-		// 绑定 Shader 并绘制对应的 RenderPrimitive
-        if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
+
+        for (const auto& component : m_components)
         {
-            g_dolas_engine.m_rhi->DrawRenderPrimitive(m_render_primitive_id);
+            Material* material = g_dolas_engine.m_material_manager->GetMaterialByID(component.m_material_id);
+            if (!material) continue;
+
+            std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
+            if (!vertex_context) continue;
+
+            std::shared_ptr<PixelContext> pixel_context = material->GetPixelContext();
+            if (!pixel_context) continue;
+
+            // 绑定 Shader 并绘制对应的 RenderPrimitive
+            if (rhi->BindVertexContext(vertex_context) && rhi->BindPixelContext(pixel_context))
+            {
+                g_dolas_engine.m_rhi->DrawRenderPrimitive(component.m_render_primitive_id);
+            }
         }
     }
 
-    void RenderEntity::SetMeshID(RenderPrimitiveID mesh_id)
+    void RenderEntity::AddComponent(RenderPrimitiveID mesh_id, MaterialID material_id)
     {
-        m_render_primitive_id = mesh_id;
-    }
-
-    void RenderEntity::SetMaterialID(MaterialID material_id)
-    {
-        m_material_id = material_id;
+        m_components.push_back({ mesh_id, material_id });
     }
 }

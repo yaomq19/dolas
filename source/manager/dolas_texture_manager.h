@@ -55,6 +55,8 @@ namespace Dolas
 
         TextureID CreateTextureFromHDRFile(const std::string& file_name);
 
+		TextureID CreateTextureFromPNGFile(const std::string& file_name);
+
         Texture* GetGlobalTexture(GlobalTextureType global_texture_type);
 
 		// 创建2D纹理

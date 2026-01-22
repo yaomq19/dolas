@@ -112,6 +112,8 @@ namespace Dolas
             return ParseRsdObjectFromXmlElement(el, base + f.offset, f.objectFields, f.objectFieldCount);
         }
         case RsdFieldType::String:
+        case RsdFieldType::RawReference:
+        case RsdFieldType::AssetReference:
         {
             auto* p = reinterpret_cast<std::string*>(base + f.offset);
             if (const char* t = GetScalarTextCompat(el))
@@ -325,6 +327,7 @@ namespace Dolas
             return true;
         }
         case RsdFieldType::MapStringString:
+        case RsdFieldType::MapStringRawReference:
         {
             auto* p = reinterpret_cast<std::map<std::string, std::string>*>(base + f.offset);
             if (!el) return true;
@@ -414,6 +417,7 @@ namespace Dolas
         {
             LOG_ERROR("Failed to parse RSD from xml: {}", file_path);
         }
+        
         return ok;
     }
 

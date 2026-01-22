@@ -91,6 +91,7 @@ namespace Dolas
 		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
@@ -109,7 +110,6 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
 	
@@ -165,18 +165,18 @@ namespace Dolas
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 
-		// Check if timeout exceeded
-		auto current_time = std::chrono::high_resolution_clock::now();
-		if (current_time - start_time > max_message_time)
-		{
-			break; // Leave remaining messages for next frame
-		}
-	}
+				// Check if timeout exceeded
+				auto current_time = std::chrono::high_resolution_clock::now();
+				if (current_time - start_time > max_message_time)
+				{
+					break; // Leave remaining messages for next frame
+				}
+			}
 	
-	// Update timing information (includes frame rate limiting)
-	m_timer_manager->Tick();
-	m_tick_manager->Tick(m_timer_manager->GetDeltaTime());
-	}
+			// Update timing information (includes frame rate limiting)
+			m_timer_manager->Tick();
+			m_tick_manager->Tick(m_timer_manager->GetDeltaTime());
+		}
 }
 }// namespace Dolas
 

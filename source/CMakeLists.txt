@@ -29,12 +29,12 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-find_package(spdlog CONFIG REQUIRED)
-find_package(tinyxml2 CONFIG REQUIRED)
-find_package(assimp CONFIG REQUIRED)
-find_package(directxtex CONFIG REQUIRED)
-find_package(Tracy CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
+# spdlog 现在通过 third_party 子模块构建，不再使用 vcpkg
+# TinyXML2 现在通过 third_party 子模块构建，不再使用 vcpkg
+# Assimp 现在通过 third_party 子模块构建，不再使用 vcpkg
+# DirectXTex 现在通过 third_party 子模块构建，不再使用 vcpkg
+# Tracy 现在通过 third_party 子模块构建，不再使用 vcpkg
+# ImGui 现在通过 third_party 子模块构建，不再使用 vcpkg
 
 # ============ 可执行文件创建 ============
 # 创建名为${PROJECT_NAME}(即Dolas)的可执行文件，包含所有源文件和头文件
@@ -49,18 +49,18 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_USE_STD_FORMAT)
 target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE)
 
 # ============ 库链接配置 ============
-# 使用 spdlog 的 header-only 版本（不需要链接库文件）
+# 链接 spdlog（来自 third_party 子模块，header-only 版本）
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
-# XML
-target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2::tinyxml2)
-# 链接 assimp
-target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
-# 链接 DirectXTex
-target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectXTex)
-# 链接 Tracy
-target_link_libraries(${PROJECT_NAME} PRIVATE Tracy::TracyClient)
-# 链接 ImGui
-target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+# 链接 TinyXML2（来自 third_party 子模块）
+target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2)
+# 链接 Assimp（来自 third_party 子模块）
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
+# 链接 DirectXTex（来自 third_party 子模块）
+target_link_libraries(${PROJECT_NAME} PRIVATE DirectXTex)
+# 链接 Tracy（来自 third_party 子模块）
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyClient)
+# 链接 ImGui（来自 third_party 子模块）
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
 
 # 如果是Windows平台，链接DirectX相关库
 if(WIN32)

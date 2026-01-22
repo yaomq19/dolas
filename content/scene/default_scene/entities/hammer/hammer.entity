@@ -1,0 +1,5 @@
+<asset>
+  <meshes type="DynamicArray" element_type="AssetReference:MeshRSD">
+    <item>scene/default_scene/entities/hammer/hammer.mesh</item>
+  </meshes>
+</asset>

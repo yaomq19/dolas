@@ -138,6 +138,7 @@ namespace Dolas
 		InputLayoutType_POS_3,
 		InputLayoutType_POS_3_UV_2,
 		InputLayoutType_POS_3_UV_2_NORM_3,
+		InputLayoutType_POS_3_UV_2_NORM_3_TANG_3,
 		InputLayoutType_POS_3_NORM_3,
 		InputLayoutType_Count
 	};

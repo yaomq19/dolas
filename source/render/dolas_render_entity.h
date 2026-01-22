@@ -13,6 +13,12 @@
 namespace Dolas
 {
     class Material;
+    struct RenderComponent
+    {
+        RenderPrimitiveID m_render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
+        MaterialID m_material_id = MATERIAL_ID_EMPTY;
+    };
+
     class RenderEntity
     {
         friend class RenderEntityManager;
@@ -22,12 +28,10 @@ namespace Dolas
         bool Clear();
         void Draw(DolasRHI* rhi);
 
-        void SetMeshID(RenderPrimitiveID mesh_id);
-        void SetMaterialID(MaterialID material_id);
+        void AddComponent(RenderPrimitiveID mesh_id, MaterialID material_id);
     protected:
         RenderEntityID m_file_id = RENDER_ENTITY_ID_EMPTY;
-        RenderPrimitiveID m_render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
-        MaterialID m_material_id = MATERIAL_ID_EMPTY;
+        std::vector<RenderComponent> m_components;
 		Pose m_pose = Pose();
     };
 } // namespace Dolas

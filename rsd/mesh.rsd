@@ -7,6 +7,7 @@
   <rsd class_name="MeshRSD" file_suffix=".mesh">
     <field name="position" type="DynamicArray" element="Float" />
     <field name="normal" type="DynamicArray" element="Float" />
+    <field name="tangent" type="DynamicArray" element="Float" />
     <field name="uv0" type="DynamicArray" element="Float" />
     <field name="uv1" type="DynamicArray" element="Float" />
     <field name="color" type="DynamicArray" element="Float" />

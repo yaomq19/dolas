@@ -115,7 +115,7 @@ static CppType CppTypeForSpec(const std::string& specIn, IncludeNeeds& needs)
     if (spec == "Vector3") return { "Vector3", "" };
     if (spec == "Vector4") return { "Vector4", "" };
 
-    if (spec == "String" || spec == "Xml" || spec == "TriangleList" || spec.rfind("AssetReference", 0) == 0)
+    if (spec == "String" || spec == "Xml" || spec == "TriangleList" || spec == "RawReference" || spec.rfind("AssetReference", 0) == 0)
     {
         needs.needString = true;
         return { "std::string", "" };
@@ -178,9 +178,8 @@ static std::string FieldEnumForSpec(const std::string& typeSpecIn)
 {
     const std::string t = Trim(typeSpecIn);
     if (t.rfind("Enum<", 0) == 0) return "RsdFieldType::EnumUInt";
-    // AssetReference<T> / RawReference are represented as string in C++.
-    if (t.rfind("AssetReference<", 0) == 0) return "RsdFieldType::String";
-    if (t == "RawReference") return "RsdFieldType::String";
+    if (t.rfind("AssetReference<", 0) == 0) return "RsdFieldType::AssetReference";
+    if (t == "RawReference") return "RsdFieldType::RawReference";
     if (t == "String") return "RsdFieldType::String";
     if (t == "Bool") return "RsdFieldType::BoolValue";
     if (t == "Int") return "RsdFieldType::IntValue";
@@ -196,6 +195,7 @@ static std::string FieldEnumForSpec(const std::string& typeSpecIn)
     if (t == "DynamicArray<Float>") return "RsdFieldType::DynArrayFloat";
     if (t == "DynamicArray<UInt>") return "RsdFieldType::DynArrayUInt";
     if (t == "Map<String, Vector4>") return "RsdFieldType::MapStringVector4";
+    if (t == "Map<String, RawReference>") return "RsdFieldType::MapStringRawReference";
     if (t == "Map<String, String>") return "RsdFieldType::MapStringString";
     if (t == "Map<String, Float>") return "RsdFieldType::MapStringFloat";
     return "RsdFieldType::Unsupported";
@@ -222,11 +222,16 @@ static std::string CanonicalizeTypeSpec(const tinyxml2::XMLElement* fieldEl)
     if (type == "DynamicArray" || type == "Set")
     {
         const char* e = fieldEl->Attribute("element");
-        if (!e) throw std::runtime_error(type + " field requires element attribute");
+        if (!e) e = fieldEl->Attribute("element_type"); // 支持新属性名
+        if (!e) throw std::runtime_error(type + " field requires element or element_type attribute");
+        
         std::string elem = Trim(e);
-        // Support attribute form for nested AssetReference to avoid XML entities:
-        //   <field type="DynamicArray" element="AssetReference" target="EntityRSD" />
-        if (elem == "AssetReference")
+        // 支持 AssetReference:MeshRSD 这种紧凑写法
+        if (elem.find("AssetReference:") == 0)
+        {
+            elem = "AssetReference<" + elem.substr(15) + ">";
+        }
+        else if (elem == "AssetReference")
         {
             const char* t = fieldEl->Attribute("target");
             if (!t) throw std::runtime_error(type + " element=AssetReference requires target attribute");

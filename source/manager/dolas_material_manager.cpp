@@ -11,9 +11,19 @@
 #include "manager/dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_log_system_manager.h"
+#include "rsd/material.h"
 
 namespace Dolas
 {
+    DOLAS_STATIC_CONST std::string k_global_material_directory = "global_material/";
+
+    DOLAS_STATIC_CONST std::array<std::string, static_cast<UInt>(GlobalMaterialType::Count)>
+        k_global_material_file_names = {
+            "deferred_shading.material",
+            "sky_box.material",
+            "debug_draw.material"
+        };
+
     MaterialManager::MaterialManager()
     {
 
@@ -50,17 +60,17 @@ namespace Dolas
 
     void MaterialManager::InitializeGlobalMaterial()
     {
-        m_global_materials.m_deferred_shading = CreateMaterial("deferred_shading.material");
-        m_global_materials.m_sky_box_material_id = CreateMaterial("sky_box.material");
-        m_global_materials.m_debug_draw_material_id = CreateMaterial("debug_draw.material");
+        m_global_materials[(UInt)GlobalMaterialType::DeferredShading] = CreateMaterial(k_global_material_directory + k_global_material_file_names[(UInt)GlobalMaterialType::DeferredShading]);
+        m_global_materials[(UInt)GlobalMaterialType::SkyBox] = CreateMaterial(k_global_material_directory + k_global_material_file_names[(UInt)GlobalMaterialType::SkyBox]);
+        m_global_materials[(UInt)GlobalMaterialType::DebugDraw] = CreateMaterial(k_global_material_directory + k_global_material_file_names[(UInt)GlobalMaterialType::DebugDraw]);
     }
 
     MaterialID MaterialManager::CreateMaterial(const std::string& file_name)
     {
-        std::string material_file_path = PathUtils::GetMaterialDir() + file_name;
+        std::string material_file_path = PathUtils::GetContentDir() + file_name;
 
         // 其他系统不需要知道 XML：统一通过 RSD 资产读取
-        MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MaterialRSD>(PathUtils::GetMaterialDir() + file_name);
+        MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MaterialRSD>(file_name);
         if (material_rsd == nullptr)
             return MATERIAL_ID_EMPTY;
 
@@ -83,9 +93,21 @@ namespace Dolas
                 const std::string& texture_name = kv.first;
                 const std::string& texture_file_name = kv.second;
 
-                TextureID texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
-                if (texture_id == TEXTURE_ID_EMPTY)
+				TextureID texture_id = TEXTURE_ID_EMPTY;
+
+				if (texture_file_name.ends_with(".dds") || texture_file_name.ends_with(".DDS"))
+                {
+                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_file_name);
+                }
+                else if (texture_file_name.ends_with(".png") || texture_file_name.ends_with(".PNG"))
+                {
+                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromPNGFile(texture_file_name);
+                }
+                else
+                {
+                    LOG_ERROR("Unsupported texture format for material: {0}, texture: {1}", file_name, texture_file_name);
                     continue;
+				}
 
                 int slot = 0;
                 if (texture_name == "albedo_map") slot = 0;
@@ -122,20 +144,10 @@ namespace Dolas
         return m_materials[material_id];
     }
 
-    Material* MaterialManager::GetDeferredShadingMaterial()
-    {
-        return GetMaterialByID(m_global_materials.m_deferred_shading);
-    }
-    
-    Material* MaterialManager::GetSkyBoxMaterial()
-    {
-        return GetMaterialByID(m_global_materials.m_sky_box_material_id);
-    }
-
-    Material* MaterialManager::GetDebugDrawMaterial()
-    {
-		return GetMaterialByID(m_global_materials.m_debug_draw_material_id);
-    }
+	Dolas::Material* MaterialManager::GetGlobalMaterial(GlobalMaterialType global_material_type)
+	{
+		return GetMaterialByID(m_global_materials[static_cast<UInt>(global_material_type)]);
+	}
 
 	// protected methods
     std::shared_ptr<VertexContext> MaterialManager::CreateVertexContext(const std::string& file_path, const std::string& entry_point)

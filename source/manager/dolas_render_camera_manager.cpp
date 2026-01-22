@@ -11,6 +11,7 @@
 #include "manager/dolas_log_system_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
+#include "rsd/camera.h"
 namespace Dolas
 {
     RenderCameraManager::RenderCameraManager()
@@ -91,7 +92,7 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(PathUtils::GetCameraDir() + file_name);
+        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(file_name);
         DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
 
 		RenderCamera* render_camera = nullptr;

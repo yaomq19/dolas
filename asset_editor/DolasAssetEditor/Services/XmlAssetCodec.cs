@@ -74,8 +74,8 @@ public static class XmlAssetCodec
         if (s.StartsWith("Set", StringComparison.OrdinalIgnoreCase)) return EditorType.Array;
         if (s.StartsWith("Map", StringComparison.OrdinalIgnoreCase)) return EditorType.Object;
         if (s.StartsWith("Enum<", StringComparison.OrdinalIgnoreCase)) return EditorType.Enum;
-        if (IsAssetRefSpec(s)) return EditorType.String;
-        if (s.Equals("RawReference", StringComparison.OrdinalIgnoreCase)) return EditorType.String;
+        if (IsAssetRefSpec(s)) return EditorType.AssetReference;
+        if (s.Equals("RawReference", StringComparison.OrdinalIgnoreCase)) return EditorType.RawReference;
         if (registry?.TryGetByClassName(s, out var objSchema) == true && objSchema is not null)
             return EditorType.Object;
 
@@ -155,6 +155,11 @@ public static class XmlAssetCodec
         var et = TypeSpecToEditorType(t, registry);
         var vm = new AssetNodeViewModel(fieldName, et, markDirty);
 
+        if (et == EditorType.AssetReference)
+        {
+            vm.TargetRsdClassName = ExtractGenericArg(t, "AssetReference");
+        }
+
         if (et == EditorType.Enum)
         {
             vm.SetEnumSelected(string.Empty, TryGetEnumValues(schema, t));
@@ -215,18 +220,27 @@ public static class XmlAssetCodec
             if (container is null) return; // keep default empty
 
             var elemSpec = ExtractGenericArg(t, "DynamicArray");
+
             var isStringLike = elemSpec.Equals("String", StringComparison.OrdinalIgnoreCase) ||
                                elemSpec.Equals("RawReference", StringComparison.OrdinalIgnoreCase) ||
                                IsAssetRefSpec(elemSpec);
 
-            if (isStringLike)
+            var isScalarValue = elemSpec.Equals("Float", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("UInt", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("Int", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("Bool", StringComparison.OrdinalIgnoreCase);
+
+            if (isStringLike || isScalarValue)
             {
                 var idx = 0;
+                var et = isScalarValue ? TypeSpecToEditorType(elemSpec, registry) : TypeSpecToEditorType(elemSpec, registry);
                 foreach (var child in container.Elements())
                 {
                     var v = ReadScalarTextCompat(child);
-                    var itemVm = new AssetNodeViewModel($"[{idx++}]", EditorType.String, markDirty);
-                    itemVm.SetScalar(v, EditorType.String);
+                    var itemVm = new AssetNodeViewModel($"[{idx++}]", et, markDirty);
+                    itemVm.SetScalar(v, et);
+                    if (et == EditorType.AssetReference)
+                        itemVm.TargetRsdClassName = ExtractGenericArg(elemSpec, "AssetReference");
                     vm.Children.Add(itemVm);
                 }
                 return;
@@ -318,14 +332,19 @@ public static class XmlAssetCodec
                 return;
             }
 
-            // Map<String, String>: new <item key="...">val</item>
+            // Map<String, String/RawReference/AssetReference>: new <item key="...">val</item>
+            var valSpec = t.Contains(',') ? t.Split(',')[1].Replace(">", "").Trim() : "String";
+            var valEt = TypeSpecToEditorType(valSpec, registry);
+
             foreach (var it in container.Elements("item"))
             {
                 var key = (string?)it.Attribute("key") ?? (string?)it.Attribute("name");
                 if (string.IsNullOrWhiteSpace(key)) continue;
-                var file = ReadScalarTextCompat(it);
-                var itemVm = new AssetNodeViewModel(key.Trim(), EditorType.String, markDirty);
-                itemVm.SetScalar(file, EditorType.String);
+                var val = ReadScalarTextCompat(it);
+                var itemVm = new AssetNodeViewModel(key.Trim(), valEt, markDirty);
+                itemVm.SetScalar(val, valEt);
+                if (valEt == EditorType.AssetReference)
+                    itemVm.TargetRsdClassName = ExtractGenericArg(valSpec, "AssetReference");
                 vm.Children.Add(itemVm);
             }
             return;
@@ -348,7 +367,10 @@ public static class XmlAssetCodec
 
         if (t == "String" || IsAssetRefSpec(t) || t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
         {
-            vm.SetScalar(ReadScalarTextCompat(el), EditorType.String);
+            var et = TypeSpecToEditorType(t, registry);
+            vm.SetScalar(ReadScalarTextCompat(el), et);
+            if (et == EditorType.AssetReference)
+                vm.TargetRsdClassName = ExtractGenericArg(t, "AssetReference");
             return;
         }
 
@@ -415,7 +437,12 @@ public static class XmlAssetCodec
                                elemSpec.Equals("RawReference", StringComparison.OrdinalIgnoreCase) ||
                                IsAssetRefSpec(elemSpec);
 
-            if (isStringLike)
+            var isScalarValue = elemSpec.Equals("Float", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("UInt", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("Int", StringComparison.OrdinalIgnoreCase) ||
+                                elemSpec.Equals("Bool", StringComparison.OrdinalIgnoreCase);
+
+            if (isStringLike || isScalarValue)
             {
                 foreach (var item in vm.Children)
                     container.Add(new XElement("item", item.ScalarText ?? string.Empty));
@@ -510,12 +537,16 @@ public static class XmlAssetCodec
                 return;
             }
 
-            // Map<String,String>
+            // Map<String,String/RawReference/AssetReference>
+            var valueTypeSpec = t.Contains(',') ? t.Split(',')[1].Replace(">", "").Trim() : "String";
+            var itemTypeAttr = valueTypeSpec;
+            if (IsAssetRefSpec(valueTypeSpec)) itemTypeAttr = "AssetReference";
+
             foreach (var item in vm.Children)
             {
                 container.Add(new XElement("item",
                     new XAttribute("key", item.Name),
-                    new XAttribute("type", "String"),
+                    new XAttribute("type", itemTypeAttr),
                     item.ScalarText ?? string.Empty));
             }
             root.Add(container);
@@ -534,6 +565,14 @@ public static class XmlAssetCodec
         {
             root.Add(new XElement(fieldName,
                 new XAttribute("type", "AssetReference"),
+                vm.ScalarText ?? string.Empty));
+            return;
+        }
+
+        if (t.Equals("RawReference", StringComparison.OrdinalIgnoreCase))
+        {
+            root.Add(new XElement(fieldName,
+                new XAttribute("type", "RawReference"),
                 vm.ScalarText ?? string.Empty));
             return;
         }

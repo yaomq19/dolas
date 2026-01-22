@@ -1,6 +1,0 @@
-﻿<asset>
-  <type type="String">base_geometry</type>
-  <mesh type="String"></mesh>
-  <base_geometry type="String">cube</base_geometry>
-  <material type="String">ground_plane.material</material>
-</asset>

@@ -144,10 +144,17 @@ public sealed class RsdSchemaRegistry
 
                 if (t.Equals("DynamicArray", StringComparison.OrdinalIgnoreCase))
                 {
-                    var element = f.Attribute("element")?.Value?.Trim();
+                    var element = f.Attribute("element")?.Value?.Trim() ?? f.Attribute("element_type")?.Value?.Trim();
                     if (string.IsNullOrWhiteSpace(element))
                     {
                         fields[name] = "DynamicArray";
+                        continue;
+                    }
+
+                    if (element.StartsWith("AssetReference:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var target = element.Substring(15).Trim();
+                        fields[name] = $"DynamicArray<AssetReference<{target}>>";
                         continue;
                     }
 

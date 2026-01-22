@@ -1,6 +1,0 @@
-﻿<asset>
-  <type type="String">mesh</type>
-  <mesh type="String">cube.mesh</mesh>
-  <base_geometry type="String"></base_geometry>
-  <material type="String">plain_color.material</material>
-</asset>

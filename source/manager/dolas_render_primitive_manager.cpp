@@ -56,15 +56,14 @@ namespace Dolas
 
     RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name)
     {
-        std::string mesh_asset_path = "mesh/" + mesh_file_name;
-        MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_asset_path);
+        MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file_name);
         if (!mesh_rsd)
         {
-            LOG_ERROR("Failed to load mesh file: {0}", mesh_asset_path);
+            LOG_ERROR("Failed to load mesh file: {0}", mesh_file_name);
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
-        RenderPrimitiveID primitive_id = HashConverter::StringHash(mesh_asset_path);
+        RenderPrimitiveID primitive_id = HashConverter::StringHash(PathUtils::GetContentDir() + mesh_file_name);
 
         // 如果已经创建过，直接返回
         if (GetRenderPrimitiveByID(primitive_id) != nullptr)
@@ -79,8 +78,17 @@ namespace Dolas
         bool has_pos = !mesh_rsd->position.empty();
         bool has_uv = !mesh_rsd->uv0.empty();
         bool has_normal = !mesh_rsd->normal.empty();
+        bool has_tangent = !mesh_rsd->tangent.empty();
 
-        if (has_pos && has_uv && has_normal)
+        if (has_pos && has_uv && has_normal && has_tangent)
+        {
+            layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3_TANG_3;
+            vertices.push_back(mesh_rsd->position);
+            vertices.push_back(mesh_rsd->uv0);
+            vertices.push_back(mesh_rsd->normal);
+            vertices.push_back(mesh_rsd->tangent);
+        }
+        else if (has_pos && has_uv && has_normal)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3;
             vertices.push_back(mesh_rsd->position);
@@ -106,7 +114,7 @@ namespace Dolas
         }
         else
         {
-            LOG_ERROR("Mesh file {0} has no position data", mesh_asset_path);
+            LOG_ERROR("Mesh file {0} has no position data", mesh_file_name);
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
@@ -129,7 +137,7 @@ namespace Dolas
 
         if (!success)
         {
-            LOG_ERROR("Failed to create render primitive for {0}", mesh_asset_path);
+            LOG_ERROR("Failed to create render primitive for {0}", mesh_file_name);
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
@@ -732,6 +740,31 @@ namespace Dolas
                 else
                 {
                     LOG_ERROR("Vertex stride mismatch: POS_3_UV_2_NORM_3");
+                    return nullptr;
+                }
+#endif
+                break;
+            case InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3_TANG_3:
+                if (stream_index == 0)
+                {
+                    vertex_stride = 3;
+                }
+                else if (stream_index == 1)
+                {
+                    vertex_stride = 2;
+                }
+                else if (stream_index == 2)
+                {
+                    vertex_stride = 3;
+                }
+                else if (stream_index == 3)
+                {
+                    vertex_stride = 3;
+                }
+#ifdef DOLAS_DEBUG
+                else
+                {
+                    LOG_ERROR("Vertex stride mismatch: POS_3_UV_2_NORM_3_TANG_3");
                     return nullptr;
                 }
 #endif

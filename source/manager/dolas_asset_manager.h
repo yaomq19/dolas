@@ -39,7 +39,7 @@ namespace Dolas
         ~AssetManager();
 
         Bool Initialize();
-        Bool Clear();
+        Bool Clear(); 
 
         template<class TRsd>
         TRsd* GetRsdAsset(const std::string& file_name);

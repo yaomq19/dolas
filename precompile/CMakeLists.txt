@@ -14,8 +14,8 @@ add_executable(Precompile
     ${DOLAS_RSD_FILES} # show schemas inside the VS project (also helps VS detect changes)
 )
 
-find_package(tinyxml2 CONFIG REQUIRED)
-target_link_libraries(Precompile PRIVATE tinyxml2::tinyxml2)
+# TinyXML2 现在通过 third_party 子模块构建，不再使用 vcpkg
+target_link_libraries(Precompile PRIVATE tinyxml2)
 target_compile_features(Precompile PRIVATE cxx_std_20)
 
 # Run after build (VS: right click Precompile -> Build will also execute the generator)

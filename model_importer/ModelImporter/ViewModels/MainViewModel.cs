@@ -1,11 +1,14 @@
-using Assimp;
-using Dolas.ModelImporter.Commands;
-using Microsoft.Win32;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using static System.Formats.Asn1.AsnWriter;
+using Microsoft.Win32;
+using Dolas.ModelImporter.Commands;
+using System.IO;
+using System.Xml.Linq;
+using Assimp;
+using System.Linq;
+using System.Collections.Generic;
+using System;
 
 namespace Dolas.ModelImporter.ViewModels
 {
@@ -64,38 +67,31 @@ namespace Dolas.ModelImporter.ViewModels
             
             try
             {
-                // TODO: 在这里添加实际的模型转换逻辑
-                // 1. 调用 C++ 编写的转换库（可以使用 P/Invoke 或 CLI/C++）
-                // 2. 或者在 C# 中使用 AssimpNet 进行解析
-                
-                string outputPath = Path.ChangeExtension(InputFilePath, ".mesh");
-
                 // 创建 Assimp 上下文
                 using (var importer = new AssimpContext())
                 {
-                    try
-                    {
-                        // 导入 FBX 文件
-                        // PostProcessSteps 定义后处理操作
-                        Scene scene = importer.ImportFile(InputFilePath,
-                            PostProcessSteps.Triangulate |           // 三角化多边形
-                            PostProcessSteps.GenerateNormals |       // 生成法线
-                            PostProcessSteps.CalculateTangentSpace | // 计算切线空间
-                            PostProcessSteps.FlipUVs);               // 翻转UV（OpenGL需要）
+                    // 常见的预处理步骤：
+                    // Triangulate: 确保所有面都是三角形
+                    // GenerateNormals: 如果模型没法线则生成
+                    // JoinIdenticalVertices: 合并重复顶点以压缩数据
+                    // FlipUVs: DirectX 需要翻转 V 坐标
+                    Scene scene = importer.ImportFile(InputFilePath,
+                        PostProcessSteps.Triangulate |           
+                        PostProcessSteps.GenerateNormals |       
+                        PostProcessSteps.CalculateTangentSpace |
+                        PostProcessSteps.JoinIdenticalVertices | 
+                        PostProcessSteps.FlipUVs);
 
-                        // 处理导入的场景
-                        ProcessScene(scene);
-                    }
-                    catch (AssimpException ex)
+                    if (scene == null || !scene.HasMeshes)
                     {
-                        Console.WriteLine($"导入失败: {ex.Message}");
+                        StatusMessage = "错误：模型中没有有效的网格数据。";
+                        return;
                     }
+
+                    ProcessScene(scene);
                 }
-
-                // 模拟转换过程
-                StatusMessage = $"转换完成！输出文件：{outputPath}";
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 StatusMessage = $"转换失败: {ex.Message}";
             }
@@ -103,43 +99,121 @@ namespace Dolas.ModelImporter.ViewModels
 
         private void ProcessScene(Scene scene)
         {
-            Console.WriteLine($"网格数量: {scene.MeshCount}");
-            Console.WriteLine($"材质数量: {scene.MaterialCount}");
-            Console.WriteLine($"动画数量: {scene.AnimationCount}");
+            int meshCount = scene.MeshCount;
+            string baseFileName = Path.GetFileNameWithoutExtension(InputFilePath);
+            string outputDir = Path.GetDirectoryName(InputFilePath) ?? string.Empty;
 
-            // 遍历所有网格
-            foreach (var mesh in scene.Meshes)
+            for (int i = 0; i < meshCount; i++)
             {
-                Console.WriteLine($"网格 '{mesh.Name}':");
-                Console.WriteLine($"  顶点数: {mesh.VertexCount}");
-                Console.WriteLine($"  面数: {mesh.FaceCount}");
-                Console.WriteLine($"  材质索引: {mesh.MaterialIndex}");
+                var mesh = scene.Meshes[i];
+                string meshName = string.IsNullOrWhiteSpace(mesh.Name) ? $"mesh_{i}" : mesh.Name;
+                // 移除非法字符
+                foreach (char c in Path.GetInvalidFileNameChars()) { meshName = meshName.Replace(c, '_'); }
+                
+                string outPath = Path.Combine(outputDir, $"{baseFileName}_{meshName}.mesh");
 
-                // 检查是否有纹理坐标
+                XElement root = new XElement("asset");
+
+                // 1. 导出位置 (X, Y, Z)
+                XElement posEl = new XElement("position", new XAttribute("type", "DynamicArray"));
+                foreach (var v in mesh.Vertices)
+                {
+                    posEl.Add(new XElement("value", v.X));
+                    posEl.Add(new XElement("value", v.Y));
+                    posEl.Add(new XElement("value", v.Z));
+                }
+                root.Add(posEl);
+
+                // 2. 导出法线 (X, Y, Z)
+                if (mesh.HasNormals)
+                {
+                    XElement normEl = new XElement("normal", new XAttribute("type", "DynamicArray"));
+                    foreach (var n in mesh.Normals)
+                    {
+                        normEl.Add(new XElement("value", n.X));
+                        normEl.Add(new XElement("value", n.Y));
+                        normEl.Add(new XElement("value", n.Z));
+                    }
+                    root.Add(normEl);
+                }
+
+                // 2.5 导出切线 (X, Y, Z)
+                if (mesh.HasTangentBasis)
+                {
+                    XElement tangEl = new XElement("tangent", new XAttribute("type", "DynamicArray"));
+                    foreach (var t in mesh.Tangents)
+                    {
+                        tangEl.Add(new XElement("value", t.X));
+                        tangEl.Add(new XElement("value", t.Y));
+                        tangEl.Add(new XElement("value", t.Z));
+                    }
+                    root.Add(tangEl);
+                }
+
+                // 3. 导出 UV0 (U, V)
                 if (mesh.HasTextureCoords(0))
                 {
-                    Console.WriteLine($"  有UV坐标");
+                    XElement uv0El = new XElement("uv0", new XAttribute("type", "DynamicArray"));
+                    foreach (var uv in mesh.TextureCoordinateChannels[0])
+                    {
+                        uv0El.Add(new XElement("value", uv.X));
+                        uv0El.Add(new XElement("value", uv.Y));
+                    }
+                    root.Add(uv0El);
                 }
 
-                // 检查是否有骨骼
-                if (mesh.HasBones)
+                // 4. 导出 UV1 (如果有)
+                if (mesh.HasTextureCoords(1))
                 {
-                    Console.WriteLine($"  骨骼数: {mesh.BoneCount}");
+                    XElement uv1El = new XElement("uv1", new XAttribute("type", "DynamicArray"));
+                    foreach (var uv in mesh.TextureCoordinateChannels[1])
+                    {
+                        uv1El.Add(new XElement("value", uv.X));
+                        uv1El.Add(new XElement("value", uv.Y));
+                    }
+                    root.Add(uv1El);
                 }
+
+                // 5. 导出顶点颜色 (R, G, B, A)
+                if (mesh.HasVertexColors(0))
+                {
+                    XElement colorEl = new XElement("color", new XAttribute("type", "DynamicArray"));
+                    foreach (var c in mesh.VertexColorChannels[0])
+                    {
+                        colorEl.Add(new XElement("value", c.R));
+                        colorEl.Add(new XElement("value", c.G));
+                        colorEl.Add(new XElement("value", c.B));
+                        colorEl.Add(new XElement("value", c.A));
+                    }
+                    root.Add(colorEl);
+                }
+
+                // 6. 导出索引
+                XElement indicesEl = new XElement("indices", new XAttribute("type", "DynamicArray"));
+                foreach (var face in mesh.Faces)
+                {
+                    // Assimp 已执行 Triangulate，所以这里一定是 3 个索引
+                    foreach (var idx in face.Indices)
+                    {
+                        indicesEl.Add(new XElement("value", (uint)idx));
+                    }
+                }
+                root.Add(indicesEl);
+
+                // 7. 拓扑结构 (默认为 triangleList)
+                root.Add(new XElement("topology", new XAttribute("type", "Enum"), 
+                    new XElement("value", "triangleList")));
+
+                // 8. 材质引用 (占位默认值)
+                root.Add(new XElement("material", new XAttribute("type", "AssetReference"), 
+                    new XElement("value", "default.material")));
+
+                // 保存文件
+                XDocument doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
+                doc.Save(outPath);
             }
 
-            // 处理材质
-            foreach (var material in scene.Materials)
-            {
-                Console.WriteLine($"材质: {material.Name}");
-
-                // 获取漫反射纹理
-                if (material.HasTextureDiffuse)
-                {
-                    var texture = material.TextureDiffuse;
-                    Console.WriteLine($"  漫反射贴图: {texture.FilePath}");
-                }
-            }
+            StatusMessage = $"转换完成！共生成 {meshCount} 个 .mesh 文件。";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -158,4 +232,3 @@ namespace Dolas.ModelImporter.ViewModels
         }
     }
 }
-

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using Dolas.AssetEditor.ViewModels;
@@ -15,7 +16,11 @@ public sealed class EditorTypeToVisibilityConverter : IValueConverter
     {
         if (value is not EditorType t) return Visibility.Collapsed;
         if (parameter is not string s) return Visibility.Collapsed;
-        return string.Equals(t.ToString(), s, StringComparison.OrdinalIgnoreCase)
+
+        var parts = s.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var typeName = t.ToString();
+
+        return parts.Any(p => string.Equals(typeName, p, StringComparison.OrdinalIgnoreCase))
             ? Visibility.Visible
             : Visibility.Collapsed;
     }

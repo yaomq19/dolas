@@ -23,8 +23,8 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
         # 最简方式：仅把 csproj 挂进 VS 解决方案，不传任何 GUID 参数
         include_external_msproject(DolasAssetEditor "${DOLAS_ASSET_EDITOR_CSPROJ}")
 
-        # 在 VS 解决方案里分组显示（可选）
-        set_property(TARGET DolasAssetEditor PROPERTY FOLDER "asset_editor")
+        # 在 VS 解决方案里分组显示到 DolasEngine 文件夹
+        set_property(TARGET DolasAssetEditor PROPERTY FOLDER "DolasEngine")
     else()
         message(WARNING "CMake is too old: include_external_msproject() is not available; skip adding WPF project to the solution.")
     endif()

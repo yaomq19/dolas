@@ -148,6 +148,23 @@
                                                                  Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
                                                                  Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=Float}" />
 
+                                                        <!-- AssetReference / RawReference -->
+                                                        <Grid Visibility="{Binding EditorType, Converter={StaticResource EditorTypeToVisibility}, ConverterParameter=AssetReference|RawReference}">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBox MinWidth="160"
+                                                                     Text="{Binding ScalarText, UpdateSourceTrigger=PropertyChanged}"
+                                                                     VerticalContentAlignment="Center" />
+                                                            <Button Grid.Column="1"
+                                                                    Content="..."
+                                                                    Width="30"
+                                                                    Margin="4,0,0,0"
+                                                                    Command="{Binding BrowseCommand}"
+                                                                    ToolTip="浏览文件..." />
+                                                        </Grid>
+
                                                         <!-- Enum -->
                                                         <ComboBox MinWidth="200"
                                                                   ItemsSource="{Binding EnumValues}"

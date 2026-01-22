@@ -26,6 +26,8 @@ enum class RsdFieldType : std::uint8_t
     Vector3,
     Vector4,
     EnumUInt,
+    RawReference,
+    AssetReference,
     DynArrayObject,
     DynArrayRawReference,
     DynArrayString,
@@ -35,6 +37,7 @@ enum class RsdFieldType : std::uint8_t
     DynArrayUInt,
     MapStringVector4,
     MapStringString,
+    MapStringRawReference,
     MapStringFloat
 };
 

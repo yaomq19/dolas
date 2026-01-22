@@ -17,21 +17,11 @@ struct LightAccumulation
     float3 specular;
 };
 
-float3 EvaluateDiffuse(SurfaceData surface_data)
-{
-    return surface_data.albedo;
-}
-
-float3 EvaluateSpecular(SurfaceData surface_data)
-{
-    return surface_data.specular;
-}
-
-LightAccumulation EvaluateStandardBxDF(SurfaceData surface_data)
+LightAccumulation EvaluateOpaqueBxDF(SurfaceData surface_data)
 {
     LightAccumulation light_accumulation = (LightAccumulation)0;
-    light_accumulation.diffuse = EvaluateDiffuse(surface_data);
-    light_accumulation.specular = EvaluateSpecular(surface_data);
+    light_accumulation.diffuse = surface_data.albedo;
+    light_accumulation.specular = surface_data.specular;
     return light_accumulation;
 }
 
@@ -47,9 +37,9 @@ LightAccumulation EvaluateBxDF(SurfaceData surface_data, SurfaceContext surface_
 {
     LightAccumulation light_accumulation = (LightAccumulation)0;
 
-    if (surface_data.shade_mode == SHADE_MODE_STANDARD)
+    if (surface_data.shade_mode == SHADE_MODE_OPAQUE)
     {
-        light_accumulation = EvaluateStandardBxDF(surface_data);
+        light_accumulation = EvaluateOpaqueBxDF(surface_data);
     }
     else if (surface_data.shade_mode == SHADE_MODE_BLINN_PHONG)
     {

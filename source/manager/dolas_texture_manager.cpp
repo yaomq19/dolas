@@ -39,9 +39,9 @@ namespace Dolas
     bool TextureManager::Initialize()
     {
         // initialize global textures
-		//TextureID sky_box_texture_id = CreateTextureFromDDSFile("sky_box.dds");
+		//TextureID sky_box_texture_id = CreateTextureFromDDSFile("texture/sky_box.dds");
         // 使用 HDR 文件加载天空盒纹理
-        TextureID sky_box_texture_id = CreateTextureFromHDRFile("golden_gate_hills_4k.hdr");
+        TextureID sky_box_texture_id = CreateTextureFromHDRFile("texture/golden_gate_hills_4k.hdr");
         
         m_global_textures[GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX] = sky_box_texture_id;
 
@@ -73,7 +73,7 @@ namespace Dolas
 
     TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)
     {
-        std::string texture_file_path = PathUtils::GetTextureDir() + file_name;
+        std::string texture_file_path = PathUtils::GetContentDir() + file_name;
 
         // 创建纹理资源
         ID3D11Resource* d3d_resource = nullptr;
@@ -136,7 +136,7 @@ namespace Dolas
 
     TextureID TextureManager::CreateTextureFromHDRFile(const std::string& file_name)
     {
-        std::string texture_file_path = PathUtils::GetTextureDir() + file_name;
+        std::string texture_file_path = PathUtils::GetContentDir() + file_name;
 
         // 创建纹理资源
         ID3D11Resource* d3d_resource = nullptr;
@@ -198,7 +198,68 @@ namespace Dolas
         return texture->m_file_id;
     }
 
-    Texture* TextureManager::GetGlobalTexture(GlobalTextureType global_texture_type)
+	TextureID TextureManager::CreateTextureFromPNGFile(const std::string& file_name)
+	{
+		std::string texture_file_path = PathUtils::GetContentDir() + file_name;
+
+		// 创建纹理资源
+		ID3D11Resource* d3d_resource = nullptr;
+		ID3D11ShaderResourceView* d3d_shader_resource_view = nullptr;
+		std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
+
+		// 使用 DirectXTex 的 WIC 加载 API (支持 PNG, JPG, BMP 等)
+		DirectX::TexMetadata metadata;
+		DirectX::ScratchImage image;
+
+		// 从 WIC 文件加载
+		HR(DirectX::LoadFromWICFile(
+			texture_file_path_w.c_str(),
+			DirectX::WIC_FLAGS_NONE,
+			&metadata,
+			image));
+
+		// 创建纹理
+		HR(DirectX::CreateTexture(
+			g_dolas_engine.m_rhi->GetD3D11Device(),
+			image.GetImages(),
+			image.GetImageCount(),
+			metadata,
+			&d3d_resource));
+
+		// 创建 Shader Resource View
+		HR(DirectX::CreateShaderResourceView(
+			g_dolas_engine.m_rhi->GetD3D11Device(),
+			image.GetImages(),
+			image.GetImageCount(),
+			metadata,
+			&d3d_shader_resource_view));
+
+		// 获取ID3D11Texture2D接口
+		ID3D11Texture2D* d3d_texture_2d = nullptr;
+		HR(d3d_resource->QueryInterface(
+			__uuidof(ID3D11Texture2D),
+			reinterpret_cast<void**>(&d3d_texture_2d)));
+
+		// 释放原始资源引用（已经通过QueryInterface获得了新的引用）
+		d3d_resource->Release();
+
+		Texture* texture = DOLAS_NEW(Texture);
+		texture->m_is_from_file = true;
+		texture->m_file_id = HashConverter::StringHash(texture_file_path);
+		texture->m_d3d_texture_2d = d3d_texture_2d;
+		texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
+
+		// Debug names for RenderDoc
+		SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D_PNG: ") + texture_file_path);
+		SetD3DDebugName(texture->m_d3d_shader_resource_view, std::string("SRV_PNG: ") + texture_file_path);
+
+		m_textures[texture->m_file_id] = texture;
+
+		LOG_INFO("Successfully loaded PNG texture: {0}", texture_file_path);
+		return texture->m_file_id;
+	}
+
+	Texture* TextureManager::GetGlobalTexture(GlobalTextureType global_texture_type)
     {
 		Texture* result_texture = nullptr;
 

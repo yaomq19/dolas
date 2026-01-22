@@ -12,6 +12,8 @@ public enum EditorType
     Float,
     Vector3,
     Vector4,
+    AssetReference,
+    RawReference,
     Null
 }
 

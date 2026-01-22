@@ -31,6 +31,8 @@ namespace Dolas
     #define DOLAS_CONTINUE_IF_FALSE(condition) if (!(condition)) { continue; }
     #define DOLAS_CONTINUE_IF_TRUE(condition) if ((condition)) { continue; }
 
+    #define DOLAS_STATIC_CONST static const
+
     #define Int int
     #define Float float
     #define Double double

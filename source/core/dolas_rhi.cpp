@@ -609,12 +609,14 @@ namespace Dolas
         }
 
         // Compute window rectangle dimensions based on requested client area dimensions.
+        // 注意：方案C - 这个窗口主要用于承载 SwapChain，可以最小化显示
         RECT R = { 0, 0, m_client_width , m_client_height };
         AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
         int width = R.right - R.left;
         int height = R.bottom - R.top;
 
-        m_window_handle = CreateWindowW(L"D3DWndClassName", L"Dolas Engine",
+        // 创建窗口（保持可见，因为 ImGui 主视口会使用它）
+        m_window_handle = CreateWindowW(L"D3DWndClassName", L"Dolas Engine - Main Window",
             WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, NULL, 0);
         if (!m_window_handle)
         {
@@ -622,6 +624,7 @@ namespace Dolas
             return false;
         }
 
+        // 显示窗口（ImGui 多视口需要主窗口可见）
         ShowWindow(m_window_handle, SW_SHOW);
         UpdateWindow(m_window_handle);
 
@@ -902,6 +905,19 @@ namespace Dolas
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			// NORMAL:   slot 2
 			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_tang_3_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3_TANG_3];
+		pos_3_uv_2_norm_3_tang_3_desc =
+		{
+			// POSITION: slot 0
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			// TEXCOORD: slot 1
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			// NORMAL:   slot 2
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			// TANGENT:  slot 3
+			{ "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 
 		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_NORM_3];

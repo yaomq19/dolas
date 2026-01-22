@@ -50,9 +50,13 @@ void ConvertGBufferToSurfaceData(inout SurfaceData surface_data, in GBufferData 
     int shade_mode = DecodeShadeMode(shade_mode_float);
     surface_data.shade_mode = shade_mode;
 
-    if (shade_mode == SHADE_MODE_STANDARD)
+    if (shade_mode == SHADE_MODE_OPAQUE)
     {
-        
+        surface_data.albedo = gbuffer_data.gbuffer_b.rgb;
+        surface_data.specular = gbuffer_data.gbuffer_d.rgb;
+        surface_data.roughness = 1.0f;
+        surface_data.metallic = 0.0f;
+        surface_data.world_position = gbuffer_data.gbuffer_a.xyz;
     }
     else if (shade_mode == SHADE_MODE_BLINN_PHONG)
     {

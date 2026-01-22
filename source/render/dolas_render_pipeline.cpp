@@ -180,7 +180,7 @@ namespace Dolas
         rhi->SetDepthStencilState(DepthStencilStateType_DepthDisabled_StencilDisable);
         rhi->SetBlendState(BlendStateType_Opaque);
 
-        Material* material = g_dolas_engine.m_material_manager->GetDeferredShadingMaterial();
+        Material* material = g_dolas_engine.m_material_manager->GetGlobalMaterial(GlobalMaterialType::DeferredShading);
         DOLAS_RETURN_IF_NULL(material);
 
         std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
@@ -230,7 +230,7 @@ namespace Dolas
         Pose pose(eye_camera->GetPosition(), Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(scale, scale, scale));
         rhi->UpdatePerObjectParameters(pose);
 
-        Material* material = g_dolas_engine.m_material_manager->GetSkyBoxMaterial();
+        Material* material = g_dolas_engine.m_material_manager->GetGlobalMaterial(GlobalMaterialType::SkyBox);
         DOLAS_RETURN_IF_NULL(material);
 
         std::shared_ptr<VertexContext> vertex_context = material->GetVertexContext();
@@ -284,7 +284,7 @@ namespace Dolas
         const auto& debug_objects = g_dolas_engine.m_debug_draw_manager->GetDebugObjects();
         DOLAS_RETURN_IF_FALSE(debug_objects.size() != 0);
         
-		Material* debug_draw_material = g_dolas_engine.m_material_manager->GetDebugDrawMaterial();
+		Material* debug_draw_material = g_dolas_engine.m_material_manager->GetGlobalMaterial(GlobalMaterialType::DebugDraw);
 		DOLAS_RETURN_IF_NULL(debug_draw_material);
 
         std::shared_ptr<VertexContext> vertex_context = debug_draw_material->GetVertexContext();

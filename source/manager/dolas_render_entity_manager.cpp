@@ -6,6 +6,8 @@
 #include "render/dolas_render_entity.h"
 #include "manager/dolas_asset_manager.h" // GetRsdAsset<>
 #include "manager/dolas_render_primitive_manager.h"
+#include "rsd/entity.h"
+#include "rsd/mesh.h"
 namespace Dolas
 {
     RenderEntityManager::RenderEntityManager()
@@ -47,89 +49,42 @@ namespace Dolas
 		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
 		MaterialID material_id = MATERIAL_ID_EMPTY;
 
-        std::string render_entity_file_path = PathUtils::GetEntityDir() + entity_file_name;
+        std::string render_entity_file_path = PathUtils::GetContentDir() + entity_file_name;
 
-        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(PathUtils::GetEntityDir() + entity_file_name);
+        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(entity_file_name);
         if (entity_rsd == nullptr)
             return result_id;
 
-        const std::string& type_name = entity_rsd->type;
-        if (!type_name.empty())
+        // 创建 RenderEntity
+        RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
+        render_entity->m_file_id = HashConverter::StringHash(render_entity_file_path);
+        render_entity->m_pose.m_postion = position;
+        render_entity->m_pose.m_rotation = rotation;
+        render_entity->m_pose.m_scale = scale;
+
+        // 遍历所有 Mesh 并加载
+        for (const auto& mesh_file : entity_rsd->meshes)
         {
-            if (type_name == "base_geometry")
-            {
-                const std::string& base_geometry_name = entity_rsd->base_geometry;
-                if (base_geometry_name == "cube")
-                {
-                    render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_CUBE);
-                }
-                else if (base_geometry_name == "sphere")
-                {
-                    render_primitive_id = g_dolas_engine.m_render_primitive_manager->GetGeometryRenderPrimitiveID(BaseGeometryType_SPHERE);
-                }
-                else
-                {
-                    return result_id;
-                }
-            }
-            else if (type_name == "mesh")
-            {
-                RenderPrimitiveManager* primitive_manager = g_dolas_engine.m_render_primitive_manager;
-                if (primitive_manager == nullptr)
-                {
-                    return result_id;
-                }
-                std::string mesh_file_name = entity_rsd->mesh;
-                if (mesh_file_name.empty())
-                    return result_id;
+            if (mesh_file.empty()) continue;
 
-                render_primitive_id = primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file_name);
-                if (render_primitive_id == RENDER_PRIMITIVE_ID_EMPTY)
-                {
-                    return result_id;
-                }
-            }
-			else
-			{
-				return result_id;
-			}
-        }
-		else
-		{
-			return result_id;
-		}
+            // 加载 Mesh 数据
+            RenderPrimitiveID primitive_id = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_file);
+            if (primitive_id == RENDER_PRIMITIVE_ID_EMPTY) continue;
 
-        {
-            const std::string material_file_name = entity_rsd->material;
-            if (material_file_name.empty())
-                return result_id;
-
-            MaterialManager* material_manager = g_dolas_engine.m_material_manager;
-            if (material_manager == nullptr)
+            // 从 Mesh 资产中获取材质路径
+            MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file);
+            MaterialID material_id = MATERIAL_ID_EMPTY;
+            if (mesh_rsd && !mesh_rsd->material.empty())
             {
-                return result_id;
+                material_id = g_dolas_engine.m_material_manager->CreateMaterial(mesh_rsd->material);
             }
 
-            material_id = material_manager->CreateMaterial(material_file_name);
-            if (material_id == MATERIAL_ID_EMPTY)
-            {
-                return result_id;
-            }
+            render_entity->AddComponent(primitive_id, material_id);
         }
 
-        // 成功路径：创建 RenderEntity 并返回有效 ID
-        {
-            RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
-            render_entity->m_file_id = HashConverter::StringHash(render_entity_file_path);
-            render_entity->m_render_primitive_id = render_primitive_id;
-            render_entity->m_material_id = material_id;
-            render_entity->m_pose.m_postion = position;
-            render_entity->m_pose.m_rotation = rotation;
-            render_entity->m_pose.m_scale = scale;
-
-            m_render_entities[render_entity->m_file_id] = render_entity;
-            result_id = render_entity->m_file_id;
-        }
+        m_render_entities[render_entity->m_file_id] = render_entity;
+        result_id = render_entity->m_file_id;
+        
         return result_id;
     }
 
@@ -145,7 +100,7 @@ namespace Dolas
 
     RenderEntity* RenderEntityManager::GetRenderEntityByFileName(const std::string& render_entity_file_name)
     {
-        std::string render_entity_file_path = PathUtils::GetEntityDir() + render_entity_file_name;
+        std::string render_entity_file_path = PathUtils::GetContentDir() + render_entity_file_name;
         RenderEntityID render_entity_id = HashConverter::StringHash(render_entity_file_path);
         return GetRenderEntityByID(render_entity_id);
     }

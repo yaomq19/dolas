@@ -7,6 +7,7 @@
 #include "manager/dolas_render_entity_manager.h"
 #include "tinyxml2.h"
 #include <cstdlib>
+#include "rsd/scene.h"
 namespace Dolas
 {
     const RenderSceneID RenderSceneManager::RENDER_SCENE_ID_MAIN = STRING_ID(main_render_scene);
@@ -50,7 +51,7 @@ namespace Dolas
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(PathUtils::GetSceneDir() + file_name);
+		SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(file_name);
 		DOLAS_RETURN_FALSE_IF_NULL(scene_rsd);
 
 		RenderScene* render_scene = DOLAS_NEW(RenderScene);

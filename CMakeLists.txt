@@ -1,15 +1,13 @@
-# 指定CMake的最低版本要求为3.15，确保 vcpkg manifest mode 和其他现代功能可用
+# 指定CMake的最低版本要求为3.15
 cmake_minimum_required(VERSION 3.15)
 
 # 定义项目名称为Dolas，版本为0.1.0，使用C++语言
 project(Dolas VERSION 0.1.0 LANGUAGES CXX)
 
-# 如果通过命令行或脚本传入了 CMAKE_TOOLCHAIN_FILE，显式打印出来，避免“未使用变量”的警告
-if(CMAKE_TOOLCHAIN_FILE)
-    message(STATUS "Using CMake toolchain file: ${CMAKE_TOOLCHAIN_FILE}")
-endif()
+# 启用 IDE 文件夹功能（用于 Visual Studio 的解决方案资源管理器）
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# 是否启用 Vulkan 支持（默认关闭，对应 README 中“Vulkan SDK（可选）”）
+# 是否启用 Vulkan 支持（默认关闭，对应 README 中"Vulkan SDK（可选）"）
 option(ENABLE_VULKAN "Enable Vulkan renderer / SDK support" OFF)
 
 # ============ C++标准设置 ============
@@ -54,6 +52,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
  
 # ============ 子目录包含 ============
+# 添加第三方库子目录（优先构建）
+add_subdirectory(third_party)
+
 # 添加源代码子目录
 add_subdirectory(source)
 
@@ -73,3 +74,26 @@ add_subdirectory(model_importer)
 if(TARGET Dolas AND TARGET Precompile)
     add_dependencies(Dolas Precompile)
 endif()
+
+# ============ IDE 项目文件夹组织 ============
+# 将 CMake 预定义的工具项目归类到 CMakeTools 文件夹
+set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTools")
+
+# 将 Dolas 引擎相关项目归类到 DolasEngine 文件夹
+if(TARGET Dolas)
+    set_target_properties(Dolas PROPERTIES FOLDER "DolasEngine")
+endif()
+if(TARGET ShaderCompiler)
+    set_target_properties(ShaderCompiler PROPERTIES FOLDER "DolasEngine")
+endif()
+if(TARGET Precompile)
+    set_target_properties(Precompile PROPERTIES FOLDER "DolasEngine")
+endif()
+if(TARGET ModelImporter)
+    set_target_properties(ModelImporter PROPERTIES FOLDER "DolasEngine")
+endif()
+
+# 注意：
+# - DolasAssetEditor 的 FOLDER 在 asset_editor/CMakeLists.txt 中设置
+# - ThirdParty 文件夹已经在 third_party/CMakeLists.txt 中设置
+# - 各第三方库已经被组织到 "ThirdParty" 文件夹中
