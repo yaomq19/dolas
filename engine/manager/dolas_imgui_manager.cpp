@@ -7,6 +7,9 @@
 #include "core/dolas_engine.h"
 #include "core/dolas_rhi.h"
 #include "manager/dolas_imgui_manager.h"
+
+#include "dolas_debug_draw_manager.h"
+#include "common/dolas_color.h"
 #include "manager/dolas_input_manager.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_timer_manager.h"
@@ -110,7 +113,7 @@ namespace Dolas
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     }
 
-    void ImGuiManager::Tick()
+    void ImGuiManager::TickPreRender()
     {
         EventOccurState f11_event_occur_state = g_dolas_engine.m_input_manager->ConsumeKeyEvent(VK_F11);
         switch (f11_event_occur_state)
@@ -320,9 +323,31 @@ namespace Dolas
             g_dolas_engine.m_shader_manager->dumpShaderReflectionInfos();
         }
 
-        if (ImGui::Button("Display World Coordinate System"))
+        static Bool display_world_coordinate_system = false;
+        ImGui::Checkbox("Display World Coordinate System", &display_world_coordinate_system);
+        if (display_world_coordinate_system)
         {
-            g_dolas_engine.m_render_pipeline_manager->DisplayWorldCoordinateSystem();
+            // g_dolas_engine.m_render_pipeline_manager->DisplayWorldCoordinateSystem();
+            g_dolas_engine.m_debug_draw_manager->AddCylinder(
+            Vector3(0.5, 0.0, 0.0),
+            0.1f,
+            1.0f,
+            Quaternion(Vector3::UNIT_Z, 90),
+            Color::RED);
+
+            g_dolas_engine.m_debug_draw_manager->AddCylinder(
+                Vector3(0.0, 0.5, 0.0),
+                0.1f,
+                1.0f,
+                Quaternion::IDENTITY,
+                Color::GREEN);
+
+            g_dolas_engine.m_debug_draw_manager->AddCylinder(
+                Vector3(0.0, 0.0, 0.5),
+                0.1f,
+                1.0f,
+                Quaternion(Vector3::UNIT_X, 90),
+                Color::BLUE);
         }
 
         ImGui::Separator();

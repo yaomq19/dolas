@@ -6,7 +6,7 @@ project(DolasPrecompile)
 #   2) automatically run it to generate source/rsd/*.h from rsd/*.rsd
 
 file(GLOB DOLAS_RSD_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/rsd/*.rsd")
-set(DOLAS_RSD_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/source/rsd")
+set(DOLAS_RSD_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/engine/rsd")
 file(MAKE_DIRECTORY "${DOLAS_RSD_OUTPUT_DIR}")
 
 add_executable(Precompile

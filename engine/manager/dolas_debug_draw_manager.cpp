@@ -26,7 +26,7 @@ namespace Dolas
         return true;
     }
 
-    void DebugDrawManager::Tick(Float delta_time)
+    void DebugDrawManager::TickPostRender(Float delta_time)
     {
 		for (auto iter = m_render_objects.begin(); iter != m_render_objects.end();)
 		{

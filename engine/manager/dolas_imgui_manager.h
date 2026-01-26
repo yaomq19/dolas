@@ -24,7 +24,7 @@ namespace Dolas
         bool Clear();
         void Render();
 
-        void Tick();
+        void TickPreRender();
         
         // 获取视口信息
         bool IsViewportHovered() const { return m_viewport_hovered; }

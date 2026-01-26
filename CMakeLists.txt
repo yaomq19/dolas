@@ -56,19 +56,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_subdirectory(third_party)
 
 # 添加源代码子目录
-add_subdirectory(source)
+add_subdirectory(engine)
 
-# 添加 Shader Compiler 子目录
-add_subdirectory(shader_compiler)
-
-# 添加资产编辑器（仅对 Visual Studio 生成器注入外部 C# WPF 工程）
-add_subdirectory(asset_editor)
+# 添加工具子目录
+add_subdirectory(tool)
 
 # 添加 precompile（RSD -> C++ 头文件生成）
 add_subdirectory(precompile)
-
-# 添加模型导入器（WPF）
-add_subdirectory(model_importer)
 
 # 让 Dolas 可执行目标依赖 Precompile（确保先生成 source/rsd/*.h）
 if(TARGET Dolas AND TARGET Precompile)

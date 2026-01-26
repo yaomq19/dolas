@@ -6,6 +6,7 @@
 #include "common/dolas_hash.h"
 namespace Dolas
 {
+    const static Float k_instant_life_time = -1.0f;
     struct DebugDrawObject
     {
 		RenderPrimitiveID m_render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
@@ -22,10 +23,10 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        void Tick(Float delta_time);
+        void TickPostRender(Float delta_time);
 		const std::vector<DebugDrawObject>& GetDebugObjects() const { return m_render_objects; }
-        void AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time = -1.0f);
-        void AddSphere(const Vector3& center, const Float radius, const Color& color, Float life_time = -1.0f);
+        void AddCylinder(const Vector3& center, const Float radius, const Float height, const Quaternion& rotation, const Color& color, Float life_time = k_instant_life_time);
+        void AddSphere(const Vector3& center, const Float radius, const Color& color, Float life_time = k_instant_life_time);
     protected:
         std::vector<DebugDrawObject> m_render_objects;
     };

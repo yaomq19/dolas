@@ -100,8 +100,8 @@ namespace Dolas
             DisplayWorldCoordinate();
         }
 
+    	ImGUIPass();
         DebugPass(rhi);
-        ImGUIPass();
         PresentPass(rhi);
     }
 
