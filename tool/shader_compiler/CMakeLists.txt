@@ -48,3 +48,7 @@ target_compile_definitions(ShaderCompiler PRIVATE
     SHADER_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/shader"
     LOG_OUTPUT_DIR="${CMAKE_BINARY_DIR}/logs"
 )
+
+if(TARGET ShaderCompiler)
+    set_target_properties(ShaderCompiler PROPERTIES FOLDER "DolasEngine")
+endif()

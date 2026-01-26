@@ -102,10 +102,11 @@ namespace Dolas
          * @note This will make all previous reverse lookups return "Unknown[hash]" format
          */
         static void ClearRegistry();
-        
+
     private:
         /// Internal mapping table for hash-to-string reverse lookup
-        static std::unordered_map<UInt, std::string> s_hashToString;
+        /// Using function-local static to avoid static initialization order fiasco
+        static std::unordered_map<UInt, std::string>& GetHashToStringMap();
     };
     
 }

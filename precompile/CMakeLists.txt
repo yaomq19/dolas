@@ -37,4 +37,6 @@ endif()
 
 set_property(TARGET Precompile PROPERTY FOLDER "precompile")
 
-
+if(TARGET Precompile)
+    set_target_properties(Precompile PROPERTIES FOLDER "DolasEngine")
+endif()

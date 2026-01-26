@@ -5,6 +5,3 @@ add_subdirectory(dolas_editor)
 
 # 添加着色器编译器子目录
 add_subdirectory(shader_compiler)
-
-# 添加模型导入器子目录
-add_subdirectory(model_importer)

@@ -2,8 +2,13 @@
 
 namespace Dolas
 {
-	// Static member definition - stores hash-to-string mappings for reverse lookup
-	std::unordered_map<UInt, std::string> HashConverter::s_hashToString;
+	// Get the hash-to-string mapping table using function-local static
+	// This ensures the map is initialized on first use, avoiding static initialization order fiasco
+	std::unordered_map<UInt, std::string>& HashConverter::GetHashToStringMap()
+	{
+		static std::unordered_map<UInt, std::string> s_hashToString;
+		return s_hashToString;
+	}
 
 	UInt HashConverter::StringHash(const std::string& str)
 	{
@@ -33,7 +38,7 @@ namespace Dolas
 		// In debug builds, automatically register the string for reverse lookup
 		// This allows debugging and logging systems to convert hashes back to readable strings
 		// #if defined(DEBUG) || defined(_DEBUG)
-		s_hashToString[hash] = str;
+		GetHashToStringMap()[hash] = str;
 		// #endif
 		
 		return hash;
@@ -62,8 +67,9 @@ namespace Dolas
 	std::string HashConverter::GetString(UInt hash)
 	{
 		// Attempt to find the original string for the given hash
-		auto it = s_hashToString.find(hash);
-		if (it != s_hashToString.end())
+		auto& map = GetHashToStringMap();
+		auto it = map.find(hash);
+		if (it != map.end())
 		{
 			// Hash found - return the original string
 			return it->second;
@@ -78,7 +84,8 @@ namespace Dolas
 	{
 		// Check if a hash exists in the registry without creating a string
 		// This is more efficient than GetString() when you only need to check existence
-		return s_hashToString.find(hash) != s_hashToString.end();
+		auto& map = GetHashToStringMap();
+		return map.find(hash) != map.end();
 	}
 
 	void HashConverter::ClearRegistry()
@@ -88,6 +95,6 @@ namespace Dolas
 		// - Memory management when switching between different resource sets
 		// - Unit testing to ensure clean state between tests
 		// - Runtime cleanup when reverse lookup is no longer needed
-		s_hashToString.clear();
+		GetHashToStringMap().clear();
 	}
 }

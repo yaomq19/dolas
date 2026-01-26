@@ -4,6 +4,13 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 # 递归搜索当前目录下的所有.h文件
 file(GLOB_RECURSE HEADERS "*.h")
 
+# 定义引擎项目名（与顶层项目区分）
+project(DolasEngine VERSION 0.1.0 LANGUAGES CXX)
+
+# 重新设置 C++ 标准（project() 会重置这些设置）
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # ============ 应用程序宏定义 ============
 # 定义项目根目录宏，供C++代码使用（使用CMake内建变量CMAKE_SOURCE_DIR）
 add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
@@ -38,7 +45,8 @@ include_directories(
 
 # ============ 可执行文件创建 ============
 # 创建名为${PROJECT_NAME}(即Dolas)的可执行文件，包含所有源文件和头文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+#add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
 
 # ============ spdlog 配置 ============
 # 配置 spdlog 使用 C++ 标准库的 std::format 而不是外部 fmt 库
@@ -81,15 +89,19 @@ endif()
 
 # ============ 调试信息输出 ============
 # 打印找到的源文件列表（用于调试和确认）
-message(STATUS "Found ${CMAKE_PROJECT_NAME} source files:")
+message(STATUS "Found ${PROJECT_NAME} source files:")
 # 遍历并输出每个源文件路径
 foreach(source ${SOURCES})
     message(STATUS "  ${source}")
 endforeach()
 
 # 打印找到的头文件列表（用于调试和确认）
-message(STATUS "Found ${CMAKE_PROJECT_NAME} header files:")
+message(STATUS "Found ${PROJECT_NAME} header files:")
 # 遍历并输出每个头文件路径
 foreach(header ${HEADERS})
     message(STATUS "  ${header}")
-endforeach() 
+endforeach()
+
+if(TARGET DolasEngine)
+    set_target_properties(DolasEngine PROPERTIES FOLDER "DolasEngine")
+endif()

@@ -77,17 +77,3 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTools")
 if(TARGET Dolas)
     set_target_properties(Dolas PROPERTIES FOLDER "DolasEngine")
 endif()
-if(TARGET ShaderCompiler)
-    set_target_properties(ShaderCompiler PROPERTIES FOLDER "DolasEngine")
-endif()
-if(TARGET Precompile)
-    set_target_properties(Precompile PROPERTIES FOLDER "DolasEngine")
-endif()
-if(TARGET ModelImporter)
-    set_target_properties(ModelImporter PROPERTIES FOLDER "DolasEngine")
-endif()
-
-# 注意：
-# - DolasAssetEditor 的 FOLDER 在 asset_editor/CMakeLists.txt 中设置
-# - ThirdParty 文件夹已经在 third_party/CMakeLists.txt 中设置
-# - 各第三方库已经被组织到 "ThirdParty" 文件夹中
