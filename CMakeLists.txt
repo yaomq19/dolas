@@ -10,12 +10,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # 是否启用 Vulkan 支持（默认关闭，对应 README 中"Vulkan SDK（可选）"）
 option(ENABLE_VULKAN "Enable Vulkan renderer / SDK support" OFF)
 
-# ============ C++标准设置 ============
-# 设置项目使用C++20标准
-set(CMAKE_CXX_STANDARD 20)
-# 强制要求C++20，如果编译器不支持则报错
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # ============ Windows平台特定设置 ============
 # 检查当前平台是否为Windows
 if(WIN32)
@@ -56,24 +50,4 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_subdirectory(third_party)
 
 # 添加源代码子目录
-add_subdirectory(engine)
-
-# 添加工具子目录
-add_subdirectory(tool)
-
-# 添加 precompile（RSD -> C++ 头文件生成）
-add_subdirectory(precompile)
-
-# 让 Dolas 可执行目标依赖 Precompile（确保先生成 source/rsd/*.h）
-if(TARGET Dolas AND TARGET Precompile)
-    add_dependencies(Dolas Precompile)
-endif()
-
-# ============ IDE 项目文件夹组织 ============
-# 将 CMake 预定义的工具项目归类到 CMakeTools 文件夹
-set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTools")
-
-# 将 Dolas 引擎相关项目归类到 DolasEngine 文件夹
-if(TARGET Dolas)
-    set_target_properties(Dolas PROPERTIES FOLDER "DolasEngine")
-endif()
+add_subdirectory(src)

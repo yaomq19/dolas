@@ -2,84 +2,6 @@
 build/
 cmake-build-*/
 
-# Visual Studio文件
-.vs/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-*.userprefs
-.vscode/
-ipch/
-*.VC.db
-*.VC.VC.opendb
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.sln
-
-# 编译输出
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-out/
-
-# C++对象文件
-*.o
-*.obj
-*.ilk
-*.idb
-*.pch
-*.ipdb
-*.iobj
-
-# DirectX着色器编译文件
-*.cso
-*.pso
-
-# 可执行文件
-*.exe
-*.so
-*.dylib
-*.out
-*.app
-
-# 依赖管理器生成的目录
-packages/
-vcpkg_installed/
-
-# 测试输出
-TestResults/
-
-# 系统文件
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# 编辑器临时文件
-*~
-*.swp
-*.swo
-.vs/
-.idea/
-*.sublime-workspace
-
-# 日志文件
-*.log
-*.tlog
-
-# 其他临时文件
-temp/
-tmp/
-.cache/
-
 # ============ Dolas Engine特定忽略规则 ============
 
 # Mesh 文件 - 体积较大，不纳入版本控制
@@ -100,15 +22,9 @@ content/textures/**/*.dds
 tools/texconv.exe
 scripts/texconv.exe
 
-# Python缓存
-__pycache__/
-*.pyc
-*.pyo
-*.pyd 
-
-CMakeUserPresets.json
-
 # RSD -> .h auto-generated headers (precompile output)
 source/rsd/*.h
 
 imgui.ini
+
+logs/
