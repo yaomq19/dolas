@@ -1,9 +1,9 @@
 #include "dolas_log_system_manager.h"
-#include "base/dolas_paths.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <filesystem>
 #include <iostream>
+#include <Windows.h>
 #include <vector>
 #include <chrono>
 #include <iomanip>
@@ -40,12 +40,29 @@ namespace Dolas
                         << std::setfill('0') << std::setw(2) << local_tm.tm_sec << ".log";
             
         // Get project root directory and create full path for log file
-        std::filesystem::path log_dir = std::filesystem::path(CMAKE_SOURCE_DIR) / "logs";
+        // Get executable directory and create full path for log file (use `log/` in the same folder as the exe)
+        char exe_path[MAX_PATH] = {0};
+        DWORD len = GetModuleFileNameA(nullptr, exe_path, MAX_PATH);
+        std::filesystem::path exe_file;
+        if (len > 0)
+        {
+            exe_file = std::filesystem::path(std::string(exe_path, static_cast<size_t>(len)));
+        }
+        else
+        {
+            exe_file = std::filesystem::current_path(); // fallback to current path
+        }
+        std::filesystem::path log_dir = exe_file.parent_path() / "log";
         std::filesystem::path log_file = log_dir / timestamp_stream.str();
         m_log_file_path = log_file.string();
-            
+
         // Ensure log directory exists
-        std::filesystem::create_directories(log_dir);
+        std::error_code ec;
+        std::filesystem::create_directories(log_dir, ec);
+        if (ec)
+        {
+            std::cerr << "Failed to create log directory: " << ec.message() << std::endl;
+        }
             
         // Configure file sink: rotating file, max 10MB, keep at most 5 files
         auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(

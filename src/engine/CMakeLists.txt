@@ -4,11 +4,6 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 # 递归搜索当前目录下的所有.h文件
 file(GLOB_RECURSE HEADERS "*.h")
 
-# ============ 应用程序宏定义 ============
-# 定义项目根目录宏，供C++代码使用（使用CMake内建变量CMAKE_SOURCE_DIR）
-add_definitions(-DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}/")
-# 定义运行时输出目录宏
-add_definitions(-DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 
 # ============ IDE文件组织结构设置 ============
 # 遍历所有源文件和头文件
@@ -38,6 +33,10 @@ target_compile_definitions(${DOLAS_ENGINE_LIBRARY_NAME} PRIVATE SPDLOG_USE_STD_F
 # ============ Tracy 配置 ============
 # 启用 Tracy 性能分析（仅在需要时）
 target_compile_definitions(${DOLAS_ENGINE_LIBRARY_NAME} PRIVATE TRACY_ENABLE)
+
+# ============ 应用程序宏定义 ============
+# 定义项目根目录宏，供C++代码使用（使用CMake内建变量CMAKE_SOURCE_DIR）
+target_compile_definitions(${DOLAS_ENGINE_LIBRARY_NAME} PRIVATE ENGINE_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/")
 
 # ============ 库链接配置 ============
 # 链接 spdlog（来自 third_party 子模块，header-only 版本）
