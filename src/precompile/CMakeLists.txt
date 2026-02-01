@@ -3,10 +3,10 @@ project(DolasPrecompile)
 # Precompile is now a real C++ executable project.
 # Building it will:
 #   1) build Precompile.exe
-#   2) automatically run it to generate source/rsd/*.h from rsd/*.rsd
+#   2) automatically run it to generate src/engine/rsd/*.h from rsd/*.rsd
 
 file(GLOB DOLAS_RSD_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/rsd/*.rsd")
-set(DOLAS_RSD_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/engine/rsd")
+set(DOLAS_RSD_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/src/engine/rsd")
 file(MAKE_DIRECTORY "${DOLAS_RSD_OUTPUT_DIR}")
 
 add_executable(Precompile
@@ -26,7 +26,7 @@ add_custom_command(
         --rsd-dir "${CMAKE_SOURCE_DIR}/rsd"
         --out-dir "${DOLAS_RSD_OUTPUT_DIR}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Run Precompile.exe to generate source/rsd/*.h"
+    COMMENT "Run Precompile.exe to generate src/engine/rsd/*.h"
     VERBATIM
 )
 

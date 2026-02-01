@@ -1,29 +1,14 @@
 # CMake构建目录
 build/
-cmake-build-*/
-
-# ============ Dolas Engine特定忽略规则 ============
 
 # Mesh 文件 - 体积较大，不纳入版本控制
 content/mesh/
-
 # 纹理文件 - 体积较大，考虑使用 Git LFS
 content/scene/**/textures/*.png
 content/texture/*.hdr
 
-# DDS纹理文件 - 由DDSGenerate.py自动生成
-*.dds
-
-# 纹理缓存和临时文件
-content/textures/**/*.dds
-*.dds.cache
-
-# 工具文件
-tools/texconv.exe
-scripts/texconv.exe
-
 # RSD -> .h auto-generated headers (precompile output)
-source/rsd/*.h
+src/engine/rsd/
 
 imgui.ini
 
