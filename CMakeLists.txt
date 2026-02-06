@@ -45,6 +45,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # 设置静态库的输出目录为构建目录下的lib文件夹
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
  
+# ============ 测试支持 ============
+# 启用 CTest 测试框架
+enable_testing()
+
 # ============ 子目录包含 ============
 # 添加第三方库子目录（优先构建）
 add_subdirectory(third_party)

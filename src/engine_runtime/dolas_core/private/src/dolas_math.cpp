@@ -197,9 +197,10 @@ namespace Dolas
 
     void Vector3::Normalize()
     {
-        this->x /= Length();
-        this->y /= Length();
-        this->z /= Length();
+        Float length_inv = 1.0f / Length();
+        this->x *= length_inv;
+        this->y *= length_inv;
+        this->z *= length_inv;
     }
 
     Vector3 Vector3::Normalized() const
