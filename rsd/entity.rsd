@@ -1,5 +1,0 @@
-<rsd_file>
-  <rsd class_name="EntityRSD" file_suffix=".entity">
-    <field name="meshes" type="DynamicArray" element_type="AssetReference:MeshRSD"/>
-  </rsd>
-</rsd_file> 

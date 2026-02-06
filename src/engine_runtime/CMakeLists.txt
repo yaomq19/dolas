@@ -1,0 +1,4 @@
+add_subdirectory(dolas_platform)
+add_subdirectory(dolas_core)
+add_subdirectory(dolas_resource)
+add_subdirectory(dolas_function)

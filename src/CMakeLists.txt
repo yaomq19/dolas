@@ -1,3 +1,3 @@
-add_subdirectory(engine)
-add_subdirectory(tool)
-add_subdirectory(precompile)
+add_subdirectory(engine_runtime)
+add_subdirectory(engine_tool)
+add_subdirectory(engine_test)
