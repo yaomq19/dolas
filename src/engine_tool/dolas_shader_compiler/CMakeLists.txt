@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.10)
-project(ShaderCompiler)
 
 # 设置C++标准
 set(CMAKE_CXX_STANDARD 17)
@@ -48,3 +47,5 @@ target_compile_definitions(ShaderCompiler PRIVATE
     SHADER_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/shader"
     LOG_OUTPUT_DIR="${CMAKE_BINARY_DIR}/logs"
 )
+
+set_target_properties(ShaderCompiler PROPERTIES FOLDER "EngineTool")

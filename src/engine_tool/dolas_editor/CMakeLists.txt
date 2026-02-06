@@ -9,3 +9,5 @@ add_executable(DolasEditor
 )
 
 target_link_libraries(DolasEditor PRIVATE DolasFunction)
+
+set_target_properties(DolasEditor PROPERTIES FOLDER "EngineTool")

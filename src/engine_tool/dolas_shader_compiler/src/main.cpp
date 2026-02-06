@@ -34,7 +34,6 @@ void InitializeLogger() {
     // Initialize logging system
     try {
         auto current_time = std::chrono::system_clock::now();
-        auto time_t = std::chrono::system_clock::to_time_t(current_time);
         
 #ifdef LOG_OUTPUT_DIR
         std::string log_dir = LOG_OUTPUT_DIR;
