@@ -27,6 +27,7 @@ target_include_directories(DolasResource PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/private/include
 )
 target_link_libraries(DolasResource PRIVATE DolasCore)
+target_link_libraries(DolasResource PRIVATE tinyxml2)
 target_compile_features(DolasResource PRIVATE cxx_std_20)
 target_compile_options(DolasResource PRIVATE /utf-8)
 set_target_properties(DolasResource PROPERTIES FOLDER "EngineRuntime")

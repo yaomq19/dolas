@@ -11,7 +11,7 @@
 #include "render/dolas_dx_trace.h"
 #include "dolas_paths.h"
 #include "manager/dolas_texture_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 namespace Dolas
 {
 

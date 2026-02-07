@@ -2,8 +2,8 @@
 #include "manager/dolas_render_scene_manager.h"
 #include "render/dolas_render_scene.h"
 #include "dolas_engine.h"
-#include "manager/dolas_asset_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_asset_manager.h"
+#include "dolas_log_system_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "tinyxml2.h"
 #include <cstdlib>

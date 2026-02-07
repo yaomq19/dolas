@@ -2,7 +2,7 @@
 #include "render/dolas_buffer.h"
 #include "dolas_base.h"
 #include <iostream>
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 namespace Dolas
 {
     BufferManager::BufferManager()
@@ -148,6 +148,7 @@ namespace Dolas
         {
             return m_buffers[buffer_id];
         }
+        return nullptr;
     }
 
     uint32_t BufferManager::GetTotalBufferMemory() const

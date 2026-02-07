@@ -2,7 +2,7 @@
 #include "render/dolas_render_object.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "dolas_base.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 namespace Dolas
 {
     RenderObjectManager::RenderObjectManager()

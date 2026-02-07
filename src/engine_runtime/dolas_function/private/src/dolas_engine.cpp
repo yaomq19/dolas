@@ -2,12 +2,11 @@
 #include <cmath>
 #include <iostream>
 
-#include <tracy/Tracy.hpp>
 
 #include "dolas_base.h"
 #include "dolas_engine.h"
 #include "render/dolas_rhi.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "manager/dolas_render_pipeline_manager.h"
 #include "manager/dolas_render_object_manager.h"
 #include "manager/dolas_material_manager.h"
@@ -15,13 +14,12 @@
 #include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
 #include "manager/dolas_shader_manager.h"
-#include "manager/dolas_asset_manager.h"
+#include "dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
 #include "manager/dolas_test_manager.h"
 #include "manager/dolas_buffer_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_render_view_manager.h"
-#include "render/dolas_render_view.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "manager/dolas_input_manager.h"
@@ -148,8 +146,6 @@ namespace Dolas
 		MSG msg = { 0 };
 		while (msg.message != WM_QUIT)
 		{
-			FrameMark;
-
 			// Limit the maximum time for message processing (microseconds)
 			const auto start_time = std::chrono::high_resolution_clock::now();
 			const auto max_message_time = std::chrono::microseconds(500); // 0.5ms

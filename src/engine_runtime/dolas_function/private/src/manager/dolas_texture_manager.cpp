@@ -10,7 +10,7 @@
 #include "dolas_string_util.h"
 #include "dolas_paths.h"
 #include "DirectXTex.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "render/dolas_dx_trace.h"
 namespace Dolas
 {

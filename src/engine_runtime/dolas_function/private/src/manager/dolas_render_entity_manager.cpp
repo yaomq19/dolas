@@ -4,7 +4,7 @@
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_entity.h"
-#include "manager/dolas_asset_manager.h" // GetRsdAsset<>
+#include "dolas_asset_manager.h" // GetRsdAsset<>
 #include "manager/dolas_render_primitive_manager.h"
 #include "rsd/entity.h"
 #include "rsd/mesh.h"

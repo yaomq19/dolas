@@ -12,7 +12,6 @@
 #include <stdexcept>
 #include <type_traits>
 #include <string>
-#include <tracy/Tracy.hpp>
 
 class ThreadPool {
 public:
@@ -43,7 +42,6 @@ inline ThreadPool::ThreadPool(size_t threads)
             {
                 // 为每个工作线程设置唯一名称并注册到 Tracy
                 std::string thread_name = "Worker_" + std::to_string(i);
-                tracy::SetThreadName(thread_name.c_str());
                 
                 for(;;)
                 {
@@ -59,8 +57,6 @@ inline ThreadPool::ThreadPool(size_t threads)
                         this->tasks.pop();
                     }
 
-                    // 使用 Tracy 跟踪任务执行
-                    ZoneScoped;
                     task();
                 }
             }

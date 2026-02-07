@@ -23,7 +23,7 @@
 #include "render/dolas_render_scene.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "manager/dolas_render_scene_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "render/dolas_render_camera.h"
 #include "manager/dolas_tick_manager.h"
 #include "manager/dolas_imgui_manager.h"

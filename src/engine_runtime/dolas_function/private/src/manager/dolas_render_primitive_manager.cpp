@@ -10,10 +10,10 @@
 #include "manager/dolas_buffer_manager.h"
 #include "render/dolas_render_primitive.h"
 #include "dolas_paths.h"
-#include "manager/dolas_asset_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_asset_manager.h"
+#include "dolas_log_system_manager.h"
 #include "render/dolas_rhi_common.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "rsd/mesh.h"
 namespace Dolas
 {

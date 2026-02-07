@@ -7,9 +7,9 @@
 #include "render/dolas_material.h"
 #include "dolas_base.h"
 #include "render/dolas_dx_trace.h"
-#include "manager/dolas_asset_manager.h"
+#include "dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "rsd/material.h"
 
 namespace Dolas

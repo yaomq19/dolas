@@ -46,7 +46,6 @@ namespace Dolas
 
     void TickManager::TickLogicThread(Float delta_time)
     {
-        ZoneScoped;
         TickPreLogic(delta_time);
         TickLogic(delta_time);
         TickPostLogic(delta_time);

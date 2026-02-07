@@ -1,4 +1,5 @@
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
+#include <spdlog/spdlog.h>
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <filesystem>
@@ -19,6 +20,71 @@ namespace Dolas
 
     LogSystemManager::~LogSystemManager()
     {
+    }
+
+    // 单例模式实现
+    LogSystemManager& LogSystemManager::GetInstance()
+    {
+        static LogSystemManager instance;
+        return instance;
+    }
+
+    // 获取 logger 指针（作为 void* 返回以隐藏类型）
+    void* LogSystemManager::GetLoggerPtr() const
+    {
+        return static_cast<void*>(m_logger.get());
+    }
+
+    // 内部辅助函数实现（在这里才暴露 spdlog 的细节）
+    namespace detail
+    {
+        void DoLogTrace(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->trace(msg);
+            }
+        }
+
+        void DoLogDebug(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->debug(msg);
+            }
+        }
+
+        void DoLogInfo(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->info(msg);
+            }
+        }
+
+        void DoLogWarn(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->warn(msg);
+            }
+        }
+
+        void DoLogError(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->error(msg);
+            }
+        }
+
+        void DoLogCritical(void* logger, const std::string& msg)
+        {
+            if (logger)
+            {
+                static_cast<spdlog::logger*>(logger)->critical(msg);
+            }
+        }
     }
     
     bool LogSystemManager::Initialize()
@@ -84,8 +150,8 @@ namespace Dolas
         spdlog::set_default_logger(m_logger);
         spdlog::flush_on(spdlog::level::warn); // Flush immediately for warnings and above
             
-        SPDLOG_INFO("=== Dolas System Initialize Success ===");
-        SPDLOG_INFO("Log file save path: {0}", m_log_file_path);
+        m_logger->info("=== Dolas System Initialize Success ===");
+        m_logger->info("Log file save path: {0}", m_log_file_path);
             
         return true;
     }
@@ -94,7 +160,7 @@ namespace Dolas
     {
         if (m_logger)
         {
-            SPDLOG_INFO("=== Dolas Log System Shutdown ===");
+            m_logger->info("=== Dolas Log System Shutdown ===");
             m_logger->flush();
         }
         

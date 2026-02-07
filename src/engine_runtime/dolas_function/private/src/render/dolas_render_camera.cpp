@@ -1,8 +1,8 @@
 #include "render/dolas_render_camera.h"
 #include <iostream>
 #include <cmath>
-#include "manager/dolas_asset_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_asset_manager.h"
+#include "dolas_log_system_manager.h"
 #include "rsd/camera.h"
 namespace Dolas
 {

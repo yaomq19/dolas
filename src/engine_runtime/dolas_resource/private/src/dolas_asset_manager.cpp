@@ -1,13 +1,13 @@
-#include "manager/dolas_asset_manager.h"
+#include "dolas_asset_manager.h"
 #include "dolas_base.h"
-#include "dolas_paths.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "tinyxml2.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
 #include <map>
 #include <cstring>
+
 namespace Dolas
 {
     AssetManager::AssetManager()

@@ -7,8 +7,8 @@
 #include "manager/dolas_input_manager.h"
 #include <iostream>
 #include <algorithm>
-#include "manager/dolas_asset_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_asset_manager.h"
+#include "dolas_log_system_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
 #include "rsd/camera.h"

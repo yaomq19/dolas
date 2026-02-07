@@ -2,7 +2,7 @@
 #include "dolas_engine.h"
 #include "render/dolas_rhi.h"
 #include <iostream>
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_log_system_manager.h"
 #include "render/dolas_dx_trace.h"
 namespace Dolas
 {

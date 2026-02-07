@@ -29,6 +29,8 @@ target_include_directories(DolasCore PRIVATE
 )
 
 target_link_libraries(DolasCore PRIVATE DolasPlatform)
+target_link_libraries(DolasCore PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(DolasCore PRIVATE TracyClient)
 
 target_compile_definitions(DolasCore PRIVATE ENGINE_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/")
 

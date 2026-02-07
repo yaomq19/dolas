@@ -6,8 +6,8 @@
 #include <cfloat>
 #include <DirectXMath.h>
 using namespace DirectX;
-#include "manager/dolas_asset_manager.h"
-#include "manager/dolas_log_system_manager.h"
+#include "dolas_asset_manager.h"
+#include "dolas_log_system_manager.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
