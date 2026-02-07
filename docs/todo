@@ -1,4 +1,0 @@
-拆分出 dolas_editor 项目
-shader compiler 放到 tool 下面
-model_importer 放到 tool 下面
-log 输出路径改成 exe 同路径

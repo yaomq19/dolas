@@ -1,50 +1,50 @@
 # Dolas 引擎
 
-Dolas 是一个基于 DirectX 11 的轻量级游戏引擎，使用 C++20 开发。
+![Dolas Editor](docs/images/editor_screenshot.png)
+
+Dolas 是一个基于 DirectX 11 的轻量级游戏引擎，使用 C++20 开发。项目采用模块化设计，旨在提供高性能、可扩展的开发框架。
 
 ## 特性
 
-- 🎮 基于 DirectX 11 的现代渲染管线
-- 📦 使用 Git Submodule 管理第三方依赖
-- 📊 集成 Tracy 性能分析工具
-- 🎨 支持 DDS 纹理加载（DirectXTex）
-- 🔄 多线程任务系统
-- 📝 使用 spdlog 的日志系统
-- 🖼️ 集成 ImGui（支持 Docking 和多视口）
+- 🎮 **现代渲染管线**: 基于 DirectX 11 的高效渲染实现。
+- 🧱 **模块化架构**: 
+  - `engine_runtime`: 核心运行时，包含平台抽象、数学库、资源管理和基础功能。
+  - `engine_tool`: 开发工具，包括场景编辑器和离线着色器编译器。
+  - `engine_test`: 基于 Catch2 的自动化单元测试。
+- 📦 **依赖管理**: 使用 Git Submodule 管理第三方库，保证版本一致性。
+- 📊 **性能分析**: 集成 Tracy Profiler，支持实时性能瓶颈分析。
+- 🎨 **资源处理**: 支持 DDS 纹理（DirectXTex）、3D 模型（Assimp）加载。
+- 🖼️ **图形界面**: 集成 ImGui（支持 Docking 和多视口），用于开发工具和调试。
+- 📝 **日志系统**: 使用 spdlog 提供的线程安全、高性能日志记录。
 
 ## 项目结构
 
 ```
 dolas/
-├── source/          # 源代码文件
-│   ├── base/        # 基础工具类
-│   ├── core/        # 核心引擎代码
-│   ├── manager/     # 各类管理器
-│   └── render/      # 渲染系统
-├── third_party/     # 第三方库（Git Submodule）
-│   ├── imgui/       # ImGui (docking branch)
-│   ├── assimp/      # Assimp 3D 模型加载
-│   ├── tinyxml2/    # TinyXML2 XML 解析
-│   ├── spdlog/      # spdlog 日志库
-│   ├── DirectXTex/  # DirectXTex 纹理处理
-│   └── tracy/       # Tracy 性能分析
-├── content/         # 资源文件
-│   ├── shader/      # HLSL 着色器文件
-│   ├── texture/     # 纹理资源
-│   ├── mesh/        # 网格资源
-│   └── material/    # 材质资源
-├── shader_compiler/ # 着色器编译工具
-├── script/          # 构建和工具脚本
-└── build/           # 构建输出目录（自动生成）
+├── src/                    # 源代码
+│   ├── engine_runtime/     # 引擎运行时模块
+│   │   ├── dolas_core/     # 核心基础类（数学、哈希、基础类型）
+│   │   ├── dolas_platform/ # 平台抽象（窗口管理、输入）
+│   │   ├── dolas_resource/ # 资源管理（纹理、模型、材质加载）
+│   │   └── dolas_function/ # 高级功能（渲染逻辑、世界系统）
+│   ├── engine_tool/        # 开发工具
+│   │   ├── dolas_editor/   # 场景/引擎编辑器
+│   │   └── dolas_shader_compiler/ # 着色器离线编译工具
+│   └── engine_test/        # 单元测试（基于 Catch2）
+├── third_party/            # 第三方库（Git Submodule）
+├── content/                # 原始资源文件（Shader, Texture, Material等）
+├── docs/                   # 项目文档与规范
+├── build/                  # 构建输出目录（由 CMake 自动生成）
+├── setup.bat               # 环境初始化脚本（生成 VS 项目）
+└── build-debug.bat         # 快速构建脚本
 ```
 
 ## 构建要求
 
 - **操作系统**: Windows 10 或更高版本
-- **编译器**: Visual Studio 2022 或更高版本（支持 C++20）
-- **CMake**: 3.15 或更高版本
+- **编译器**: Visual Studio 2022 (v143) 或更高版本（需支持 C++20）
+- **CMake**: 3.20 或更高版本
 - **Git**: 用于克隆仓库和管理子模块
-- **Vulkan SDK**: （可选）如果需要 Vulkan 支持
 
 ## 快速开始
 
@@ -59,110 +59,54 @@ cd dolas
 git submodule update --init --recursive
 ```
 
-### 2. 配置 CMake
+### 2. 初始化环境
 
-```bash
-# 生成 Visual Studio 项目文件
-cmake -B build -G "Visual Studio 17 2022"
+运行根目录下的 `setup.bat`。该脚本会自动创建 `build` 目录并为 Visual Studio 2022 生成项目文件。
 
-# 或者使用提供的脚本
-script\cmake_generate.bat
+```powershell
+.\setup.bat
 ```
 
 ### 3. 构建项目
 
-```bash
-# 使用 CMake 构建
-cmake --build build --config Debug
+你可以直接在根目录下使用预设的批处理文件进行快速构建：
 
-# 或者使用 Visual Studio 打开生成的解决方案
-build\Dolas.sln
+- **Debug 版本**: `.\build-debug.bat`
+- **Release 版本**: `.\build-release.bat`
+
+或者使用 CMake 手动构建：
+
+```bash
+cmake --build build --config Debug -j16
 ```
 
 ### 4. 运行
 
-```bash
-build\bin\Debug\Dolas.exe
-```
+构建成功后，可执行文件位于 `build/bin/` 目录下：
 
-### 5. 使用便捷脚本
-
-项目提供了几个便捷的批处理脚本，位于 `script/utility/` 目录下：
-
-#### `generate_project.bat`
-配置 CMake 项目。首次构建或修改 CMakeLists.txt 后运行。
-
-```bash
-script\utility\generate_project.bat
-```
-
-#### `build_project.bat`
-构建项目到 `build/` 目录。
-
-```bash
-script\utility\build_project.bat
-```
-
-#### `quick_start.bat`
-运行构建好的 Debug 版本应用程序。
-
-```bash
-script\utility\quick_start.bat
-```
-
-> **提示**: 所有脚本执行完毕后会等待按键退出，方便查看输出结果。
+- **编辑器**: `build\bin\Debug\DolasEditor.exe`
+- **着色器编译器**: `build\bin\Debug\ShaderCompiler.exe`
+- **单元测试**: `build\bin\Debug\DolasTest.exe`
 
 ## 第三方库
 
 本项目通过 Git Submodule 管理以下依赖：
 
-| 库名 | 版本 | 用途 | 许可证 | 仓库 |
-|------|------|------|--------|------|
-| [ImGui](https://github.com/ocornut/imgui) | master (docking) | 即时模式 GUI | MIT | [yaomq19/imgui](https://github.com/yaomq19/imgui) |
-| [Assimp](https://github.com/assimp/assimp) | master | 3D 模型加载 | BSD-3-Clause | [yaomq19/assimp](https://github.com/yaomq19/assimp) |
-| [TinyXML2](https://github.com/leethomason/tinyxml2) | master | XML 解析 | Zlib | [yaomq19/tinyxml2](https://github.com/yaomq19/tinyxml2) |
-| [spdlog](https://github.com/gabime/spdlog) | v1.x | 快速日志库 | MIT | [yaomq19/spdlog](https://github.com/yaomq19/spdlog) |
-| [DirectXTex](https://github.com/microsoft/DirectXTex) | main | DirectX 纹理处理 | MIT | [yaomq19/DirectXTex](https://github.com/yaomq19/DirectXTex) |
-| [Tracy](https://github.com/wolfpld/tracy) | master | 性能分析工具 | BSD-3-Clause | [yaomq19/tracy](https://github.com/yaomq19/tracy) |
-| [Catch2](https://github.com/catchorg/Catch2) | devel (v3) | 单元测试框架 | BSL-1.0 | [yaomq19/Catch2](https://github.com/yaomq19/Catch2) |
-
-> 所有依赖都位于 `third_party/` 目录下，通过 Git Submodule 管理。详细信息请参阅 [third_party/README.md](third_party/README.md)。
-
-### 更新子模块
-
-```bash
-# 更新所有子模块到最新版本
-git submodule update --remote
-
-# 更新特定子模块
-cd third_party/imgui
-git pull origin master
-cd ../..
-git add third_party/imgui
-git commit -m "Update ImGui submodule"
-```
-
-## 配置选项
-
-### Tracy 性能分析
-
-项目默认启用 Tracy 性能分析（on-demand 模式）。要禁用它，请修改 `source/CMakeLists.txt`：
-
-```cmake
-# 注释掉这一行
-# target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_ENABLE)
-```
-
-### spdlog 格式化
-
-项目配置 spdlog 使用 C++20 的 `std::format`。如果需要使用外部 fmt 库，请修改 `source/CMakeLists.txt`。
+| 库名 | 用途 | 许可证 | 仓库 |
+|------|------|--------|------|
+| [ImGui](https://github.com/ocornut/imgui) | 即时模式 GUI (docking) | MIT | [yaomq19/imgui](https://github.com/yaomq19/imgui) |
+| [Assimp](https://github.com/assimp/assimp) | 3D 模型加载 | BSD-3-Clause | [yaomq19/assimp](https://github.com/yaomq19/assimp) |
+| [spdlog](https://github.com/gabime/spdlog) | 快速日志库 | MIT | [yaomq19/spdlog](https://github.com/yaomq19/spdlog) |
+| [DirectXTex](https://github.com/microsoft/DirectXTex) | DirectX 纹理处理 | MIT | [yaomq19/DirectXTex](https://github.com/yaomq19/DirectXTex) |
+| [Tracy](https://github.com/wolfpld/tracy) | 性能分析工具 | BSD-3-Clause | [yaomq19/tracy](https://github.com/yaomq19/tracy) |
+| [Catch2](https://github.com/catchorg/Catch2) | 单元测试框架 | BSL-1.0 | [yaomq19/Catch2](https://github.com/yaomq19/Catch2) |
+| [TinyXML2](https://github.com/leethomason/tinyxml2) | XML 解析 | Zlib | [yaomq19/tinyxml2](https://github.com/yaomq19/tinyxml2) |
 
 ## 开发文档
 
-更多开发相关信息，请参阅 [Developer.md](Developer.md)。
+- 编码规范与路线图：[Developer.md](Developer.md)
+- 详细设计与规范：[docs/](docs/)
 
 ## 许可证
 
 本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
-
-各第三方库遵循其各自的许可证，具体信息请参见上表。
