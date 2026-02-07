@@ -421,5 +421,9 @@ namespace Dolas
         return ok;
     }
 
-
+    AssetBase* AssetManagerNew::GetAsset(const std::string& relative_file_path)
+    {
+        auto [it, inserted] = m_assets.try_emplace(relative_file_path, std::make_unique<AssetBase>());
+        return it->second.get();
+    }
 }

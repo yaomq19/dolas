@@ -5,14 +5,9 @@
 #include <unordered_map>
 #include <typeindex>
 #include <memory>
-#include <vector>
 #include "dolas_base.h"
 #include "dolas_paths.h"
 
-#include "dolas_math.h"
-#include "rsd/camera.h"
-#include "rsd/scene.h"
-#include "rsd/entity.h"
 #include "rsd/material.h"
 namespace Dolas
 {
@@ -96,5 +91,36 @@ namespace Dolas
 			return &ins->second;
         }
     }
+
+    class AssetBase
+    {
+        
+    };
+    
+    class GeneralAsset : public AssetBase
+    {
+        
+    };
+    
+    class RawAsset : public AssetBase
+    {
+        
+    };
+    
+    class RawAssetWithSpecificExtension : public AssetBase
+    {
+        
+    };
+    
+    class AssetManagerNew
+    {
+    public:
+        AssetManagerNew();
+        ~AssetManagerNew();
+        AssetBase* GetAsset(const std::string& relative_file_path);
+        
+    private:
+        std::unordered_map<std::string, std::unique_ptr<AssetBase>> m_assets;
+    };
 }
 #endif // DOLAS_ASSET_MANAGER_H
