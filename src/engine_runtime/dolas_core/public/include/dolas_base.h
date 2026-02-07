@@ -3,10 +3,6 @@
 
 namespace Dolas
 {
-#if defined(DEBUG) | defined(_DEBUG)
-    #define DOLAS_DEBUG
-#endif
-
     // Base header file content will be here
     #define DOLAS_NEW(type, ...) new type(__VA_ARGS__)
     #define DOLAS_DELETE(ptr) if (ptr) { delete ptr; ptr = nullptr; }

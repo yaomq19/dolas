@@ -430,7 +430,7 @@ namespace Dolas
     std::unique_ptr<AssetBase> AssetManagerNew::LoadAsset(const std::string& relative_file_path)
     {
         
-        PathUtils::GetEngineContentDir();
+        PathUtils::CombineToFullPath(relative_file_path);
         tinyxml2::XMLElement* root;
 
         std::unique_ptr<AssetBase> asset = std::make_unique<AssetBase>();
