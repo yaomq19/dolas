@@ -421,19 +421,87 @@ namespace Dolas
         return ok;
     }
 
-    AssetBase* AssetManagerNew::GetAsset(const std::string& relative_file_path)
+    AssetManagerNew::AssetManagerNew()
     {
-        auto [it, inserted] = m_assets.try_emplace(relative_file_path, LoadAsset(relative_file_path));
-        return it->second.get();
     }
 
-    std::unique_ptr<AssetBase> AssetManagerNew::LoadAsset(const std::string& relative_file_path)
+    AssetManagerNew::~AssetManagerNew()
     {
-        
-        PathUtils::CombineToFullPath(relative_file_path);
-        tinyxml2::XMLElement* root;
+    }
 
-        std::unique_ptr<AssetBase> asset = std::make_unique<AssetBase>();
-        return std::move(asset);
+    const AssetBase* AssetManagerNew::GetAsset(const std::string& relative_file_path)
+    {
+        if (m_assets.contains(relative_file_path))
+        {
+            return m_assets.at(relative_file_path).get();
+        }
+        
+        LoadAsset(relative_file_path);
+        
+        if (m_assets.contains(relative_file_path))
+        {
+            return m_assets.at(relative_file_path).get();
+        }
+        return nullptr;
+    }
+
+    std::unique_ptr<XmlAsset> AssetManagerNew::LoadXmlAsset(const std::string& absolute_path)
+    {
+        tinyxml2::XMLDocument doc;
+        if (doc.LoadFile(absolute_path.c_str()) != tinyxml2::XML_SUCCESS)
+        {
+            LOG_ERROR("Failed to load XML asset file: {}", absolute_path);
+            return nullptr;
+        }
+
+        tinyxml2::XMLElement* root = doc.RootElement();
+        if (!root)
+        {
+            LOG_ERROR("XML asset file has no root element: {}", absolute_path);
+            return nullptr;
+        }
+
+        
+        return std::make_unique<XmlAsset>();
+    }
+
+    std::unique_ptr<RawAsset> AssetManagerNew::LoadRawAsset(const std::string& absolute_path)
+    {
+        return nullptr; // to do
+    }
+
+    Bool AssetManagerNew::LoadAsset(const std::string& relative_file_path)
+    {
+        if (relative_file_path.empty())
+        {
+            LOG_ERROR("Relative file path is empty");
+            return false;
+        }
+
+        auto absolute_path = PathUtils::CombineToFullPath(relative_file_path);
+        if (!absolute_path.has_value())
+        {
+            LOG_ERROR("Failed to get absolute path for asset: {}", relative_file_path);
+            return false;
+        }
+
+        if (absolute_path.value().ends_with(".ast"))
+        {
+            if (auto result = LoadXmlAsset(absolute_path.value()))
+            {
+                m_assets[relative_file_path] = std::move(result);
+                return true;
+            }
+        }
+        else
+        {
+            if (auto result = LoadRawAsset(absolute_path.value()))
+            {
+                m_assets[relative_file_path] = std::move(result);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

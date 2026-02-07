@@ -97,7 +97,7 @@ namespace Dolas
         
     };
     
-    class GeneralAsset : public AssetBase
+    class XmlAsset : public AssetBase
     {
         
     };
@@ -117,10 +117,15 @@ namespace Dolas
     public:
         AssetManagerNew();
         ~AssetManagerNew();
-        AssetBase* GetAsset(const std::string& relative_file_path);
+        const AssetBase* GetAsset(const std::string& relative_file_path);
         
     private:
-        std::unique_ptr<AssetBase> LoadAsset(const std::string& relative_file_path);
+        Bool LoadAsset(const std::string& relative_file_path);
+    private:
+        std::unique_ptr<XmlAsset> LoadXmlAsset(const std::string& absolute_path);
+        std::unique_ptr<RawAsset> LoadRawAsset(const std::string& absolute_path);
+        
+    private:
         std::unordered_map<std::string, std::unique_ptr<AssetBase>> m_assets;
     };
 }

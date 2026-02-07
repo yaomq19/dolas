@@ -6,7 +6,9 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 target_sources(DolasTest PRIVATE ${SOURCES})
 
 # 链接 DolasCore（被测模块）和 Catch2WithMain（提供 main 入口）
-target_link_libraries(DolasTest PRIVATE DolasCore Catch2::Catch2WithMain)
+target_link_libraries(DolasTest PRIVATE DolasCore)
+target_link_libraries(DolasTest PRIVATE DolasResource)
+target_link_libraries(DolasTest PRIVATE Catch2::Catch2WithMain)
 
 target_compile_features(DolasTest PRIVATE cxx_std_20)
 target_compile_options(DolasTest PRIVATE /utf-8)
