@@ -49,7 +49,7 @@ namespace Dolas
 		RenderPrimitiveID render_primitive_id = RENDER_PRIMITIVE_ID_EMPTY;
 		MaterialID material_id = MATERIAL_ID_EMPTY;
 
-        std::string render_entity_file_path = PathUtils::GetContentDir() + entity_file_name;
+        std::string render_entity_file_path = PathUtils::GetEngineContentDir() + entity_file_name;
 
         EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(entity_file_name);
         if (entity_rsd == nullptr)
@@ -100,7 +100,7 @@ namespace Dolas
 
     RenderEntity* RenderEntityManager::GetRenderEntityByFileName(const std::string& render_entity_file_name)
     {
-        std::string render_entity_file_path = PathUtils::GetContentDir() + render_entity_file_name;
+        std::string render_entity_file_path = PathUtils::GetEngineContentDir() + render_entity_file_name;
         RenderEntityID render_entity_id = HashConverter::StringHash(render_entity_file_path);
         return GetRenderEntityByID(render_entity_id);
     }

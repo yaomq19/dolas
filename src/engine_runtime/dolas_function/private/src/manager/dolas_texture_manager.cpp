@@ -73,7 +73,7 @@ namespace Dolas
 
     TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)
     {
-        std::string texture_file_path = PathUtils::GetContentDir() + file_name;
+        std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
 
         // 创建纹理资源
         ID3D11Resource* d3d_resource = nullptr;
@@ -136,7 +136,7 @@ namespace Dolas
 
     TextureID TextureManager::CreateTextureFromHDRFile(const std::string& file_name)
     {
-        std::string texture_file_path = PathUtils::GetContentDir() + file_name;
+        std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
 
         // 创建纹理资源
         ID3D11Resource* d3d_resource = nullptr;
@@ -200,7 +200,7 @@ namespace Dolas
 
 	TextureID TextureManager::CreateTextureFromPNGFile(const std::string& file_name)
 	{
-		std::string texture_file_path = PathUtils::GetContentDir() + file_name;
+		std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
 
 		// 创建纹理资源
 		ID3D11Resource* d3d_resource = nullptr;

@@ -69,7 +69,7 @@ namespace Dolas
     {
 		// Accepts an absolute path; otherwise, concatenates with the content's relative path.
         // If an absolute path is provided, use it directly; otherwise, resolve it relative to the content directory.
-        const std::string file_path = IsAbsolutePathLike(file_name) ? file_name : (PathUtils::GetContentDir() + file_name);
+        const std::string file_path = IsAbsolutePathLike(file_name) ? file_name : (PathUtils::GetEngineContentDir() + file_name);
         std::unordered_map<std::string, TRsd>& cache = GetTypedCache<TRsd>().map;
         auto it = cache.find(file_path);
 
@@ -120,6 +120,7 @@ namespace Dolas
         AssetBase* GetAsset(const std::string& relative_file_path);
         
     private:
+        std::unique_ptr<AssetBase> LoadAsset(const std::string& relative_file_path);
         std::unordered_map<std::string, std::unique_ptr<AssetBase>> m_assets;
     };
 }

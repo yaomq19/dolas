@@ -86,6 +86,8 @@ namespace Dolas
 
 	bool DolasEngine::Initialize()
 	{
+		PathUtils::SetProjectDirectoryPath("hack_path");
+		
 		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
@@ -111,6 +113,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_timer_manager->Initialize());
 	
+		
 		return true;
 	}
 

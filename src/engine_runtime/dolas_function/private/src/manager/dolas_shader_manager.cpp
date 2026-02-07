@@ -128,7 +128,7 @@ namespace Dolas
 
     VertexContext* ShaderManager::CreateVertexShader(const std::string& file_path, const std::string& entry_point)
     {
-        std::string shader_path = PathUtils::GetContentDir() + file_path;
+        std::string shader_path = PathUtils::GetEngineContentDir() + file_path;
 
         // 创建着色器对象
         VertexContext* vertex_context = DOLAS_NEW(VertexContext);
@@ -149,7 +149,7 @@ namespace Dolas
 
     PixelContext* ShaderManager::CreatePixelShader(const std::string& file_path, const std::string& entry_point)
     {
-        std::string shader_path = PathUtils::GetContentDir() + file_path;
+        std::string shader_path = PathUtils::GetEngineContentDir() + file_path;
 
         PixelContext* pixel_context = DOLAS_NEW(PixelContext);
         if (!pixel_context->BuildFromFile(shader_path, entry_point))

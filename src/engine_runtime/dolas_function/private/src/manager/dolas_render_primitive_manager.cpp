@@ -63,7 +63,7 @@ namespace Dolas
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
-        RenderPrimitiveID primitive_id = HashConverter::StringHash(PathUtils::GetContentDir() + mesh_file_name);
+        RenderPrimitiveID primitive_id = HashConverter::StringHash(PathUtils::GetEngineContentDir() + mesh_file_name);
 
         // 如果已经创建过，直接返回
         if (GetRenderPrimitiveByID(primitive_id) != nullptr)

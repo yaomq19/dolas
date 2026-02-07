@@ -423,7 +423,17 @@ namespace Dolas
 
     AssetBase* AssetManagerNew::GetAsset(const std::string& relative_file_path)
     {
-        auto [it, inserted] = m_assets.try_emplace(relative_file_path, std::make_unique<AssetBase>());
+        auto [it, inserted] = m_assets.try_emplace(relative_file_path, LoadAsset(relative_file_path));
         return it->second.get();
+    }
+
+    std::unique_ptr<AssetBase> AssetManagerNew::LoadAsset(const std::string& relative_file_path)
+    {
+        
+        PathUtils::GetEngineContentDir();
+        tinyxml2::XMLElement* root;
+
+        std::unique_ptr<AssetBase> asset = std::make_unique<AssetBase>();
+        return std::move(asset);
     }
 }
