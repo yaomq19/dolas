@@ -2,6 +2,7 @@
 #include <imgui_internal.h> // DockBuilder API (docking 分支)
 #include <imgui_impl_win32.h>  // Win32 后端
 #include <imgui_impl_dx11.h>   // Direct3D 11 后端
+#include <ImGuizmo.h> // ImGuizmo - 3D gizmo 库
 #include <string>
 #include <algorithm>  // for std::max
 #include "dolas_engine.h"
@@ -367,6 +368,25 @@ namespace Dolas
         ImGui::Text("Viewport Size: %.0f x %.0f", m_viewport_size.x, m_viewport_size.y);
         ImGui::Text("Viewport Hovered: %s", m_viewport_hovered ? "Yes" : "No");
         ImGui::Text("Viewport Focused: %s", m_viewport_focused ? "Yes" : "No");
+
+        ImGui::Separator();
+
+        // ImGuizmo 测试
+        static float gizmo_matrix[16] = { 1,0,0,0,  0,1,0,0,  0,0,1,0,  0,0,0,1 };
+        static ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
+        static ImGuizmo::MODE gizmo_mode = ImGuizmo::WORLD;
+
+        ImGui::Text("ImGuizmo Test:");
+        if (ImGui::RadioButton("Translate", gizmo_operation == ImGuizmo::TRANSLATE))
+            gizmo_operation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", gizmo_operation == ImGuizmo::ROTATE))
+            gizmo_operation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", gizmo_operation == ImGuizmo::SCALE))
+            gizmo_operation = ImGuizmo::SCALE;
+
+        ImGui::Text("ImGuizmo integration successful!");
 
         UnsetFontStyle();
         ImGui::End();
