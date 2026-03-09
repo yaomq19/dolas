@@ -56,19 +56,3 @@ add_subdirectory(third_party)
 # 添加源代码子目录
 add_subdirectory(src)
 
-# ============ 文档文件配置 ============
-# 将文档文件添加到项目中，以便在IDE中显示
-set(DOCUMENTATION_FILES
-    AGENTS.md
-    README.md
-    Developer.md
-    LICENSE
-)
-
-# 为文档文件创建源组，在IDE中组织显示
-source_group("Documentation" FILES ${DOCUMENTATION_FILES})
-
-# 创建接口库以在IDE中显示文档文件
-add_library(Documentation INTERFACE)
-target_sources(Documentation INTERFACE ${DOCUMENTATION_FILES})
-set_target_properties(Documentation PROPERTIES FOLDER "Documentation")
