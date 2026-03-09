@@ -3,10 +3,9 @@ add_subdirectory(engine_tool)
 add_subdirectory(engine_test)
 
 # ============ 文档文件配置 ============
-# 将文档文件添加到项目中，以便在IDE中显示
-set(DOCUMENTATION_FILES
-    ${CMAKE_SOURCE_DIR}/AGENTS.md
-    ${CMAKE_SOURCE_DIR}/README.md
+# 自动扫描 docs 目录下的所有文档文件
+file(GLOB DOCUMENTATION_FILES
+    ${CMAKE_SOURCE_DIR}/docs/*.md
 )
 
 # 为文档文件创建源组，在IDE中组织显示

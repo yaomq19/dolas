@@ -17,15 +17,6 @@ Third-party dependencies via Git submodules.
 ### Environment Setup
 ```bash
 git submodule update --init --recursive
-.\script\setup.bat
-```
-
-### Quick Build Scripts
-```bash
-.\script\build-debug.bat
-.\script\build-release.bat
-.\script\build-relWithDebInfo.bat
-.\script\build-minSizeRel.bat
 ```
 
 ### Manual CMake Commands
@@ -146,7 +137,7 @@ No `.cursor/rules/`, `.cursorrules`, or `.github/copilot-instructions.md` files 
 
 ## Verification Checklist
 Before considering work complete:
-- [ ] Build succeeds with `.\script\build-debug.bat`
+- [ ] Build succeeds: `cmake --build build --config Debug -j16`
 - [ ] Tests pass: `ctest -C Debug --output-on-failure`
 - [ ] No new compiler warnings introduced
 - [ ] Code follows naming conventions

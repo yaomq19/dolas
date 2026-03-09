@@ -8,6 +8,7 @@ using namespace Dolas;
 namespace fs = std::filesystem;
 
 TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
+#if defined(DEBUG) || defined(_DEBUG)
     // 备份原始项目路径
     std::string originalProjectDir = PathUtils::GetProjectContentDir();
     
@@ -105,4 +106,8 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
     } catch (...) {
         // 忽略清理时的异常（例如文件被占用）
     }
+#else
+    // Release build - skip this test as debug-only functions are not available
+    SUCCEED("Test skipped in Release build (debug-only functions not available)");
+#endif
 }

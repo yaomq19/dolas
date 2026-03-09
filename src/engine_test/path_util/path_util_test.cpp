@@ -4,6 +4,7 @@
 using namespace Dolas;
 
 TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
+#if defined(DEBUG) || defined(_DEBUG)
     // 准备测试环境
     std::string originalEngineDir = PathUtils::GetEngineContentDir();
     std::string originalProjectDir = PathUtils::GetProjectContentDir();
@@ -29,7 +30,7 @@ TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
     }
 
     SECTION("Testing _project prefix") {
-        PathUtils::SetProjectContentDirForDebug("D:/MyGame/Content"); // 故意不带斜杠
+        PathUtils::SetProjectContentDirForDebug("D:/MyGame/Content");
         
         // 正常拼接
         auto resultValid = PathUtils::CombineToFullPath("_project/models/hero.fbx");
@@ -51,4 +52,8 @@ TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
     // 恢复原始状态
     PathUtils::SetEngineContentDirForDebug(originalEngineDir);
     PathUtils::SetProjectContentDirForDebug(originalProjectDir);
+#else
+    // Release build - skip this test as debug-only functions are not available
+    SUCCEED("Test skipped in Release build (debug-only functions not available)");
+#endif
 }
