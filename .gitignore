@@ -13,3 +13,7 @@ src/engine/rsd/
 imgui.ini
 
 draft/
+
+.vscode/
+.cursor/
+.opencode/

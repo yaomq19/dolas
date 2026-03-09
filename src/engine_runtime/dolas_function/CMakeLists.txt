@@ -26,6 +26,7 @@ target_include_directories(DolasFunction PUBLIC
 )
 target_include_directories(DolasFunction PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_SOURCE_DIR}/third_party/ImGuizmo
 )
 
 target_compile_features(DolasFunction PRIVATE cxx_std_20)
@@ -51,6 +52,9 @@ target_link_libraries(DolasFunction PRIVATE DirectXTex)
 
 # 链接 ImGui（来自 third_party 子模块）
 target_link_libraries(DolasFunction PRIVATE imgui)
+
+# 链接 ImGuizmo（来自 third_party 子模块）
+target_link_libraries(DolasFunction PRIVATE imguizmo)
 
 # 如果是Windows平台，链接DirectX相关库
 if(WIN32)

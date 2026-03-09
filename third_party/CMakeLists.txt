@@ -205,3 +205,37 @@ endif()
 if(TARGET Catch2WithMain)
     set_target_properties(Catch2WithMain PROPERTIES FOLDER "ThirdParty")
 endif()
+
+# ============ ImGuizmo ============
+# ImGuizmo - Immediate mode 3D gizmo for scene editing
+set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo)
+
+# ImGuizmo 核心文件
+set(IMGUIZMO_SOURCES
+    ${IMGUIZMO_DIR}/ImGuizmo.cpp
+)
+set(IMGUIZMO_HEADERS
+    ${IMGUIZMO_DIR}/ImGuizmo.h
+)
+
+# 创建 ImGuizmo 静态库
+add_library(imguizmo STATIC
+    ${IMGUIZMO_SOURCES}
+    ${IMGUIZMO_HEADERS}
+)
+
+# ImGuizmo 需要 ImGui
+target_link_libraries(imguizmo PUBLIC imgui)
+
+# 设置 ImGuizmo 的编译选项
+target_compile_features(imguizmo PUBLIC cxx_std_11)
+
+# 如果是 MSVC，设置为 UTF-8 编码
+if(MSVC)
+    target_compile_options(imguizmo PRIVATE /utf-8)
+endif()
+
+# 将 ImGuizmo 组织到 IDE 的 "ThirdParty" 文件夹中
+set_target_properties(imguizmo PROPERTIES
+    FOLDER "ThirdParty"
+)
