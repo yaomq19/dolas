@@ -26,7 +26,7 @@ def count_stats(target_dir):
     return h_count, cpp_count, total_lines
 
 def main():
-    base_src = "src"
+    base_src = "../src"
     sub_dirs = ["engine_runtime", "engine_test", "engine_tool"]
     
     print(f"{'Directory':<20} | {'h files':<8} | {'cpp files':<10} | {'Total Lines':<12}")

@@ -86,50 +86,21 @@ TEST_CASE("Vector3 default constructor", "[Vector3][constructor]")
 - **Sources**: `.cpp` in `private/src/`
 - **Include guards**: `#ifndef DOLAS_MODULE_NAME_H`, `#define DOLAS_MODULE_NAME_H`
 
-### Formatting
+### Formatting & Imports
 - **Indentation**: 4 spaces
 - **Braces**: Allman style (braces on separate lines)
 - **Pointer/Reference**: `Type* ptr`, `Type& ref` (no space before `*` or `&`)
 - **Class layout**: `public:` sections first, then member variables
+- **System headers**: `#include <library/header.h>`
+- **Project headers**: `#include "module/header.h"` (relative to `src/engine_*/`)
+- **Include order**: System → third-party → project headers
 
-### Imports and Includes
-- System headers: `#include <library/header.h>`
-- Project headers: `#include "module/header.h"` (relative to `src/engine_*/`)
-- Order: System first, then third-party, then project headers
-- Example:
-  ```cpp
-  #include <catch2/catch_test_macros.hpp>
-  #include "dolas_math.h"
-  ```
-
-### Type System
-- Use type aliases from `dolas_base.h`:
-  - `Float`, `Double`, `Int`, `UInt`
-  - `Bool`, `UByte`, `ULong`, `ULongLong`
-  - Resource IDs: `StringID`, `FileID`, `MaterialID`, etc.
-- Avoid raw built-in types (`float`, `int`) in public interfaces
-
-### Error Handling
-- Use `DOLAS_RETURN_*` macros for early returns:
-  ```cpp
-  DOLAS_RETURN_IF_NULL(pointer);
-  DOLAS_RETURN_FALSE_IF_FALSE(condition);
-  DOLAS_RETURN_NULL_IF_TRUE(condition);
-  ```
+### Type System & Error Handling
+- Use type aliases from `dolas_base.h`: `Float`, `Double`, `Int`, `UInt`, etc.
+- Resource IDs: `StringID`, `FileID`, `MaterialID`, etc.
+- Use `DOLAS_RETURN_*` macros for early returns
 - No exceptions; use return values and error codes
-- For unrecoverable errors, log with `LOG_ERROR()` and return
-
-### Logging System
-- Use logging macros (via `dolas_log_system_manager.h`):
-  ```cpp
-  LOG_TRACE("Message {}", arg);
-  LOG_DEBUG("Debug info");
-  LOG_INFO("Information");
-  LOG_WARN("Warning");
-  LOG_ERROR("Error occurred");
-  LOG_CRITICAL("Critical failure");
-  ```
-- Thread-safe, uses spdlog, outputs to file (`logs/dolas.log`) and console
+- Log with `LOG_ERROR()` for unrecoverable errors
 
 ### String Hashing Convention
 **Important**: Follow rules from `Developer.md`:
@@ -144,7 +115,7 @@ TEST_CASE("Vector3 default constructor", "[Vector3][constructor]")
 
 ## Development Tools
 - Tracy Profiler for performance analysis (`ZoneScoped` macros)
-- Shaders offline-compiled via `ShaderCompiler` tool (`content/shader/`)
+- Shaders offline-compiled via `ShaderCompiler` tool
 - Textures: DDS via DirectXTex
 - 3D models: Assimp
 - Materials: Custom `.material` files
@@ -155,17 +126,17 @@ No `.cursor/rules/`, `.cursorrules`, or `.github/copilot-instructions.md` files 
 ## Common Tasks for Agents
 
 ### Adding a New Class
-1. Header in appropriate `public/include/` subdirectory
+1. Header in `public/include/` subdirectory
 2. Source in `private/src/` subdirectory
 3. Follow naming conventions and include guards
-4. Add to relevant CMakeLists.txt
+4. Add to CMakeLists.txt
 5. Write unit tests in `engine_test/`
 
 ### Adding a New Test
 1. Test file in `src/engine_test/{module}/`
 2. Use Catch2 `TEST_CASE` with descriptive tags
-3. Include necessary headers (`<catch2/...>` and project headers)
-4. Follow existing test patterns (sections, assertions)
+3. Include necessary headers
+4. Follow existing test patterns
 
 ### Modifying Existing Code
 1. Maintain consistent formatting
