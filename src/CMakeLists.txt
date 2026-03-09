@@ -12,7 +12,7 @@ set(DOCUMENTATION_FILES
 # 为文档文件创建源组，在IDE中组织显示
 source_group("Documentation" FILES ${DOCUMENTATION_FILES})
 
-# 创建空静态库以在IDE中显示文档文件
-add_library(Documentation STATIC ${DOCUMENTATION_FILES})
+# 创建接口库以在IDE中显示文档文件
+add_library(Documentation INTERFACE)
+target_sources(Documentation INTERFACE ${DOCUMENTATION_FILES})
 set_target_properties(Documentation PROPERTIES FOLDER "Documentation")
-set_target_properties(Documentation PROPERTIES LINKER_LANGUAGE CXX)
