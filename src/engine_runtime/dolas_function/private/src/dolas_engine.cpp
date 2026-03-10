@@ -28,6 +28,8 @@
 #include "manager/dolas_imgui_manager.h"
 #include "manager/dolas_debug_draw_manager.h"
 #include "manager/dolas_timer_manager.h"
+#include "dolas_render_hardware_interface.h"
+
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
@@ -56,6 +58,7 @@ namespace Dolas
 		m_imgui_manager = DOLAS_NEW(ImGuiManager);
 		m_debug_draw_manager = DOLAS_NEW(DebugDrawManager);
 		m_timer_manager = DOLAS_NEW(TimerManager);
+		m_render_hardware_interface = DOLAS_NEW(RenderHardwareInterface);
 	}
 
 	DolasEngine::~DolasEngine()
@@ -82,6 +85,7 @@ namespace Dolas
 		DOLAS_DELETE(m_imgui_manager);
 		DOLAS_DELETE(m_debug_draw_manager);
 		DOLAS_DELETE(m_timer_manager);
+		DOLAS_DELETE(m_render_hardware_interface);
 	}
 
 	bool DolasEngine::Initialize()

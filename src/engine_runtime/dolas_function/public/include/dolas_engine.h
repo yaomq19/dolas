@@ -35,6 +35,7 @@ namespace Dolas
 		class ImGuiManager* m_imgui_manager;
 		class DebugDrawManager* m_debug_draw_manager;
 		class TimerManager* m_timer_manager;
+		class RenderHardwareInterface* m_render_hardware_interface;
 	};
 	extern DolasEngine g_dolas_engine;
 }// namespace Dolas

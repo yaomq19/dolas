@@ -1,7 +1,6 @@
 #ifndef DOLAS_RHI_COMMON_H
 #define DOLAS_RHI_COMMON_H
 #include <d3d11.h>
-#include <d3d11_1.h>
 #include "dolas_hash.h"
 #include "dolas_math.h"
 
