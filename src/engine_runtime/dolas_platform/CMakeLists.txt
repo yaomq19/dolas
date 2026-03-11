@@ -20,6 +20,7 @@ foreach(source IN LISTS SOURCES HEADERS)
 endforeach()
 
 target_sources(DolasPlatform PRIVATE ${SOURCES} ${HEADERS})
+target_link_libraries(DolasPlatform PRIVATE spdlog::spdlog_header_only)
 
 target_include_directories(DolasPlatform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/public/include
