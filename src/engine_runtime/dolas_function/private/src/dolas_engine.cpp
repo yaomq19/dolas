@@ -95,6 +95,7 @@ namespace Dolas
 		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_render_hardware_interface->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
@@ -124,6 +125,7 @@ namespace Dolas
 	void DolasEngine::Clear()
 	{
 		m_rhi->Clear();
+		m_render_hardware_interface->Clear();
 		m_render_pipeline_manager->Clear();
 		m_material_manager->Clear();
 		m_render_entity_manager->Clear();

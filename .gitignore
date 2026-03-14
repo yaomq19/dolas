@@ -21,3 +21,5 @@ draft/
 nul
 
 AGENTS.md
+
+ruff_cache/
