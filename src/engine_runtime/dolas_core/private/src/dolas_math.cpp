@@ -197,7 +197,9 @@ namespace Dolas
 
     void Vector3::Normalize()
     {
-        Float length_inv = 1.0f / Length();
+        Float len = Length();
+        if (len <= 0.0f) return;
+        Float length_inv = 1.0f / len;
         this->x *= length_inv;
         this->y *= length_inv;
         this->z *= length_inv;
@@ -205,7 +207,9 @@ namespace Dolas
 
     Vector3 Vector3::Normalized() const
     {
-        return Vector3(x / Length(), y / Length(), z / Length());
+        Float len = Length();
+        if (len <= 0.0f) return Vector3();
+        return Vector3(x / len, y / len, z / len);
     }
 
     Float& Vector3::operator[](UInt index)
@@ -354,10 +358,12 @@ namespace Dolas
 
     void Vector4::Normalize()
     {
-        this->x /= Length();
-        this->y /= Length();
-        this->z /= Length();
-        this->w /= Length();
+        Float len = Length();
+        if (len <= 0.0f) return;
+        this->x /= len;
+        this->y /= len;
+        this->z /= len;
+        this->w /= len;
     }
 
     Float& Vector4::operator[](UInt index)
@@ -665,10 +671,21 @@ namespace Dolas
     
     Matrix3x3 Matrix3x3::GetInverse() const
     {
+        Float a = data[0][0], b = data[0][1], c = data[0][2];
+        Float d = data[1][0], e = data[1][1], f = data[1][2];
+        Float g = data[2][0], h = data[2][1], i = data[2][2];
+
+        Float det = a*(e*i - f*h) - b*(d*i - f*g) + c*(d*h - e*g);
+
+        if (det == 0.0f) return Matrix3x3::IDENTITY;
+
+        Float invDet = 1.0f / det;
+
         return Matrix3x3(
-            data[0][0], data[1][0], data[2][0],
-            data[0][1], data[1][1], data[2][1],
-            data[0][2], data[1][2], data[2][2]);
+            (e*i - f*h) * invDet, (c*h - b*i) * invDet, (b*f - c*e) * invDet,
+            (f*g - d*i) * invDet, (a*i - c*g) * invDet, (c*d - a*f) * invDet,
+            (d*h - e*g) * invDet, (b*g - a*h) * invDet, (a*e - b*d) * invDet
+        );
     }
     
     Matrix4x4 Matrix3x3::ExpandToMatrix4x4() const
@@ -960,11 +977,53 @@ namespace Dolas
 
     Matrix4x4 Matrix4x4::GetInverse() const
     {
-        return Matrix4x4(
-            data[0][0], data[1][0], data[2][0], data[3][0],
-            data[0][1], data[1][1], data[2][1], data[3][1],
-            data[0][2], data[1][2], data[2][2], data[3][2],
-            data[0][3], data[1][3], data[2][3], data[3][3]);
+        const Float (*m)[4] = data;
+
+        // Compute 3x3 minors s[i][j] = determinant of submatrix with row i, col j removed
+        Float s[4][4];
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                Float minor[3][3];
+                int r = 0;
+                for (int ii = 0; ii < 4; ii++)
+                {
+                    if (ii == i) continue;
+                    int c = 0;
+                    for (int jj = 0; jj < 4; jj++)
+                    {
+                        if (jj == j) continue;
+                        minor[r][c] = m[ii][jj];
+                        c++;
+                    }
+                    r++;
+                }
+                s[i][j] = minor[0][0]*(minor[1][1]*minor[2][2] - minor[1][2]*minor[2][1])
+                        - minor[0][1]*(minor[1][0]*minor[2][2] - minor[1][2]*minor[2][0])
+                        + minor[0][2]*(minor[1][0]*minor[2][1] - minor[1][1]*minor[2][0]);
+            }
+        }
+
+        // det via first row expansion: det = sum_j (-1)^j * m[0][j] * s[0][j]
+        Float det = m[0][0]*s[0][0] - m[0][1]*s[0][1] + m[0][2]*s[0][2] - m[0][3]*s[0][3];
+
+        if (det == 0.0f) return Matrix4x4::IDENTITY;
+
+        Float invDet = 1.0f / det;
+
+        Matrix4x4 result;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                Float cofactor = s[j][i]; // transposed minor
+                if ((i + j) % 2 == 1) cofactor = -cofactor;
+                result.data[i][j] = cofactor * invDet;
+            }
+        }
+
+        return result;
     }
 
     Matrix4x4 Matrix4x4::Orthographic(Float l, Float r, Float t, Float b, Float f, Float n)

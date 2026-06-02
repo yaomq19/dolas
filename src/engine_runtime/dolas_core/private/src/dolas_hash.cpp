@@ -37,9 +37,9 @@ namespace Dolas
 
 		// In debug builds, automatically register the string for reverse lookup
 		// This allows debugging and logging systems to convert hashes back to readable strings
-		// #if defined(DEBUG) || defined(_DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
 		GetHashToStringMap()[hash] = str;
-		// #endif
+#endif
 		
 		return hash;
 	}
