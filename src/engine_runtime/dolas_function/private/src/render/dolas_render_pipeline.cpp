@@ -54,14 +54,14 @@ namespace Dolas
 
     void RenderPipeline::Render(DolasRHI* rhi)
     {
-        UserAnnotationScope scope(rhi, L”RenderPipeline”);
+        UserAnnotationScope scope(rhi, L"RenderPipeline");
         rhi->UpdatePerFrameParameters();
         RenderView* render_view = TryGetRenderView();
         DOLAS_RETURN_IF_NULL(render_view);
 		RenderCamera* render_camera = TryGetRenderCamera(render_view);
 		DOLAS_RETURN_IF_NULL(render_camera);
 
-        // 仅在”中心视口”区域渲染场景（由 ImGui Dock 布局决定）
+        // 仅在"中心视口"区域渲染场景（由 ImGui Dock 布局决定）
         // 注意：该 rect 来自上一帧 ImGui 计算结果（ImGui 渲染发生在本帧末尾），因此会有 1 帧延迟，但交互上可接受。
         ImVec2 vp_pos = g_dolas_engine.m_imgui_manager->GetViewportPos();
         ImVec2 vp_size = g_dolas_engine.m_imgui_manager->GetViewportSize();
