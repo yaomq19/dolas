@@ -18,8 +18,7 @@ draft/
 .cursor/
 .opencode/
 .claude/
-
-nul
+.idea/
 
 AGENTS.md
 

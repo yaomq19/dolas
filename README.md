@@ -1,112 +1,135 @@
-# Dolas 引擎
+# Dolas Engine
 
 ![Dolas Editor](docs/images/editor_screenshot.png)
 
-Dolas 是一个基于 DirectX 11 的轻量级游戏引擎，使用 C++20 开发。项目采用模块化设计，旨在提供高性能、可扩展的开发框架。
+Dolas is a lightweight game engine built with C++20, targeting Windows. It features a deferred rendering pipeline and a modular architecture designed for extensibility. The engine is currently in the process of migrating from DirectX 11 to DirectX 12.
 
-## 特性
+## Features
 
-- 🎮 **现代渲染管线**: 基于 DirectX 11 的高效渲染实现。
-- 🧱 **模块化架构**: 
-  - `engine_runtime`: 核心运行时，包含平台抽象、数学库、资源管理和基础功能。
-  - `engine_tool`: 开发工具，包括场景编辑器和离线着色器编译器。
-  - `engine_test`: 基于 Catch2 的自动化单元测试。
-- 📦 **依赖管理**: 使用 Git Submodule 管理第三方库，保证版本一致性。
-- 📊 **性能分析**: 集成 Tracy Profiler，支持实时性能瓶颈分析。
-- 🎨 **资源处理**: 支持 DDS 纹理（DirectXTex）、3D 模型（Assimp）加载。
-- 🖼️ **图形界面**: 集成 ImGui（支持 Docking 和多视口），用于开发工具和调试。
-- 📝 **日志系统**: 使用 spdlog 提供的线程安全、高性能日志记录。
+- **Deferred Rendering Pipeline**: Multi-pass pipeline (Clear → GBuffer → DeferredShading → ForwardShading → Skybox → Debug → ImGUI → PostProcess → Present), currently D3D11-based with D3D12 migration in progress.
+- **Modular Architecture**: Four-layer design — `DolasPlatform` (windowing, D3D12 device init, logging, thread pool), `DolasCore` (math, hashing, path utilities), `DolasResource` (RSD asset system with XML deserialization), `DolasFunction` (18 managers, render layer, editor layer).
+- **Asset System**: RSD (Resource Schema Definition) based asset pipeline with `AssetManager` for loading/deserializing typed assets from XML.
+- **Editor**: ImGui-based scene editor with docking and multi-viewport support, including content browser for asset management.
+- **Performance Profiling**: Integrated Tracy profiler for real-time performance analysis.
+- **Resource Processing**: DDS texture loading via DirectXTex, 3D model import via Assimp.
+- **Logging**: Thread-safe, high-performance logging via spdlog.
 
-## 项目结构
+## Project Structure
 
 ```
 dolas/
-├── src/                    # 源代码
-│   ├── engine_runtime/     # 引擎运行时模块
-│   │   ├── dolas_core/     # 核心基础类（数学、哈希、基础类型）
-│   │   ├── dolas_platform/ # 平台抽象（窗口管理、输入）
-│   │   ├── dolas_resource/ # 资源管理（纹理、模型、材质加载）
-│   │   └── dolas_function/ # 高级功能（渲染逻辑、世界系统）
-│   ├── engine_tool/        # 开发工具
-│   │   ├── dolas_editor/   # 场景/引擎编辑器
-│   │   └── dolas_shader_compiler/ # 着色器离线编译工具
-│   └── engine_test/        # 单元测试（基于 Catch2）
-├── third_party/            # 第三方库（Git Submodule）
-├── content/                # 原始资源文件（Shader, Texture, Material等）
-├── docs/                   # 项目文档与规范
-├── build/                  # 构建输出目录（由 CMake 自动生成）
-├── setup.bat               # 环境初始化脚本（生成 VS 项目）
-└── build-debug.bat         # 快速构建脚本
+├── src/
+│   ├── engine_runtime/
+│   │   ├── dolas_platform/     # Platform abstraction (window, D3D12 device, logging, file system, thread pool)
+│   │   ├── dolas_core/         # Core types, math library, hash utilities, path resolution
+│   │   ├── dolas_resource/     # RSD asset system (AssetManager, XML deserialization)
+│   │   └── dolas_function/     # Engine layer: managers, render pipeline, editor GUI
+│   ├── engine_tool/
+│   │   ├── dolas_editor/       # Scene/engine editor executable
+│   │   └── dolas_shader_compiler/  # Offline shader compiler (standalone, no engine deps)
+│   └── engine_test/            # Catch2 unit tests (asset manager, math, path utilities)
+├── third_party/                # Third-party dependencies (git submodules)
+├── content/                    # Raw assets (shaders, textures, materials, etc.)
+├── docs/                       # Documentation and specifications
+├── build/                      # CMake build output directory
+└── CMakeLists.txt
 ```
 
-## 构建要求
+## Build Requirements
 
-- **操作系统**: Windows 10 或更高版本
-- **编译器**: Visual Studio 2022 (v143) 或更高版本（需支持 C++20）
-- **CMake**: 3.20 或更高版本
-- **Git**: 用于克隆仓库和管理子模块
+- **Operating System**: Windows 10 or later
+- **Compiler**: Visual Studio 2022 (v143) with C++20 support
+- **CMake**: 3.15 or later
+- **Git**: For cloning the repository and managing submodules
 
-## 快速开始
+## Quick Start
 
-### 1. 克隆项目（包含子模块）
+### 1. Clone the Repository (with Submodules)
 
 ```bash
-# 克隆主仓库和所有子模块
 git clone --recursive https://github.com/yaomq19/dolas.git
 cd dolas
 
-# 如果已经克隆了主仓库，初始化子模块
+# If already cloned without submodules:
 git submodule update --init --recursive
 ```
 
-### 2. 初始化环境
-
-运行根目录下的 `setup.bat`。该脚本会自动创建 `build` 目录并为 Visual Studio 2022 生成项目文件。
-
-```powershell
-.\setup.bat
-```
-
-### 3. 构建项目
-
-你可以直接在根目录下使用预设的批处理文件进行快速构建：
-
-- **Debug 版本**: `.\build-debug.bat`
-- **Release 版本**: `.\build-release.bat`
-
-或者使用 CMake 手动构建：
+### 2. Configure
 
 ```bash
-cmake --build build --config Debug -j16
+cmake -B build -G "Visual Studio 17 2022" -A x64
 ```
 
-### 4. 运行
+### 3. Build
 
-构建成功后，可执行文件位于 `build/bin/` 目录下：
+```bash
+# Debug
+cmake --build build --config Debug -j16
 
-- **编辑器**: `build\bin\Debug\DolasEditor.exe`
-- **着色器编译器**: `build\bin\Debug\ShaderCompiler.exe`
-- **单元测试**: `build\bin\Debug\DolasTest.exe`
+# Release
+cmake --build build --config Release -j16
+```
 
-## 第三方库
+### 4. Run
 
-本项目通过 Git Submodule 管理以下依赖：
+Executables are output to `build/bin/`:
 
-| 库名 | 用途 | 许可证 | 仓库 |
-|------|------|--------|------|
-| [ImGui](https://github.com/ocornut/imgui) | 即时模式 GUI (docking) | MIT | [yaomq19/imgui](https://github.com/yaomq19/imgui) |
-| [Assimp](https://github.com/assimp/assimp) | 3D 模型加载 | BSD-3-Clause | [yaomq19/assimp](https://github.com/yaomq19/assimp) |
-| [spdlog](https://github.com/gabime/spdlog) | 快速日志库 | MIT | [yaomq19/spdlog](https://github.com/yaomq19/spdlog) |
-| [DirectXTex](https://github.com/microsoft/DirectXTex) | DirectX 纹理处理 | MIT | [yaomq19/DirectXTex](https://github.com/yaomq19/DirectXTex) |
-| [Tracy](https://github.com/wolfpld/tracy) | 性能分析工具 | BSD-3-Clause | [yaomq19/tracy](https://github.com/yaomq19/tracy) |
-| [Catch2](https://github.com/catchorg/Catch2) | 单元测试框架 | BSL-1.0 | [yaomq19/Catch2](https://github.com/yaomq19/Catch2) |
-| [TinyXML2](https://github.com/leethomason/tinyxml2) | XML 解析 | Zlib | [yaomq19/tinyxml2](https://github.com/yaomq19/tinyxml2) |
+- **Editor**: `build/bin/Debug/DolasEditor.exe`
+- **Shader Compiler**: `build/bin/Debug/ShaderCompiler.exe`
+- **Unit Tests**: `build/bin/Debug/DolasTest.exe`
 
-## 开发文档
+Run all tests via CTest:
 
-- 编码规范与路线图：[Developer.md](Developer.md)
-- 详细设计与规范：[docs/](docs/)
+```bash
+cd build && ctest --config Debug
+```
 
-## 许可证
+## Architecture
 
-本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
+```
+DolasEditor (app)        ShaderCompiler (standalone tool)
+    └─ DolasFunction          └─ d3dcompiler only
+          ├─ DolasResource
+          ├─ DolasCore
+          └─ DolasPlatform
+```
+
+- **DolasPlatform** — Lowest layer. Window creation, D3D12 `RenderHardwareInterface`, logging macros, file system, thread pool.
+- **DolasCore** — Fundamental types, math library (`dolas_math.h`), hash utilities (`STRING_ID` macro, `HashConverter`), path resolution.
+- **DolasResource** — RSD asset system. `AssetManager` loads typed assets (Material, Mesh, Entity, Camera, Scene) from XML.
+- **DolasFunction** — The main engine library, organized into three areas:
+  - **Manager layer**: `DolasEngine` singleton owns 18 managers (`MeshManager`, `TextureManager`, `ShaderManager`, `MaterialManager`, `RenderPipelineManager`, `ImGuiManager`, `TaskManager`, etc.).
+  - **Render layer**: `DolasRHI` (D3D11-based, migrating to D3D12), multi-pass `RenderPipeline`, resource wrappers (`Buffer`, `Texture`, `Shader`, `Material`).
+  - **Editor layer**: `ContentBrowser` and ImGui-based tooling.
+
+## DX11 to DX12 Migration
+
+The engine is mid-migration. Current state:
+
+- `dolas_platform/dolas_render_hardware_interface.cpp` already links `d3d12.lib` and creates a D3D12 device and command queue.
+- `dolas_function/dolas_rhi.cpp` and all render layer code still use D3D11 (`d3d11.lib`, `dxgi.lib`, `d3dcompiler.lib`).
+- See [docs/DX12迁移计划.md](docs/DX12迁移计划.md) for the full 8-phase migration plan.
+
+## Third-Party Dependencies
+
+All managed via git submodules under `third_party/`:
+
+| Library | Purpose | License | Upstream |
+|---------|---------|---------|----------|
+| [ImGui](https://github.com/ocornut/imgui) | Immediate-mode GUI (docking) | MIT | [yaomq19/imgui](https://github.com/yaomq19/imgui) |
+| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo) | 3D gizmo manipulation | MIT | [yaomq19/ImGuizmo](https://github.com/yaomq19/ImGuizmo) |
+| [Assimp](https://github.com/assimp/assimp) | 3D model loading | BSD-3-Clause | [yaomq19/assimp](https://github.com/yaomq19/assimp) |
+| [DirectXTex](https://github.com/microsoft/DirectXTex) | DirectX texture processing | MIT | [yaomq19/DirectXTex](https://github.com/yaomq19/DirectXTex) |
+| [spdlog](https://github.com/gabime/spdlog) | Fast logging library | MIT | [yaomq19/spdlog](https://github.com/yaomq19/spdlog) |
+| [Tracy](https://github.com/wolfpld/tracy) | Performance profiler | BSD-3-Clause | [yaomq19/tracy](https://github.com/yaomq19/tracy) |
+| [Catch2](https://github.com/catchorg/Catch2) | Unit testing framework | BSL-1.0 | [yaomq19/Catch2](https://github.com/yaomq19/Catch2) |
+| [TinyXML2](https://github.com/leethomason/tinyxml2) | XML parser | Zlib | [yaomq19/tinyxml2](https://github.com/yaomq19/tinyxml2) |
+
+## Documentation
+
+- [Developer.md](docs/Developer.md) — Coding conventions and resource ID hashing guidelines
+- [docs/](docs/) — Detailed design docs, DX12 migration plan, editor development notes
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
