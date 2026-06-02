@@ -54,12 +54,14 @@ namespace Dolas
 
     void RenderPipeline::Render(DolasRHI* rhi)
     {
-        UserAnnotationScope scope(rhi, L"RenderPipeline");
+        UserAnnotationScope scope(rhi, L”RenderPipeline”);
         rhi->UpdatePerFrameParameters();
-		RenderCamera* render_camera = TryGetRenderCamera();
+        RenderView* render_view = TryGetRenderView();
+        DOLAS_RETURN_IF_NULL(render_view);
+		RenderCamera* render_camera = TryGetRenderCamera(render_view);
 		DOLAS_RETURN_IF_NULL(render_camera);
 
-        // 仅在“中心视口”区域渲染场景（由 ImGui Dock 布局决定）
+        // 仅在”中心视口”区域渲染场景（由 ImGui Dock 布局决定）
         // 注意：该 rect 来自上一帧 ImGui 计算结果（ImGui 渲染发生在本帧末尾），因此会有 1 帧延迟，但交互上可接受。
         ImVec2 vp_pos = g_dolas_engine.m_imgui_manager->GetViewportPos();
         ImVec2 vp_size = g_dolas_engine.m_imgui_manager->GetViewportSize();
@@ -88,11 +90,11 @@ namespace Dolas
 
 		rhi->UpdatePerViewParameters(render_camera);
 
-        ClearPass(rhi);
-        GBufferPass(rhi);
-        DeferredShadingPass(rhi);
+        ClearPass(rhi, render_view);
+        GBufferPass(rhi, render_view);
+        DeferredShadingPass(rhi, render_view);
         ForwardShadingPass(rhi);
-        SkyboxPass(rhi);
+        SkyboxPass(rhi, render_view);
         PostProcessPass(rhi);
 
         if (m_display_world_coordinate)
@@ -101,8 +103,8 @@ namespace Dolas
         }
 
     	ImGUIPass();
-        DebugPass(rhi);
-        PresentPass(rhi);
+        DebugPass(rhi, render_view);
+        PresentPass(rhi, render_view);
     }
 
     void RenderPipeline::SetRenderViewID(RenderViewID id)
@@ -115,10 +117,10 @@ namespace Dolas
 		m_display_world_coordinate = !m_display_world_coordinate;
 	}
 
-    void RenderPipeline::ClearPass(DolasRHI* rhi)
+    void RenderPipeline::ClearPass(DolasRHI* rhi, RenderView* render_view)
     {
         UserAnnotationScope scope(rhi, L"ClearPass");
-		RenderResource* render_resource = TryGetRenderResource();
+		RenderResource* render_resource = TryGetRenderResource(render_view);
 		DOLAS_RETURN_IF_NULL(render_resource);
 
 		const FLOAT black_clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -155,15 +157,15 @@ namespace Dolas
         rhi->EndEvent();
     }
 
-    void RenderPipeline::GBufferPass(DolasRHI* rhi)
+    void RenderPipeline::GBufferPass(DolasRHI* rhi, RenderView* render_view)
     {
         UserAnnotationScope scope(rhi, L"GBufferPass");
-        
-        RenderScene* render_scene = TryGetRenderScene();
+
+        RenderScene* render_scene = TryGetRenderScene(render_view);
         DOLAS_RETURN_IF_NULL(render_scene);
 
         // 设置 RT 和 视口
-		RenderResource* render_resource = TryGetRenderResource();
+		RenderResource* render_resource = TryGetRenderResource(render_view);
         DOLAS_RETURN_IF_NULL(render_resource);
 
         std::vector<std::shared_ptr<RenderTargetView>> rtvs;
@@ -190,11 +192,11 @@ namespace Dolas
         }
     }
 
-    void RenderPipeline::DeferredShadingPass(DolasRHI* rhi)
+    void RenderPipeline::DeferredShadingPass(DolasRHI* rhi, RenderView* render_view)
     {
         UserAnnotationScope scope(rhi, L"DeferredShadingPass");
 
-        RenderResource* render_resource = TryGetRenderResource();
+        RenderResource* render_resource = TryGetRenderResource(render_view);
         DOLAS_RETURN_IF_NULL(render_resource);
 
         std::vector<std::shared_ptr<RenderTargetView>> rtvs;
@@ -234,11 +236,11 @@ namespace Dolas
         UserAnnotationScope scope(rhi, L"ForwardShadingPass");
 	}
     
-    void RenderPipeline::SkyboxPass(DolasRHI* rhi)
+    void RenderPipeline::SkyboxPass(DolasRHI* rhi, RenderView* render_view)
     {
         UserAnnotationScope scope(rhi, L"SkyboxPass");
         // TODO: Implement SkyboxPass
-		RenderResource* render_resource = TryGetRenderResource();
+		RenderResource* render_resource = TryGetRenderResource(render_view);
 		DOLAS_RETURN_IF_NULL(render_resource);
 
 		std::vector<std::shared_ptr<RenderTargetView>> rtvs;
@@ -250,7 +252,7 @@ namespace Dolas
 		rhi->SetDepthStencilState(DepthStencilStateType_DepthDisabled_StencilReadSky);
 		rhi->SetBlendState(BlendStateType_Opaque);
 
-        RenderCamera* eye_camera = TryGetRenderCamera();
+        RenderCamera* eye_camera = TryGetRenderCamera(render_view);
 		DOLAS_RETURN_IF_NULL(eye_camera);
         
         const Float hack_scale = 0.99f;
@@ -306,12 +308,12 @@ namespace Dolas
 			Color::BLUE);
     }
 
-    void RenderPipeline::DebugPass(DolasRHI* rhi)
+    void RenderPipeline::DebugPass(DolasRHI* rhi, RenderView* render_view)
     {
 		UserAnnotationScope scope(rhi, L"DebugPass");
         const auto& debug_objects = g_dolas_engine.m_debug_draw_manager->GetDebugObjects();
         DOLAS_RETURN_IF_FALSE(debug_objects.size() != 0);
-        
+
 		Material* debug_draw_material = g_dolas_engine.m_material_manager->GetGlobalMaterial(GlobalMaterialType::DebugDraw);
 		DOLAS_RETURN_IF_NULL(debug_draw_material);
 
@@ -321,7 +323,7 @@ namespace Dolas
         std::shared_ptr<PixelContext> pixel_context = debug_draw_material->GetPixelContext();
 		DOLAS_RETURN_IF_NULL(pixel_context);
 
-        auto render_resouce = TryGetRenderResource();
+        auto render_resouce = TryGetRenderResource(render_view);
         
         auto rtv = g_dolas_engine.m_rhi->CreateRenderTargetView(render_resouce->m_scene_result_id);
         auto dsv = g_dolas_engine.m_rhi->CreateDepthStencilView(render_resouce->m_depth_stencil_id);
@@ -353,21 +355,29 @@ namespace Dolas
         g_dolas_engine.m_imgui_manager->Render();
     }
 
-    void RenderPipeline::PresentPass(DolasRHI* rhi)
+    void RenderPipeline::PresentPass(DolasRHI* rhi, RenderView* render_view)
     {
         UserAnnotationScope scope(rhi, L"PresentPass");
-		RenderResource* render_resource = TryGetRenderResource();
+		RenderResource* render_resource = TryGetRenderResource(render_view);
         DOLAS_RETURN_IF_NULL(render_resource);
         rhi->Present(render_resource->m_scene_result_id);
     }
 
-    RenderScene* RenderPipeline::TryGetRenderScene() const
+    RenderView* RenderPipeline::TryGetRenderView() const
     {
-		RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
-		DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
-		RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
-		DOLAS_RETURN_NULL_IF_NULL(render_view);
-		RenderSceneID render_scene_id = render_view->GetRenderSceneID();
+        RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
+        DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
+        return render_view_manager->GetRenderView(m_render_view_id);
+    }
+
+    RenderScene* RenderPipeline::TryGetRenderScene(RenderView* view /*= nullptr*/) const
+    {
+        if (!view)
+        {
+            view = TryGetRenderView();
+        }
+		DOLAS_RETURN_NULL_IF_NULL(view);
+		RenderSceneID render_scene_id = view->GetRenderSceneID();
 
 		RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
 		DOLAS_RETURN_NULL_IF_NULL(render_scene_manager);
@@ -375,29 +385,31 @@ namespace Dolas
         return render_scene_manager->GetRenderSceneByID(render_scene_id);
     }
 
-    RenderResource* RenderPipeline::TryGetRenderResource() const
+    RenderResource* RenderPipeline::TryGetRenderResource(RenderView* view /*= nullptr*/) const
     {
-        RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
-        DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
-        RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
-        DOLAS_RETURN_NULL_IF_NULL(render_view);
+        if (!view)
+        {
+            view = TryGetRenderView();
+        }
+        DOLAS_RETURN_NULL_IF_NULL(view);
 
         RenderResourceManager* render_resource_manager = g_dolas_engine.m_render_resource_manager;
         DOLAS_RETURN_NULL_IF_NULL(render_resource_manager);
-        RenderResourceID render_resource_id = render_view->GetRenderResourceID();
+        RenderResourceID render_resource_id = view->GetRenderResourceID();
         return render_resource_manager->GetRenderResourceByID(render_resource_id);
     }
 
-    class RenderCamera* RenderPipeline::TryGetRenderCamera() const
+    class RenderCamera* RenderPipeline::TryGetRenderCamera(RenderView* view /*= nullptr*/) const
     {
-        RenderViewManager* render_view_manager = g_dolas_engine.m_render_view_manager;
-        DOLAS_RETURN_NULL_IF_NULL(render_view_manager);
-        RenderView* render_view = render_view_manager->GetRenderView(m_render_view_id);
-        DOLAS_RETURN_NULL_IF_NULL(render_view);
+        if (!view)
+        {
+            view = TryGetRenderView();
+        }
+        DOLAS_RETURN_NULL_IF_NULL(view);
 
         RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
         DOLAS_RETURN_NULL_IF_NULL(render_camera_manager);
-        RenderCameraID render_camera_id = render_view->GetRenderCameraID();
+        RenderCameraID render_camera_id = view->GetRenderCameraID();
         return render_camera_manager->GetRenderCameraByID(render_camera_id);
     }
 } // namespace Dolas

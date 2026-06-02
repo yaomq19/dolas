@@ -18,20 +18,21 @@ namespace Dolas
         void SetRenderViewID(RenderViewID id);
         void DisplayWorldCoordinateSystem();
     private:
-        void ClearPass(DolasRHI* rhi);
-        void GBufferPass(DolasRHI* rhi);
-        void DeferredShadingPass(DolasRHI* rhi);
+        void ClearPass(DolasRHI* rhi, class RenderView* render_view);
+        void GBufferPass(DolasRHI* rhi, class RenderView* render_view);
+        void DeferredShadingPass(DolasRHI* rhi, class RenderView* render_view);
         void ForwardShadingPass(DolasRHI* rhi);
-        void SkyboxPass(DolasRHI* rhi);
-        void DebugPass(DolasRHI* rhi);
+        void SkyboxPass(DolasRHI* rhi, class RenderView* render_view);
+        void DebugPass(DolasRHI* rhi, class RenderView* render_view);
         void ImGUIPass();
         void PostProcessPass(DolasRHI* rhi);
         void DisplayWorldCoordinate();
-        void PresentPass(DolasRHI* rhi);
+        void PresentPass(DolasRHI* rhi, class RenderView* render_view);
 
-        class RenderScene* TryGetRenderScene() const;
-        class RenderResource* TryGetRenderResource() const;
-        class RenderCamera* TryGetRenderCamera() const;
+        class RenderScene* TryGetRenderScene(class RenderView* view = nullptr) const;
+        class RenderResource* TryGetRenderResource(class RenderView* view = nullptr) const;
+        class RenderCamera* TryGetRenderCamera(class RenderView* view = nullptr) const;
+        class RenderView* TryGetRenderView() const;
         ViewPort m_viewport;
         RenderViewID m_render_view_id;
 

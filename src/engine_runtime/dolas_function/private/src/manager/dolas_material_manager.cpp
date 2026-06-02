@@ -136,11 +136,8 @@ namespace Dolas
 
     Material* MaterialManager::GetMaterialByID(MaterialID material_id)
     {
-        if (m_materials.find(material_id) == m_materials.end())
-        {
-            return nullptr;
-        }
-        return m_materials[material_id];
+        auto it = m_materials.find(material_id);
+        return (it != m_materials.end()) ? it->second : nullptr;
     }
 
 	Dolas::Material* MaterialManager::GetGlobalMaterial(GlobalMaterialType global_material_type)

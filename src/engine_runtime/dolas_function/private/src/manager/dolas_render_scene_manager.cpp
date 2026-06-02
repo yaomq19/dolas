@@ -43,8 +43,8 @@ namespace Dolas
 
     RenderScene* RenderSceneManager::GetRenderSceneByID(RenderSceneID id)
     {
-        if (m_render_scenes.find(id) == m_render_scenes.end()) return nullptr;
-        return m_render_scenes[id];
+        auto it = m_render_scenes.find(id);
+        return (it != m_render_scenes.end()) ? it->second : nullptr;
     }
 
     Bool RenderSceneManager::CreateRenderSceneByID(RenderSceneID id, const std::string& file_name)

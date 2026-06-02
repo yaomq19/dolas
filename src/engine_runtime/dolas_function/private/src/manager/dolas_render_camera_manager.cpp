@@ -84,8 +84,8 @@ namespace Dolas
 
     RenderCamera* RenderCameraManager::GetRenderCameraByID(RenderCameraID id)
     {
-        if (m_render_cameras.find(id) == m_render_cameras.end()) return nullptr;
-        return m_render_cameras[id];
+        auto it = m_render_cameras.find(id);
+        return (it != m_render_cameras.end()) ? it->second : nullptr;
     }
 
     Bool RenderCameraManager::CreateRenderCameraByID(RenderCameraID render_camera_id, const std::string& file_name)

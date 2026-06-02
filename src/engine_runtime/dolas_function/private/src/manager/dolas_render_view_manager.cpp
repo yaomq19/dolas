@@ -50,14 +50,14 @@ namespace Dolas
 
     RenderView* RenderViewManager::GetMainRenderView()
     {
-        if (m_render_views.find(RENDER_VIEW_ID_MAIN) == m_render_views.end()) return nullptr;
-        return m_render_views[RENDER_VIEW_ID_MAIN];
+        auto it = m_render_views.find(RENDER_VIEW_ID_MAIN);
+        return (it != m_render_views.end()) ? it->second : nullptr;
     }
 
     RenderView* RenderViewManager::GetRenderView(RenderViewID id)
     {
-        if (m_render_views.find(id) == m_render_views.end()) return nullptr;
-        return m_render_views[id];
+        auto it = m_render_views.find(id);
+        return (it != m_render_views.end()) ? it->second : nullptr;
     }
 
     Bool RenderViewManager::CreateRenderViewByID(RenderViewID render_view_id, RenderCameraID render_camera_id, RenderPipelineID render_pipeline_id, RenderResourceID render_resource_id, RenderSceneID render_scene_id)

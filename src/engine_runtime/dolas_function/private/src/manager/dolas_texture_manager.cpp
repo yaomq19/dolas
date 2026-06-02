@@ -64,11 +64,8 @@ namespace Dolas
 
     Texture* TextureManager::GetTextureByTextureID(TextureID texture_id)
     {
-        if (m_textures.find(texture_id) == m_textures.end())
-        {
-            return nullptr;
-        }
-        return m_textures[texture_id];
+        auto it = m_textures.find(texture_id);
+        return (it != m_textures.end()) ? it->second : nullptr;
     }
 
     TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)

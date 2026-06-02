@@ -24,6 +24,7 @@ namespace Dolas
     class InputManager
     {
     public:
+        static constexpr size_t k_max_key_event_queue_size = 64;
         InputManager();
         ~InputManager();
 

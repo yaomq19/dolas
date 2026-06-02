@@ -76,12 +76,16 @@ namespace Dolas
 
     void InputManager::ProduceKeyPressEvent(int key_code)
     {
-        m_key_event_occur_states[key_code].push(EventOccurState::PRESS);
+        auto& q = m_key_event_occur_states[key_code];
+        if (q.size() >= k_max_key_event_queue_size) { q.pop(); }
+        q.push(EventOccurState::PRESS);
     }
 
     void InputManager::ProduceKeyReleaseEvent(int key_code)
     {
-        m_key_event_occur_states[key_code].push(EventOccurState::RELEASE);
+        auto& q = m_key_event_occur_states[key_code];
+        if (q.size() >= k_max_key_event_queue_size) { q.pop(); }
+        q.push(EventOccurState::RELEASE);
     }
 
     EventOccurState InputManager::ConsumeKeyEvent(int key_code)

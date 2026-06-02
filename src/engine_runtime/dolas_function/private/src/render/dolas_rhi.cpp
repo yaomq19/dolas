@@ -138,12 +138,7 @@ namespace Dolas
 
 	DolasRHI::~DolasRHI()
 	{
-		// 释放D3D设备和上下文
-		if (m_swap_chain_back_texture) m_swap_chain_back_texture->Release();
-		if (m_d3d_user_annotation) m_d3d_user_annotation->Release();
-		if (m_d3d_immediate_context) m_d3d_immediate_context->Release();
-		if (m_d3d_device) m_d3d_device->Release();
-		if (m_swap_chain) m_swap_chain->Release();
+		Clear();
 	}
 
 	bool DolasRHI::Initialize()

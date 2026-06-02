@@ -25,11 +25,8 @@ namespace Dolas
     
     RenderResource* RenderResourceManager::GetRenderResourceByID(RenderResourceID render_resource_id)
     {
-        if (m_render_resources.find(render_resource_id) == m_render_resources.end())
-        {
-            return nullptr;
-        }
-        return m_render_resources[render_resource_id];
+        auto it = m_render_resources.find(render_resource_id);
+        return (it != m_render_resources.end()) ? it->second : nullptr;
     }
 
     Bool RenderResourceManager::CreateRenderResourceByID(RenderResourceID render_resource_id)

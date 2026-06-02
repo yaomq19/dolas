@@ -2,9 +2,12 @@
 #include "render/dolas_buffer.h"
 #include "dolas_base.h"
 #include <iostream>
+#include <atomic>
 #include "dolas_log_system_manager.h"
 namespace Dolas
 {
+
+static std::atomic<UInt> s_next_buffer_id{ 1 };
     BufferManager::BufferManager()
     {
 
@@ -62,13 +65,7 @@ namespace Dolas
         
         if (buffer_id == BUFFER_ID_EMPTY)
         {
-            UInt random_uint = rand();
-            while (m_buffers.find(random_uint) != m_buffers.end())
-            {
-                random_uint = rand();
-            }
-
-            buffer_id = random_uint;
+            buffer_id = s_next_buffer_id.fetch_add(1, std::memory_order_relaxed);
         }
         // 创建顶点缓冲区
         if (!buffer->CreateVertexBuffer(vertex_data.size() * sizeof(Float), vertex_data.data(), usage))
@@ -88,13 +85,7 @@ namespace Dolas
         
 		if (buffer_id == BUFFER_ID_EMPTY)
 		{
-			UInt random_uint = rand();
-			while (m_buffers.find(random_uint) != m_buffers.end())
-			{
-				random_uint = rand();
-			}
-
-			buffer_id = random_uint;
+			buffer_id = s_next_buffer_id.fetch_add(1, std::memory_order_relaxed);
 		}
 
         // 创建索引缓冲区
@@ -144,11 +135,8 @@ namespace Dolas
 
     Buffer* BufferManager::GetBufferByID(BufferID buffer_id)
     {
-		if (m_buffers.find(buffer_id) != m_buffers.end())
-        {
-            return m_buffers[buffer_id];
-        }
-        return nullptr;
+        auto it = m_buffers.find(buffer_id);
+        return (it != m_buffers.end()) ? it->second : nullptr;
     }
 
     uint32_t BufferManager::GetTotalBufferMemory() const
