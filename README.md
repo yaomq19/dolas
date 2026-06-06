@@ -31,7 +31,7 @@ dolas/
 ├── third_party/                # Third-party dependencies (git submodules)
 ├── content/                    # Raw assets (shaders, textures, materials, etc.)
 ├── docs/                       # Documentation and specifications
-├── build/                      # CMake build output (build/debug/, build/release/)
+├── build/                      # CMake build output (build/vs2022-debug/, build/vs2022-release/)
 └── CMakeLists.txt
 ```
 
@@ -57,31 +57,31 @@ git submodule update --init --recursive
 ### 2. Configure
 
 ```bash
-cmake --preset debug
+cmake --preset vs2022-debug
 ```
 
 ### 3. Build
 
 ```bash
 # Debug
-cmake --build --preset debug -j16
+cmake --build --preset vs2022-debug -j16
 
 # Release
-cmake --build --preset release -j16
+cmake --build --preset vs2022-release -j16
 ```
 
 ### 4. Run
 
 Executables are output to `build/<preset>/bin/`:
 
-- **Editor**: `build/debug/bin/DolasEditor.exe`
-- **Shader Compiler**: `build/debug/bin/ShaderCompiler.exe`
-- **Unit Tests**: `build/debug/bin/DolasTest.exe`
+- **Editor**: `build/vs2022-debug/bin/DolasEditor.exe`
+- **Shader Compiler**: `build/vs2022-debug/bin/ShaderCompiler.exe`
+- **Unit Tests**: `build/vs2022-debug/bin/DolasTest.exe`
 
 Run all tests via CTest:
 
 ```bash
-cd build/debug && ctest --config Debug
+cd build/vs2022-debug && ctest --config Debug
 ```
 
 ## Architecture

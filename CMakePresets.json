@@ -4,44 +4,49 @@
     {
       "name": "base",
       "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "vs2022",
+      "hidden": true,
+      "inherits": "base",
       "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build/${presetName}",
       "architecture": { "value": "x64", "strategy": "set" }
     },
     {
-      "name": "debug",
-      "inherits": "base",
-      "displayName": "Debug",
+      "name": "vs2022-debug",
+      "inherits": "vs2022",
+      "displayName": "VS2022 Debug",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
-      "name": "release",
-      "inherits": "base",
-      "displayName": "Release",
+      "name": "vs2022-release",
+      "inherits": "vs2022",
+      "displayName": "VS2022 Release",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
   ],
   "buildPresets": [
     {
-      "name": "debug",
-      "configurePreset": "debug",
+      "name": "vs2022-debug",
+      "configurePreset": "vs2022-debug",
       "configuration": "Debug"
     },
     {
-      "name": "release",
-      "configurePreset": "release",
+      "name": "vs2022-release",
+      "configurePreset": "vs2022-release",
       "configuration": "Release"
     }
   ],
   "testPresets": [
     {
-      "name": "debug",
-      "configurePreset": "debug",
+      "name": "vs2022-debug",
+      "configurePreset": "vs2022-debug",
       "configuration": "Debug"
     },
     {
-      "name": "release",
-      "configurePreset": "release",
+      "name": "vs2022-release",
+      "configurePreset": "vs2022-release",
       "configuration": "Release"
     }
   ]

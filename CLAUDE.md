@@ -8,19 +8,19 @@ Dolas is a C++20 game engine for **Windows only** (Visual Studio 2022, CMake >= 
 
 ```bash
 # First-time setup (after git clone --recursive):
-cmake --preset debug
+cmake --preset vs2022-debug
 
 # Build (Debug):
-cmake --build --preset debug -j16
+cmake --build --preset vs2022-debug -j16
 
 # Build (Release):
-cmake --build --preset release -j16
+cmake --build --preset vs2022-release -j16
 
 # Run tests:
-cd build/debug && ctest --config Debug
+cd build/vs2022-debug && ctest --config Debug
 
 # Run a single test via CTest:
-cd build/debug && ctest --config Debug -R "test_name_pattern"
+cd build/vs2022-debug && ctest --config Debug -R "test_name_pattern"
 ```
 
 Outputs go to `build/<preset>/bin/` (executables) and `build/<preset>/lib/` (static libraries). The three executables are `DolasEditor.exe`, `ShaderCompiler.exe`, and `DolasTest.exe`.
