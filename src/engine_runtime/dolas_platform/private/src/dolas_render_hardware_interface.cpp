@@ -321,19 +321,24 @@ namespace Dolas
     
     bool RenderHardwareInterface::InitializeWindow(LONG origin_width, LONG origin_height)
     {
-        WNDCLASSW wc = {};
+        // 加载自定义图标 (IDI_ICON_MAIN = 101, 定义于 rc/Dolas.rc)
+        HICON hAppIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(101));
+
+        WNDCLASSEXW wc = {};
+        wc.cbSize = sizeof(WNDCLASSEXW);
         wc.style = CS_HREDRAW | CS_VREDRAW;
         wc.lpfnWndProc = MainWndProc2;
         wc.cbClsExtra = 0;
         wc.cbWndExtra = 0;
         wc.hInstance = GetModuleHandleW(nullptr);
-        wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+        wc.hIcon = hAppIcon;
+        wc.hIconSm = hAppIcon;  // 任务栏小图标
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
         wc.lpszMenuName = nullptr;
         wc.lpszClassName = kD3D12WindowClassName;
 
-        if (!RegisterClassW(&wc))
+        if (!RegisterClassExW(&wc))
         {
             const DWORD last_error = GetLastError();
             if (last_error != ERROR_CLASS_ALREADY_EXISTS)
