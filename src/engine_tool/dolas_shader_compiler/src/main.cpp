@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cctype>
 #include "shader_compiler.h"
-#include "logger.h"
+#include "dolas_log_system_manager.h"
 #include "file_utils.h"
 
 void PrintUsage(const std::string& program_name) {
@@ -28,32 +28,6 @@ void PrintHeader() {
     std::cout << "    Continuous Shader File Compilation Validity Tool" << std::endl;
     std::cout << "=====================================================" << std::endl;
     std::cout << std::endl;
-}
-
-void InitializeLogger() {
-    // Initialize logging system
-    try {
-        auto current_time = std::chrono::system_clock::now();
-        
-#ifdef LOG_OUTPUT_DIR
-        std::string log_dir = LOG_OUTPUT_DIR;
-#else
-        std::string log_dir = "logs";
-#endif
-        
-        if (!FileUtils::DirectoryExists(log_dir)) {
-            FileUtils::CreateDirectory(log_dir);
-        }
-        
-        Logger::Instance().Initialize(log_dir);
-        Logger::Instance().SetLogLevel(LogLevel::DEBUG);
-        
-        LOG_INFO("Shader compiler started");
-        LOG_INFO("Log directory: " + log_dir);
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Error: Unable to initialize log system: " << e.what() << std::endl;
-    }
 }
 
 std::string GetShaderDir() {
@@ -83,6 +57,7 @@ std::string GetShaderDir() {
 }
 
 int main(int argc, char* argv[]) {
+    Dolas::LogSystemManager::GetInstance().Initialize();
     PrintHeader();
     
     // Check help arguments
@@ -203,7 +178,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 if (!FileUtils::FileExists(filepath)) {
-                    LOG_WARNING("File does not exist: " + filepath);
+                    LOG_WARN("File does not exist: " + filepath);
                     std::cout << "Warning: File does not exist: " << filepath << std::endl;
                     continue;
                 }
@@ -268,9 +243,6 @@ int main(int argc, char* argv[]) {
         } else {
             std::cout << "All shader files compiled successfully!" << std::endl;
         }
-
-        // Flush logs
-        Logger::Instance().Flush();
 
         std::cout << std::endl;
     }

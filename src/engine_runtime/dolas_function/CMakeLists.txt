@@ -32,6 +32,7 @@ target_include_directories(DolasFunction PRIVATE
 target_compile_features(DolasFunction PRIVATE cxx_std_20)
 target_compile_options(DolasFunction PRIVATE /utf-8)
 
+target_link_libraries(DolasFunction PRIVATE DolasCommon)
 target_link_libraries(DolasFunction PRIVATE DolasResource)
 target_link_libraries(DolasFunction PRIVATE DolasCore)
 target_link_libraries(DolasFunction PRIVATE DolasPlatform)

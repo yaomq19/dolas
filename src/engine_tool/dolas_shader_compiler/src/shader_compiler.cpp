@@ -1,5 +1,5 @@
 #include "shader_compiler.h"
-#include "logger.h"
+#include "dolas_log_system_manager.h"
 #include "file_utils.h"
 #include <iostream>
 #include <chrono>
@@ -176,10 +176,8 @@ CompilationResult ShaderCompiler::CompileShader(const std::string& filepath, con
     
     if (result.success) {
         LOG_INFO("Compilation successful: " + result.filename + " (" + std::to_string(result.compilation_time_ms) + "ms)");
-        Logger::Instance().LogCompilationSuccess(result.filename, result.compilation_time_ms);
     } else {
         LOG_ERROR("Compilation failed: " + result.filename + " - " + result.error_message);
-        Logger::Instance().LogCompilationError(result.filename, result.error_message);
     }
     
     return result;
@@ -277,7 +275,7 @@ std::vector<CompilationResult> ShaderCompiler::CompileAllShaders(const std::stri
     LOG_DEBUG("Found " + std::to_string(hlsl_files.size()) + " files with .hlsl extension");
     
     if (hlsl_files.empty()) {
-        LOG_WARNING("No .hlsl files found in directory: " + directory);
+        LOG_WARN("No .hlsl files found in directory: " + directory);
         std::cout << "Warning: No .hlsl files found in directory: " << directory << std::endl;
         return results;
     }

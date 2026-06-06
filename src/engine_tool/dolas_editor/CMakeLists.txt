@@ -8,6 +8,7 @@ add_executable(DolasEditor
     main.cpp
 )
 
+target_link_libraries(DolasEditor PRIVATE DolasCommon)
 target_link_libraries(DolasEditor PRIVATE DolasFunction)
 
 # Windows 资源文件（图标等）

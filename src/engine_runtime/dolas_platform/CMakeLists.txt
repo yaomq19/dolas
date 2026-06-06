@@ -20,7 +20,7 @@ foreach(source IN LISTS SOURCES HEADERS)
 endforeach()
 
 target_sources(DolasPlatform PRIVATE ${SOURCES} ${HEADERS})
-target_link_libraries(DolasPlatform PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(DolasPlatform PRIVATE DolasCommon)
 
 # 链接 D3D12 库
 target_link_libraries(DolasPlatform PRIVATE d3d12.lib dxgi.lib dxguid.lib)

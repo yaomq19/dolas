@@ -26,6 +26,7 @@ target_include_directories(DolasResource PUBLIC
 target_include_directories(DolasResource PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/private/include
 )
+target_link_libraries(DolasResource PRIVATE DolasCommon)
 target_link_libraries(DolasResource PRIVATE DolasCore)
 target_link_libraries(DolasResource PRIVATE DolasPlatform)
 target_link_libraries(DolasResource PRIVATE tinyxml2)

@@ -28,6 +28,7 @@ target_include_directories(DolasCore PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/private/include
 )
 
+target_link_libraries(DolasCore PRIVATE DolasCommon)
 target_link_libraries(DolasCore PRIVATE DolasPlatform)
 target_link_libraries(DolasCore PRIVATE TracyClient)
 
