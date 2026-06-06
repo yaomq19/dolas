@@ -33,6 +33,14 @@
 namespace Dolas
 {
     DolasEngine g_dolas_engine;
+
+    namespace
+    {
+        LRESULT CALLBACK MainRenderWindowMsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+        {
+            return g_dolas_engine.m_input_manager->MsgProc(hwnd, msg, wParam, lParam);
+        }
+    }
     
 	DolasEngine::DolasEngine()
 	{
@@ -94,8 +102,8 @@ namespace Dolas
 		
 		// First, initialize the logging system
 		DOLAS_RETURN_FALSE_IF_FALSE(m_log_system_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_hardware_interface->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
@@ -113,6 +121,7 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_view_manager->Initialize());
 		// Initialize the input manager (must be done after RHI initialization, as it requires a window handle)
 		DOLAS_RETURN_FALSE_IF_FALSE(m_input_manager->Initialize());
+		m_render_hardware_interface->SetWindowMessageHandler(&MainRenderWindowMsgProc);
 		DOLAS_RETURN_FALSE_IF_FALSE(m_task_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_tick_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_debug_draw_manager->Initialize());
@@ -124,6 +133,7 @@ namespace Dolas
 
 	void DolasEngine::Clear()
 	{
+		m_imgui_manager->Clear();
 		m_rhi->Clear();
 		m_render_hardware_interface->Clear();
 		m_render_pipeline_manager->Clear();
@@ -145,7 +155,6 @@ namespace Dolas
 		// Finally, clean up the log system
 		m_log_system_manager->Clear();
 		m_tick_manager->Clear();
-		m_imgui_manager->Clear();
 		m_debug_draw_manager->Clear();
 		m_timer_manager->Clear();
 	}

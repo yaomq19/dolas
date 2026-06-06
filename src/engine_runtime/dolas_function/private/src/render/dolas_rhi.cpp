@@ -1,31 +1,134 @@
 #include "render/dolas_rhi.h"
+#include <Windows.h>
+#include <d3d11.h>
+#include <d3d11_1.h>
+#include <d3d12.h>
+#include <d3dcompiler.h>
 #include "dolas_engine.h"
+#include "dolas_render_hardware_interface.h"
 #include "render/dxgi_helper.h"
 #include "manager/dolas_texture_manager.h"
-#include "manager/dolas_input_manager.h"
+#include "manager/dolas_imgui_manager.h"
 #include "render/dolas_dx_trace.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #include <d3d11sdklayers.h>  // For D3D11 debug interfaces
 #endif
 
 #include <iostream>
+#include <algorithm>
+#include <cstring>
 #include <limits>
-#include <imm.h>  // 输入法控制（切换到英文输入状态）
+#include <utility>
 #include "render/dolas_render_camera.h"
 #include "dolas_log_system_manager.h"
 #include "render/dolas_render_primitive.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "manager/dolas_buffer_manager.h"
 #include "render/dolas_shader.h"
+#include "render/dolas_texture.h"
 namespace Dolas
 {
-    LRESULT CALLBACK
-    MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-    {
-        // Forward hwnd on because we can get messages (e.g., WM_CREATE)
-        // before CreateWindow returns, and thus before m_hMainWnd is valid.
-        return g_dolas_engine.m_input_manager->MsgProc(hwnd, msg, wParam, lParam);
-    }
+	struct DolasRHI::D3D11StateCache
+	{
+		D3D11_RASTERIZER_DESC rasterizer_state_create_desc[RasterizerStateType_Count] = {};
+		std::pair<D3D11_DEPTH_STENCIL_DESC, UInt> depth_stencil_state_create_desc[DepthStencilStateType_Count] = {};
+		D3D11_BLEND_DESC blend_state_create_desc[BlendStateType_Count] = {};
+
+		D3D11_PRIMITIVE_TOPOLOGY primitive_topology[PrimitiveTopology_Count] = {};
+		std::vector<D3D11_INPUT_ELEMENT_DESC> input_element_descs[InputLayoutType_Count];
+
+		D3D12_RASTERIZER_DESC d3d12_rasterizer_state_create_desc[RasterizerStateType_Count] = {};
+		std::pair<D3D12_DEPTH_STENCIL_DESC, UInt> d3d12_depth_stencil_state_create_desc[DepthStencilStateType_Count] = {};
+		D3D12_BLEND_DESC d3d12_blend_state_create_desc[BlendStateType_Count] = {};
+		D3D12_PRIMITIVE_TOPOLOGY d3d12_primitive_topology[PrimitiveTopology_Count] = {};
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE d3d12_primitive_topology_type[PrimitiveTopology_Count] = {};
+		std::vector<D3D12_INPUT_ELEMENT_DESC> d3d12_input_element_descs[InputLayoutType_Count];
+	};
+
+	namespace
+	{
+		constexpr UINT kD3D12SrvTableSize = 16;
+		constexpr UINT kRootPerViewCBV = 0;
+		constexpr UINT kRootPerFrameCBV = 1;
+		constexpr UINT kRootPerObjectCBV = 2;
+		constexpr UINT kRootVSGlobalCBV = 3;
+		constexpr UINT kRootPSGlobalCBV = 4;
+		constexpr UINT kRootVSSrvTable = 5;
+		constexpr UINT kRootPSSrvTable = 6;
+
+		template<typename T>
+		void SafeRelease(T*& ptr)
+		{
+			if (ptr)
+			{
+				ptr->Release();
+				ptr = nullptr;
+			}
+		}
+
+		std::size_t HashCombine(std::size_t seed, std::size_t value)
+		{
+			return seed ^ (value + 0x9e3779b97f4a7c15ull + (seed << 6) + (seed >> 2));
+		}
+
+		UINT AlignTo256(UINT value)
+		{
+			return (value + 255u) & ~255u;
+		}
+
+		bool CreateD3D12UploadBuffer(ID3D12Device* device, UINT size, const void* initial_data, ID3D12Resource** resource)
+		{
+			if (!device || !resource || size == 0)
+			{
+				return false;
+			}
+
+			D3D12_HEAP_PROPERTIES heap_properties = {};
+			heap_properties.Type = D3D12_HEAP_TYPE_UPLOAD;
+			heap_properties.CreationNodeMask = 1;
+			heap_properties.VisibleNodeMask = 1;
+
+			D3D12_RESOURCE_DESC resource_desc = {};
+			resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+			resource_desc.Width = AlignTo256(size);
+			resource_desc.Height = 1;
+			resource_desc.DepthOrArraySize = 1;
+			resource_desc.MipLevels = 1;
+			resource_desc.SampleDesc.Count = 1;
+			resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+			HRESULT hr = device->CreateCommittedResource(
+				&heap_properties,
+				D3D12_HEAP_FLAG_NONE,
+				&resource_desc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(resource));
+			if (FAILED(hr))
+			{
+				LOG_ERROR("Failed to create D3D12 upload buffer, HRESULT: 0x{0:X}", hr);
+				return false;
+			}
+
+			if (initial_data)
+			{
+				D3D12_RANGE read_range = { 0, 0 };
+				void* mapped_data = nullptr;
+				hr = (*resource)->Map(0, &read_range, &mapped_data);
+				if (FAILED(hr))
+				{
+					LOG_ERROR("Failed to map D3D12 upload buffer, HRESULT: 0x{0:X}", hr);
+					SafeRelease(*resource);
+					return false;
+				}
+				memcpy(mapped_data, initial_data, size);
+				D3D12_RANGE written_range = { 0, size };
+				(*resource)->Unmap(0, &written_range);
+			}
+
+			return true;
+		}
+	}
 
 	RenderTargetView::RenderTargetView() : m_d3d_render_target_view(nullptr)
 	{
@@ -56,18 +159,16 @@ namespace Dolas
 	}	
 
 	ViewPort::ViewPort(Float top_left_x, Float top_left_y, Float width, Float height, Float min_depth, Float max_depth)
-		: m_d3d_viewport(D3D11_VIEWPORT())
+		: m_top_left_x(top_left_x)
+		, m_top_left_y(top_left_y)
+		, m_width(width)
+		, m_height(height)
+		, m_min_depth(min_depth)
+		, m_max_depth(max_depth)
 	{
-		m_d3d_viewport.TopLeftX = top_left_x;
-		m_d3d_viewport.TopLeftY = top_left_y;
-		m_d3d_viewport.Width = width;
-		m_d3d_viewport.Height = height;
-		m_d3d_viewport.MinDepth = min_depth;
-		m_d3d_viewport.MaxDepth = max_depth;
 	}
 	ViewPort::~ViewPort()
 	{
-		m_d3d_viewport = D3D11_VIEWPORT();
 	}
 
 	RasterizerState::RasterizerState() : m_d3d_rasterizer_state(nullptr)
@@ -132,6 +233,7 @@ namespace Dolas
 		, m_client_width(DEFAULT_CLIENT_WIDTH)
 		, m_client_height(DEFAULT_CLIENT_HEIGHT)
 		, m_d3d_user_annotation(nullptr)
+		, m_d3d11_state_cache(std::make_unique<D3D11StateCache>())
 	{
 		// 初始化D3D设备和上下文
 	}
@@ -143,34 +245,41 @@ namespace Dolas
 
 	bool DolasRHI::Initialize()
 	{
-		if (!InitializeWindow()) return false;
-		if (!InitializeD3D()) return false;
+		if (!InitializeD3D12CompatibilityResources()) return false;
 
-		D3D11_BUFFER_DESC cbd;
-		ZeroMemory(&cbd, sizeof(cbd));
-		cbd.Usage = D3D11_USAGE_DYNAMIC;
-		cbd.ByteWidth = sizeof(PerViewConstantBuffer);
-		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		// 新建常量缓冲区，不使用初始数据
-		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer));
+		if (!InitializeD3D11CompatibilityDevice())
+		{
+			LOG_WARN("DolasRHI: D3D11 compatibility device unavailable; continuing with DX12-only runtime resources.");
+		}
 
-		ZeroMemory(&cbd, sizeof(cbd));
-		cbd.Usage = D3D11_USAGE_DYNAMIC;
-		cbd.ByteWidth = sizeof(PerFrameConstantBuffer);
-		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		// 新建常量缓冲区，不使用初始数据
-		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer));
+		if (m_d3d_device)
+		{
+			D3D11_BUFFER_DESC cbd;
+			ZeroMemory(&cbd, sizeof(cbd));
+			cbd.Usage = D3D11_USAGE_DYNAMIC;
+			cbd.ByteWidth = sizeof(PerViewConstantBuffer);
+			cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			// 新建常量缓冲区，不使用初始数据
+			HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_view_parameters_buffer));
 
-		// Per object
-		ZeroMemory(&cbd, sizeof(cbd));
-		cbd.Usage = D3D11_USAGE_DYNAMIC;
-		cbd.ByteWidth = sizeof(PerObjectConstantBuffer);
-		cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		// 新建常量缓冲区，不使用初始数据
-		HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_object_parameters_buffer));
+			ZeroMemory(&cbd, sizeof(cbd));
+			cbd.Usage = D3D11_USAGE_DYNAMIC;
+			cbd.ByteWidth = sizeof(PerFrameConstantBuffer);
+			cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			// 新建常量缓冲区，不使用初始数据
+			HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_frame_parameters_buffer));
+
+			// Per object
+			ZeroMemory(&cbd, sizeof(cbd));
+			cbd.Usage = D3D11_USAGE_DYNAMIC;
+			cbd.ByteWidth = sizeof(PerObjectConstantBuffer);
+			cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			// 新建常量缓冲区，不使用初始数据
+			HR(m_d3d_device->CreateBuffer(&cbd, nullptr, &m_d3d_per_object_parameters_buffer));
+		}
 
 		return true;
 	}
@@ -187,29 +296,155 @@ namespace Dolas
 		if (m_d3d_immediate_context) { m_d3d_immediate_context->Release(); m_d3d_immediate_context = nullptr; }
 		if (m_d3d_device) { m_d3d_device->Release(); m_d3d_device = nullptr; }
 		if (m_swap_chain) { m_swap_chain->Release(); m_swap_chain = nullptr; }
+
+		for (auto& pso_pair : m_d3d12_pipeline_state_cache)
+		{
+			SafeRelease(pso_pair.second);
+		}
+		m_d3d12_pipeline_state_cache.clear();
+		SafeRelease(m_d3d12_root_signature);
+		SafeRelease(m_d3d12_per_frame_parameters_buffer);
+		SafeRelease(m_d3d12_per_view_parameters_buffer);
+		SafeRelease(m_d3d12_per_object_parameters_buffer);
+		SafeRelease(m_d3d12_dummy_constant_buffer);
+	}
+
+	bool DolasRHI::BeginFrame(const float clear_color[4])
+	{
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		if (!rhi || !rhi->BeginFrame(clear_color))
+		{
+			return false;
+		}
+
+		m_d3d12_frame_started = true;
+		ID3D12DescriptorHeap* descriptor_heaps[] = { rhi->GetSrvHeap() };
+		rhi->GetCommandList()->SetDescriptorHeaps(1, descriptor_heaps);
+		BindD3D12GlobalResources();
+		return true;
 	}
 
 	void DolasRHI::Present(TextureID scene_result_texture_id)
 	{
 		Texture* scene_result_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(scene_result_texture_id);
 		DOLAS_RETURN_IF_NULL(scene_result_texture);
-		m_d3d_immediate_context->CopyResource(m_swap_chain_back_texture, scene_result_texture->GetD3DTexture2D());
-		m_swap_chain->Present(0, 0);
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		DOLAS_RETURN_IF_NULL(rhi);
+		ID3D12GraphicsCommandList* command_list = rhi->GetCommandList();
+		ID3D12Resource* back_buffer = rhi->GetCurrentBackBufferResource();
+		ID3D12Resource* scene_result = scene_result_texture->GetD3D12Resource();
+		DOLAS_RETURN_IF_NULL(command_list);
+		DOLAS_RETURN_IF_NULL(back_buffer);
+		DOLAS_RETURN_IF_NULL(scene_result);
+
+		TransitionTexture(scene_result_texture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		TransitionResource(back_buffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+		command_list->CopyResource(back_buffer, scene_result);
+		TransitionResource(back_buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE back_buffer_rtv = rhi->GetCurrentRtvHandle();
+		command_list->OMSetRenderTargets(1, &back_buffer_rtv, FALSE, nullptr);
+		RenderImGuiDrawData();
+
+		if (rhi->EndFrame())
+		{
+			m_d3d12_frame_started = false;
+		}
 	}
 
 	void DolasRHI::SetRenderTargetViewAndDepthStencilView(std::shared_ptr<RenderTargetView> d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view)
 	{
+		if (d3d11_render_target_view)
+		{
+			std::vector<std::shared_ptr<RenderTargetView>> rtvs = { d3d11_render_target_view };
+			SetRenderTargetViewAndDepthStencilView(rtvs, depth_stencil_view);
+			return;
+		}
+
+		if (!m_d3d_immediate_context || !depth_stencil_view)
+		{
+			return;
+		}
+
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
 		ID3D11RenderTargetView* d3d11_render_target_view_array[k_max_render_targets] = { nullptr };
-		d3d11_render_target_view_array[0] = d3d11_render_target_view->m_d3d_render_target_view;
+		d3d11_render_target_view_array[0] = d3d11_render_target_view ? d3d11_render_target_view->m_d3d_render_target_view : nullptr;
 		m_d3d_immediate_context->OMSetRenderTargets(1, d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
 	}
 
 	void DolasRHI::SetRenderTargetViewAndDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view, std::shared_ptr<DepthStencilView> depth_stencil_view)
 	{
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			const UINT rt_count = static_cast<UINT>(std::min<std::size_t>(d3d11_render_target_view.size(), 8));
+			D3D12_CPU_DESCRIPTOR_HANDLE d3d12_rtvs[8] = {};
+			m_current_render_target_count = rt_count;
+			for (UINT i = 0; i < 8; ++i)
+			{
+				m_current_rtv_formats[i] = DXGI_FORMAT_UNKNOWN;
+			}
+
+			for (UINT i = 0; i < rt_count; ++i)
+			{
+				const auto& rtv = d3d11_render_target_view[i];
+				if (!rtv || rtv->m_d3d12_render_target_view.ptr == 0)
+				{
+					continue;
+				}
+
+				Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(rtv->m_texture_id);
+				DOLAS_CONTINUE_IF_NULL(texture);
+				TransitionTexture(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				d3d12_rtvs[i] = rtv->m_d3d12_render_target_view;
+				if (ID3D12Resource* resource = texture->GetD3D12Resource())
+				{
+					D3D12_RESOURCE_DESC desc = resource->GetDesc();
+					m_current_rtv_formats[i] = desc.Format;
+				}
+			}
+
+			D3D12_CPU_DESCRIPTOR_HANDLE d3d12_dsv = {};
+			m_current_dsv_format = DXGI_FORMAT_UNKNOWN;
+			if (depth_stencil_view && depth_stencil_view->m_d3d12_depth_stencil_view.ptr != 0)
+			{
+				Texture* depth_texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(depth_stencil_view->m_texture_id);
+				if (depth_texture)
+				{
+					TransitionTexture(depth_texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+					if (ID3D12Resource* resource = depth_texture->GetD3D12Resource())
+					{
+						D3D12_RESOURCE_DESC desc = resource->GetDesc();
+						switch (desc.Format)
+						{
+						case DXGI_FORMAT_R24G8_TYPELESS:
+							m_current_dsv_format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+							break;
+						case DXGI_FORMAT_R32_TYPELESS:
+							m_current_dsv_format = DXGI_FORMAT_D32_FLOAT;
+							break;
+						default:
+							m_current_dsv_format = desc.Format;
+							break;
+						}
+					}
+				}
+				d3d12_dsv = depth_stencil_view->m_d3d12_depth_stencil_view;
+			}
+
+			command_list->OMSetRenderTargets(rt_count, rt_count > 0 ? d3d12_rtvs : nullptr, FALSE, d3d12_dsv.ptr ? &d3d12_dsv : nullptr);
+		}
+
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
+
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
         if (d3d11_render_target_view.size() == 0) {
-            m_d3d_immediate_context->OMSetRenderTargets(0, nullptr, depth_stencil_view->m_d3d_depth_stencil_view);
+            m_d3d_immediate_context->OMSetRenderTargets(0, nullptr, depth_stencil_view ? depth_stencil_view->m_d3d_depth_stencil_view : nullptr);
             return;
         }
 
@@ -221,11 +456,51 @@ namespace Dolas
         std::size_t rt_count_sz = d3d11_render_target_view.size();
         if (rt_count_sz > k_max_render_targets) rt_count_sz = k_max_render_targets;
         if (rt_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) rt_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
-        m_d3d_immediate_context->OMSetRenderTargets((UINT)rt_count_sz, d3d11_render_target_view_array, depth_stencil_view->m_d3d_depth_stencil_view);
+        m_d3d_immediate_context->OMSetRenderTargets((UINT)rt_count_sz, d3d11_render_target_view_array, depth_stencil_view ? depth_stencil_view->m_d3d_depth_stencil_view : nullptr);
 	}
 
     void DolasRHI::SetRenderTargetViewWithoutDepthStencilView(const std::vector<std::shared_ptr<RenderTargetView>>& d3d11_render_target_view)
     {
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			const UINT rt_count = static_cast<UINT>(std::min<std::size_t>(d3d11_render_target_view.size(), 8));
+			D3D12_CPU_DESCRIPTOR_HANDLE d3d12_rtvs[8] = {};
+			m_current_render_target_count = rt_count;
+			m_current_dsv_format = DXGI_FORMAT_UNKNOWN;
+			for (UINT i = 0; i < 8; ++i)
+			{
+				m_current_rtv_formats[i] = DXGI_FORMAT_UNKNOWN;
+			}
+
+			for (UINT i = 0; i < rt_count; ++i)
+			{
+				const auto& rtv = d3d11_render_target_view[i];
+				if (!rtv || rtv->m_d3d12_render_target_view.ptr == 0)
+				{
+					continue;
+				}
+
+				Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(rtv->m_texture_id);
+				DOLAS_CONTINUE_IF_NULL(texture);
+				TransitionTexture(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				d3d12_rtvs[i] = rtv->m_d3d12_render_target_view;
+				if (ID3D12Resource* resource = texture->GetD3D12Resource())
+				{
+					D3D12_RESOURCE_DESC desc = resource->GetDesc();
+					m_current_rtv_formats[i] = desc.Format;
+				}
+			}
+
+			command_list->OMSetRenderTargets(rt_count, rt_count > 0 ? d3d12_rtvs : nullptr, FALSE, nullptr);
+		}
+
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
+
 		const UInt k_max_render_targets = 10; // D3D11允许最多10个渲染目标
 		if (d3d11_render_target_view.size() == 0) {
 			return;
@@ -244,7 +519,27 @@ namespace Dolas
 
 	void DolasRHI::ClearRenderTargetView(std::shared_ptr<RenderTargetView> rtv, const Float clear_color[4])
 	{
-		m_d3d_immediate_context->ClearRenderTargetView(rtv->m_d3d_render_target_view, clear_color);
+		if (!rtv)
+		{
+			return;
+		}
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list && rtv->m_d3d12_render_target_view.ptr != 0)
+		{
+			Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(rtv->m_texture_id);
+			if (texture)
+			{
+				TransitionTexture(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			}
+			command_list->ClearRenderTargetView(rtv->m_d3d12_render_target_view, clear_color, 0, nullptr);
+		}
+
+		if (m_d3d_immediate_context && rtv->m_d3d_render_target_view)
+		{
+			m_d3d_immediate_context->ClearRenderTargetView(rtv->m_d3d_render_target_view, clear_color);
+		}
 	}
 
 	std::shared_ptr<RenderTargetView> DolasRHI::GetBackBufferRTV() const { return m_back_buffer_render_target_view; }
@@ -257,38 +552,46 @@ namespace Dolas
 		Texture* texture = texture_manager->GetTextureByTextureID(texture_id);
 		DOLAS_RETURN_NULL_IF_NULL(texture);
 
-		ID3D11Texture2D* d3d_texture_2d = texture->GetD3DTexture2D();
-		DOLAS_RETURN_NULL_IF_NULL(d3d_texture_2d);
-
-		D3D11_TEXTURE2D_DESC texture_desc = {};
-		d3d_texture_2d->GetDesc(&texture_desc);
-
-		DXGI_FORMAT dsv_format = texture_desc.Format;
-		switch (texture_desc.Format)
-		{
-		case DXGI_FORMAT_R24G8_TYPELESS:
-			dsv_format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-			break;
-		case DXGI_FORMAT_R32_TYPELESS:
-			dsv_format = DXGI_FORMAT_D32_FLOAT;
-			break;
-		default:
-			break;
-		}
-
-		D3D11_DEPTH_STENCIL_VIEW_DESC dsv_desc = {};
-		dsv_desc.Format = dsv_format;
-		dsv_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		dsv_desc.Texture2D.MipSlice = 0;
-
 		std::shared_ptr<DepthStencilView> depth_stencil_view = std::make_shared<DepthStencilView>();
-		HR(g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(d3d_texture_2d, &dsv_desc, &depth_stencil_view->m_d3d_depth_stencil_view));
+		depth_stencil_view->m_texture_id = texture_id;
+		depth_stencil_view->m_d3d12_depth_stencil_view = texture->GetD3D12DsvHandle();
+
+		ID3D11Texture2D* d3d_texture_2d = texture->GetD3DTexture2D();
+		if (m_d3d_device && d3d_texture_2d)
+		{
+			D3D11_TEXTURE2D_DESC texture_desc = {};
+			d3d_texture_2d->GetDesc(&texture_desc);
+
+			DXGI_FORMAT dsv_format = texture_desc.Format;
+			switch (texture_desc.Format)
+			{
+			case DXGI_FORMAT_R24G8_TYPELESS:
+				dsv_format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+				break;
+			case DXGI_FORMAT_R32_TYPELESS:
+				dsv_format = DXGI_FORMAT_D32_FLOAT;
+				break;
+			default:
+				break;
+			}
+
+			D3D11_DEPTH_STENCIL_VIEW_DESC dsv_desc = {};
+			dsv_desc.Format = dsv_format;
+			dsv_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+			dsv_desc.Texture2D.MipSlice = 0;
+			HR(g_dolas_engine.m_rhi->m_d3d_device->CreateDepthStencilView(d3d_texture_2d, &dsv_desc, &depth_stencil_view->m_d3d_depth_stencil_view));
+		}
 
 		return depth_stencil_view;
 	}
 
 	void DolasRHI::ClearDepthStencilView(std::shared_ptr<DepthStencilView> dsv, const DepthClearParams& depth_clear_params, const StencilClearParams& stencil_clear_params)
 	{
+		if (!dsv)
+		{
+			return;
+		}
+
 		UINT clear_flags = 0;
 		if (depth_clear_params.enable)
 		{
@@ -299,17 +602,78 @@ namespace Dolas
 			clear_flags |= D3D11_CLEAR_STENCIL;
 		}
 
-		m_d3d_immediate_context->ClearDepthStencilView(dsv->m_d3d_depth_stencil_view, clear_flags, depth_clear_params.clear_value, stencil_clear_params.clear_value);
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list && dsv->m_d3d12_depth_stencil_view.ptr != 0)
+		{
+			Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(dsv->m_texture_id);
+			if (texture)
+			{
+				TransitionTexture(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			}
+
+			D3D12_CLEAR_FLAGS d3d12_clear_flags = static_cast<D3D12_CLEAR_FLAGS>(0);
+			if (depth_clear_params.enable)
+			{
+				d3d12_clear_flags = static_cast<D3D12_CLEAR_FLAGS>(d3d12_clear_flags | D3D12_CLEAR_FLAG_DEPTH);
+			}
+			if (stencil_clear_params.enable)
+			{
+				d3d12_clear_flags = static_cast<D3D12_CLEAR_FLAGS>(d3d12_clear_flags | D3D12_CLEAR_FLAG_STENCIL);
+			}
+			command_list->ClearDepthStencilView(dsv->m_d3d12_depth_stencil_view, d3d12_clear_flags, depth_clear_params.clear_value, static_cast<UINT8>(stencil_clear_params.clear_value), 0, nullptr);
+		}
+
+		if (m_d3d_immediate_context && dsv->m_d3d_depth_stencil_view)
+		{
+			m_d3d_immediate_context->ClearDepthStencilView(dsv->m_d3d_depth_stencil_view, clear_flags, depth_clear_params.clear_value, stencil_clear_params.clear_value);
+		}
 	}
 
     void DolasRHI::SetViewPort(const ViewPort& viewport)
 	{
-		m_d3d_immediate_context->RSSetViewports(1, &viewport.m_d3d_viewport);
+		D3D11_VIEWPORT d3d_viewport = {};
+		d3d_viewport.TopLeftX = viewport.m_top_left_x;
+		d3d_viewport.TopLeftY = viewport.m_top_left_y;
+		d3d_viewport.Width = viewport.m_width;
+		d3d_viewport.Height = viewport.m_height;
+		d3d_viewport.MinDepth = viewport.m_min_depth;
+		d3d_viewport.MaxDepth = viewport.m_max_depth;
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->RSSetViewports(1, &d3d_viewport);
+		}
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			D3D12_VIEWPORT d3d12_viewport = {};
+			d3d12_viewport.TopLeftX = viewport.m_top_left_x;
+			d3d12_viewport.TopLeftY = viewport.m_top_left_y;
+			d3d12_viewport.Width = viewport.m_width;
+			d3d12_viewport.Height = viewport.m_height;
+			d3d12_viewport.MinDepth = viewport.m_min_depth;
+			d3d12_viewport.MaxDepth = viewport.m_max_depth;
+			command_list->RSSetViewports(1, &d3d12_viewport);
+
+			D3D12_RECT scissor_rect = {};
+			scissor_rect.left = static_cast<LONG>(viewport.m_top_left_x);
+			scissor_rect.top = static_cast<LONG>(viewport.m_top_left_y);
+			scissor_rect.right = static_cast<LONG>(viewport.m_top_left_x + viewport.m_width);
+			scissor_rect.bottom = static_cast<LONG>(viewport.m_top_left_y + viewport.m_height);
+			command_list->RSSetScissorRects(1, &scissor_rect);
+		}
 	}
 	
 	void DolasRHI::SetRasterizerState(RasterizerStateType type)
 	{
+		m_current_rasterizer_state_type = type;
 		RasterizerState& rasterizer_state = m_rasterizer_states[static_cast<UInt>(type)];
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
 		if (rasterizer_state.m_d3d_rasterizer_state == nullptr)
 		{
 			rasterizer_state.m_d3d_rasterizer_state = CreateRasterizerState(type);
@@ -324,12 +688,28 @@ namespace Dolas
 
     void DolasRHI::SetDepthStencilState(DepthStencilStateType type)
     {
+		m_current_depth_stencil_state_type = type;
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			command_list->OMSetStencilRef(m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[type].second);
+		}
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
 		const DepthStencilState& depth_stencil_state = GetOrCreateDepthStencilState(type);
         m_d3d_immediate_context->OMSetDepthStencilState(depth_stencil_state.m_d3d_depth_stencil_state, depth_stencil_state.m_stencil_ref_value);
     }
 
     void DolasRHI::SetBlendState(BlendStateType type)
     {
+		m_current_blend_state_type = type;
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
 		BlendState& blend_state = m_blend_states[static_cast<UInt>(type)];
 		if (blend_state.m_d3d_blend_state == nullptr)
 		{
@@ -345,6 +725,34 @@ namespace Dolas
 
 	Bool DolasRHI::BindVertexContext(std::shared_ptr<VertexContext> vertex_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
+		DOLAS_RETURN_FALSE_IF_NULL(vertex_context);
+		m_current_vertex_context = vertex_context;
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list && m_d3d12_root_signature)
+		{
+			command_list->SetGraphicsRootSignature(m_d3d12_root_signature);
+			BindD3D12GlobalResources();
+			ID3D12Resource* global_constant_buffer = vertex_context->GetD3D12GlobalConstantBuffer();
+			if (!global_constant_buffer)
+			{
+				global_constant_buffer = m_d3d12_dummy_constant_buffer;
+			}
+			if (global_constant_buffer)
+			{
+				command_list->SetGraphicsRootConstantBufferView(kRootVSGlobalCBV, global_constant_buffer->GetGPUVirtualAddress());
+			}
+			vertex_context->ConvertTextureIDMapToSRVMap();
+			BindD3D12SrvTable(vertex_context, false);
+		}
+
+		if (!m_d3d_immediate_context)
+		{
+			m_current_vs_bytecode = vertex_context->GetShaderBytecode();
+			return true;
+		}
+
 		/* 1. Set shader to context */
 		m_d3d_immediate_context->VSSetShader(vertex_context->GetD3DVertexShader(), class_instances, num_class_instances);
 
@@ -365,11 +773,14 @@ namespace Dolas
 		/* 4. Set Constant Buffer */
 		// Bind Constant Buffer to context
 		ID3D11Buffer* global_constant_buffer = vertex_context->GetGlobalConstantBuffer();
-		m_d3d_immediate_context->VSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+        if (global_constant_buffer)
+        {
+            m_d3d_immediate_context->VSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+        }
 
 		// Update Constant Buffer Data（将 ShaderContext 中预打包好的全局常量拷贝到 GPU CB）
 		const std::vector<uint8_t>& cb_data = vertex_context->GetGlobalConstantBufferData();
-		if (!cb_data.empty())
+		if (global_constant_buffer && !cb_data.empty())
 		{
 			D3D11_MAPPED_SUBRESOURCE mappedData;
 			HR(m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
@@ -377,8 +788,8 @@ namespace Dolas
 			m_d3d_immediate_context->Unmap(global_constant_buffer, 0);
 		}
 
-		/* 5. Cache vs blob for InputLayout creating later */
-		m_current_vs_blob = vertex_context->GetD3DShaderBlob();
+		/* 5. Cache VS bytecode for InputLayout creating later */
+		m_current_vs_bytecode = vertex_context->GetShaderBytecode();
 
 		return true;
 	}
@@ -386,6 +797,33 @@ namespace Dolas
 	// PixelContext
 	Bool DolasRHI::BindPixelContext(std::shared_ptr<PixelContext> pixel_context, ID3D11ClassInstance* const* class_instances/* = nullptr*/, UINT num_class_instances/* = 0*/)
 	{
+		DOLAS_RETURN_FALSE_IF_NULL(pixel_context);
+		m_current_pixel_context = pixel_context;
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list && m_d3d12_root_signature)
+		{
+			command_list->SetGraphicsRootSignature(m_d3d12_root_signature);
+			BindD3D12GlobalResources();
+			ID3D12Resource* global_constant_buffer = pixel_context->GetD3D12GlobalConstantBuffer();
+			if (!global_constant_buffer)
+			{
+				global_constant_buffer = m_d3d12_dummy_constant_buffer;
+			}
+			if (global_constant_buffer)
+			{
+				command_list->SetGraphicsRootConstantBufferView(kRootPSGlobalCBV, global_constant_buffer->GetGPUVirtualAddress());
+			}
+			pixel_context->ConvertTextureIDMapToSRVMap();
+			BindD3D12SrvTable(pixel_context, true);
+		}
+
+		if (!m_d3d_immediate_context)
+		{
+			return true;
+		}
+
 		/* 1. Set shader to context */ 
 		m_d3d_immediate_context->PSSetShader(pixel_context->GetD3DPixelShader(), class_instances, num_class_instances);
 		
@@ -406,10 +844,13 @@ namespace Dolas
 		/* 4. Set Constant Buffer */
 		// Bind Constant Buffer to context
 		ID3D11Buffer* global_constant_buffer = pixel_context->GetGlobalConstantBuffer();
-		m_d3d_immediate_context->PSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+        if (global_constant_buffer)
+        {
+            m_d3d_immediate_context->PSSetConstantBuffers(D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1, 1, &global_constant_buffer);
+        }
 		// Update Constant Buffer Data（将 ShaderContext 中预打包好的全局常量拷贝到 GPU CB）
 		const std::vector<uint8_t>& cb_data = pixel_context->GetGlobalConstantBufferData();
-		if (!cb_data.empty())
+		if (global_constant_buffer && !cb_data.empty())
 		{
 			D3D11_MAPPED_SUBRESOURCE mappedData;
 			HR(m_d3d_immediate_context->Map(global_constant_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
@@ -422,17 +863,62 @@ namespace Dolas
 
 	void DolasRHI::SetPrimitiveTopology(PrimitiveTopology primitive_topology)
 	{
-		m_d3d_immediate_context->IASetPrimitiveTopology(m_d3d11_primitive_topology[static_cast<UInt>(primitive_topology)]);
+		m_current_primitive_topology = primitive_topology;
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->IASetPrimitiveTopology(m_d3d11_state_cache->primitive_topology[static_cast<UInt>(primitive_topology)]);
+		}
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			command_list->IASetPrimitiveTopology(m_d3d11_state_cache->d3d12_primitive_topology[static_cast<UInt>(primitive_topology)]);
+		}
 	}
 
 	void DolasRHI::SetInputLayout(InputLayoutType input_layout_type, const void* vs_blob, size_t bytecode_length)
 	{
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
 		std::shared_ptr<InputLayout> input_layout = CreateInputLayout(input_layout_type, vs_blob, bytecode_length);
 		m_d3d_immediate_context->IASetInputLayout(input_layout->m_d3d_input_layout);
 	}
 
 	void DolasRHI::SetVertexBuffers(const std::vector<BufferID>& vertex_buffer_ids, const std::vector<UInt>& vertex_strides, const std::vector<UInt>& vertex_offsets)
 	{
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			std::vector<D3D12_VERTEX_BUFFER_VIEW> d3d12_buffer_views;
+			for (std::size_t i = 0; i < vertex_buffer_ids.size(); i++)
+			{
+				Buffer* buffer = g_dolas_engine.m_buffer_manager->GetBufferByID(vertex_buffer_ids[i]);
+				DOLAS_CONTINUE_IF_NULL(buffer);
+				ID3D12Resource* resource = buffer->GetD3D12Resource();
+				DOLAS_CONTINUE_IF_NULL(resource);
+
+				D3D12_VERTEX_BUFFER_VIEW view = {};
+				view.BufferLocation = resource->GetGPUVirtualAddress();
+				view.SizeInBytes = buffer->GetSize();
+				view.StrideInBytes = i < vertex_strides.size() ? vertex_strides[i] : buffer->GetStride();
+				d3d12_buffer_views.push_back(view);
+			}
+
+			if (!d3d12_buffer_views.empty())
+			{
+				command_list->IASetVertexBuffers(0, static_cast<UINT>(d3d12_buffer_views.size()), d3d12_buffer_views.data());
+			}
+		}
+
+		if (!m_d3d_immediate_context)
+		{
+			return;
+		}
+
 		std::vector<ID3D11Buffer*> d3d11_buffers;
 		for (std::size_t i = 0; i < vertex_buffer_ids.size(); i++)
 		{
@@ -448,12 +934,37 @@ namespace Dolas
 	{
 		Buffer* buffer = g_dolas_engine.m_buffer_manager->GetBufferByID(index_buffer_id);
 		DOLAS_RETURN_IF_NULL(buffer);
-		m_d3d_immediate_context->IASetIndexBuffer(buffer->GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list && buffer->GetD3D12Resource())
+		{
+			D3D12_INDEX_BUFFER_VIEW index_view = {};
+			index_view.BufferLocation = buffer->GetD3D12Resource()->GetGPUVirtualAddress();
+			index_view.SizeInBytes = buffer->GetSize();
+			index_view.Format = DXGI_FORMAT_R32_UINT;
+			command_list->IASetIndexBuffer(&index_view);
+		}
+
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->IASetIndexBuffer(buffer->GetBuffer(), DXGI_FORMAT_R32_UINT, 0);
+		}
 	}
 
 	void DolasRHI::DrawIndexed(UInt index_count)
 	{
-		m_d3d_immediate_context->DrawIndexed(index_count, 0, 0);
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (command_list)
+		{
+			command_list->DrawIndexedInstanced(index_count, 1, 0, 0, 0);
+		}
+
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->DrawIndexed(index_count, 0, 0);
+		}
 	}
 
 	void DolasRHI::DrawRenderPrimitive(RenderPrimitiveID render_primitive_id)
@@ -461,7 +972,12 @@ namespace Dolas
 		RenderPrimitive* render_primitive = g_dolas_engine.m_render_primitive_manager->GetRenderPrimitiveByID(render_primitive_id);
 		DOLAS_RETURN_IF_NULL(render_primitive);
 
-		SetInputLayout(render_primitive->m_input_layout_type, m_current_vs_blob->GetBufferPointer(), m_current_vs_blob->GetBufferSize());
+		if (!m_current_vs_bytecode.IsValid())
+		{
+			return;
+		}
+
+		SetInputLayout(render_primitive->m_input_layout_type, m_current_vs_bytecode.data, m_current_vs_bytecode.size);
 
 		SetPrimitiveTopology(render_primitive->m_topology);
 
@@ -469,25 +985,45 @@ namespace Dolas
 
 		SetIndexBuffer(render_primitive->m_index_buffer_id);
 
+		if (ID3D12PipelineState* pso = GetOrCreateD3D12PipelineState(render_primitive))
+		{
+			RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+			ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+			if (command_list)
+			{
+				command_list->SetPipelineState(pso);
+			}
+		}
+
 		DrawIndexed(render_primitive->m_index_count);
 	}
 
 	void DolasRHI::VSSetConstantBuffers()
 	{
-		m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
-		m_d3d_immediate_context->VSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
-		m_d3d_immediate_context->VSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->VSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+			m_d3d_immediate_context->VSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
+			m_d3d_immediate_context->VSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
+		}
 	}
 
 	void DolasRHI::PSSetConstantBuffers()
 	{
-		m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
-		m_d3d_immediate_context->PSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
-		m_d3d_immediate_context->PSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->PSSetConstantBuffers(0, 1, &m_d3d_per_view_parameters_buffer);
+			m_d3d_immediate_context->PSSetConstantBuffers(1, 1, &m_d3d_per_frame_parameters_buffer);
+			m_d3d_immediate_context->PSSetConstantBuffers(2, 1, &m_d3d_per_object_parameters_buffer);
+		}
 	}
 
 	ID3D11ShaderResourceView* DolasRHI::CreateShaderResourceView(ID3D11Resource* resource)
 	{
+		if (!m_d3d_device)
+		{
+			return nullptr;
+		}
 		ID3D11ShaderResourceView* shader_resource_view = nullptr;
 		HR(m_d3d_device->CreateShaderResourceView(resource, nullptr, &shader_resource_view));
 
@@ -500,11 +1036,15 @@ namespace Dolas
 		per_frame_constant_buffer.light_direction_intensity = Vector4(-1.0f, 1.0f, -1.0f, 1.0f);
 		per_frame_constant_buffer.light_color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HR(m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+		if (m_d3d_immediate_context && m_d3d_per_frame_parameters_buffer)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedData;
+			HR(m_d3d_immediate_context->Map(m_d3d_per_frame_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 
-		memcpy_s(mappedData.pData, sizeof(per_frame_constant_buffer), &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
-		m_d3d_immediate_context->Unmap(m_d3d_per_frame_parameters_buffer, 0);
+			memcpy_s(mappedData.pData, sizeof(per_frame_constant_buffer), &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
+			m_d3d_immediate_context->Unmap(m_d3d_per_frame_parameters_buffer, 0);
+		}
+		UpdateD3D12UploadBuffer(m_d3d12_per_frame_parameters_buffer, &per_frame_constant_buffer, sizeof(per_frame_constant_buffer));
 	}
 
 	void DolasRHI::UpdatePerViewParameters(RenderCamera* render_camera)
@@ -514,10 +1054,14 @@ namespace Dolas
 		per_view_constant_buffer.proj = render_camera->GetProjectionMatrix();
 		per_view_constant_buffer.camera_position = Vector4(render_camera->GetPosition(), 1.0f);
 
-		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HR(m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-		memcpy_s(mappedData.pData, sizeof(per_view_constant_buffer), &per_view_constant_buffer, sizeof(per_view_constant_buffer));
-		m_d3d_immediate_context->Unmap(m_d3d_per_view_parameters_buffer, 0);
+		if (m_d3d_immediate_context && m_d3d_per_view_parameters_buffer)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedData;
+			HR(m_d3d_immediate_context->Map(m_d3d_per_view_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+			memcpy_s(mappedData.pData, sizeof(per_view_constant_buffer), &per_view_constant_buffer, sizeof(per_view_constant_buffer));
+			m_d3d_immediate_context->Unmap(m_d3d_per_view_parameters_buffer, 0);
+		}
+		UpdateD3D12UploadBuffer(m_d3d12_per_view_parameters_buffer, &per_view_constant_buffer, sizeof(per_view_constant_buffer));
 	}
 
 	void DolasRHI::UpdatePerObjectParameters(Pose pose)
@@ -576,145 +1120,209 @@ namespace Dolas
 
 		per_object_constant_buffer.world = trans_mat * ratation_mat * scale_mat;
 
-		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HR(m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+		if (m_d3d_immediate_context && m_d3d_per_object_parameters_buffer)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedData;
+			HR(m_d3d_immediate_context->Map(m_d3d_per_object_parameters_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 
-		memcpy_s(mappedData.pData, sizeof(per_object_constant_buffer), &per_object_constant_buffer, sizeof(per_object_constant_buffer));
-		m_d3d_immediate_context->Unmap(m_d3d_per_object_parameters_buffer, 0);
+			memcpy_s(mappedData.pData, sizeof(per_object_constant_buffer), &per_object_constant_buffer, sizeof(per_object_constant_buffer));
+			m_d3d_immediate_context->Unmap(m_d3d_per_object_parameters_buffer, 0);
+		}
+		UpdateD3D12UploadBuffer(m_d3d12_per_object_parameters_buffer, &per_object_constant_buffer, sizeof(per_object_constant_buffer));
 	}
 
-	Bool DolasRHI::InitializeWindow()
+	bool DolasRHI::InitializeD3D11CompatibilityDevice()
 	{
-		WNDCLASS wc;
-        wc.style = CS_HREDRAW | CS_VREDRAW;
-        wc.lpfnWndProc = MainWndProc;
-        wc.cbClsExtra = 0;
-        wc.cbWndExtra = 0;
-        wc.hInstance = GetModuleHandle(NULL);
-        wc.hIcon = LoadIcon(0, IDI_APPLICATION);
-        wc.hCursor = LoadCursor(0, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-        wc.lpszMenuName = 0;
-        wc.lpszClassName = "D3DWndClassName";
-
-        if (!RegisterClass(&wc))
-        {
-            MessageBoxW(0, L"RegisterClass Failed.", 0, 0);
-            return false;
-        }
-
-        // Compute window rectangle dimensions based on requested client area dimensions.
-        // 注意：方案C - 这个窗口主要用于承载 SwapChain，可以最小化显示
-        RECT R = { 0, 0, m_client_width , m_client_height };
-        AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
-        int width = R.right - R.left;
-        int height = R.bottom - R.top;
-
-        // 创建窗口（保持可见，因为 ImGui 主视口会使用它）
-        m_window_handle = CreateWindowW(L"D3DWndClassName", L"Dolas Engine - Main Window",
-            WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, NULL, 0);
-        if (!m_window_handle)
-        {
-            MessageBoxW(0, L"CreateWindow Failed.", 0, 0);
-            return false;
-        }
-
-        // 显示窗口（ImGui 多视口需要主窗口可见）
-        ShowWindow(m_window_handle, SW_SHOW);
-        UpdateWindow(m_window_handle);
-
-        // 启动时彻底禁用这个窗口上的 IME（直接输入，不经过中文输入法）
-        // 这样键盘消息不会被输入法拦截，可直接用于游戏按键。
-        ImmAssociateContext(m_window_handle, NULL);
-
-        return true;
-	}
-
-	bool DolasRHI::InitializeD3D()
-	{
-        IDXGIAdapter* best_adapter = DXGIHelper::SelectBestAdapter();
-		if (!best_adapter) {
-			LOG_ERROR("Failed to select best adapter!");
+		IDXGIAdapter* best_adapter = DXGIHelper::SelectBestAdapter();
+		if (!best_adapter)
+		{
+			LOG_WARN("Failed to select best adapter for optional D3D11 compatibility device.");
 			return false;
 		}
 
-		DXGI_ADAPTER_DESC adapter_desc;
-		best_adapter->GetDesc(&adapter_desc);
 		DXGIHelper::PrintAdapterInfo(best_adapter);
 
-		// 设置交换链描述
-		DXGI_SWAP_CHAIN_DESC swap_chain_desc = {};
-		swap_chain_desc.BufferCount = 1;
-		swap_chain_desc.BufferDesc.Width = m_client_width;
-		swap_chain_desc.BufferDesc.Height = m_client_height;
-		swap_chain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		// Set to 0/0 to let DXGI choose the best refresh rate (no limit)
-		swap_chain_desc.BufferDesc.RefreshRate.Numerator = 0;
-		swap_chain_desc.BufferDesc.RefreshRate.Denominator = 0;
-		swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swap_chain_desc.OutputWindow = m_window_handle;  // 使用创建的窗口句柄
-		swap_chain_desc.SampleDesc.Count = 1;
-		swap_chain_desc.SampleDesc.Quality = 0;
-		swap_chain_desc.Windowed = TRUE;
-
-		// 设置特性级别
 		D3D_FEATURE_LEVEL feature_levels[] = {
 			D3D_FEATURE_LEVEL_11_1,
 			D3D_FEATURE_LEVEL_11_0,
 			D3D_FEATURE_LEVEL_10_1,
 			D3D_FEATURE_LEVEL_10_0
 		};
-		D3D_FEATURE_LEVEL feature_level;
+		D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0;
 
-		// 设置设备创建标志
 		UINT d3d_device_create_flags = 0;
 #if defined(DEBUG) || defined(_DEBUG)
-		// 在调试模式下启用D3D11 debug layer
 		d3d_device_create_flags |= D3D11_CREATE_DEVICE_DEBUG;
-		LOG_INFO("D3D11 Debug Layer enabled!");
 #endif
 
-		HR(D3D11CreateDeviceAndSwapChain(
-			best_adapter,                    // pAdapter
-			D3D_DRIVER_TYPE_UNKNOWN,         // DriverType (使用指定适配器时必须是UNKNOWN)
-			NULL,                            // Software
-			d3d_device_create_flags,         // Flags
-			feature_levels,                  // pFeatureLevels
-			ARRAYSIZE(feature_levels),       // FeatureLevels
-			D3D11_SDK_VERSION,               // SDKVersion
-			&swap_chain_desc,                // pSwapChainDesc
-			&m_swap_chain,                   // ppSwapChain
-			&m_d3d_device,                   // ppDevice
-			&feature_level,                  // pFeatureLevel
-			&m_d3d_immediate_context         // ppImmediateContext
-		));
-
-		// 释放适配器
-		best_adapter->Release();
-
-
-		// 查询 GPU 事件注解接口（RenderDoc/PIX 标记）
-		HR(m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation)));
-
-        HR(m_swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_swap_chain_back_texture)));
-
-
-		m_back_buffer_render_target_view = CreateRenderTargetViewByD3D11Texture(m_swap_chain_back_texture);
+		HRESULT hr = D3D11CreateDevice(
+			best_adapter,
+			D3D_DRIVER_TYPE_UNKNOWN,
+			nullptr,
+			d3d_device_create_flags,
+			feature_levels,
+			ARRAYSIZE(feature_levels),
+			D3D11_SDK_VERSION,
+			&m_d3d_device,
+			&feature_level,
+			&m_d3d_immediate_context);
 
 #if defined(DEBUG) || defined(_DEBUG)
-		// 启用D3D11 debug layer的额外配置
-		ID3D11Debug* d3d_debug = nullptr;
-		HR(m_d3d_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&d3d_debug)));
+		if (FAILED(hr) && (d3d_device_create_flags & D3D11_CREATE_DEVICE_DEBUG))
+		{
+			LOG_INFO("D3D11 debug layer unavailable for compatibility device, retrying without it.");
+			d3d_device_create_flags &= ~D3D11_CREATE_DEVICE_DEBUG;
+			hr = D3D11CreateDevice(
+				best_adapter,
+				D3D_DRIVER_TYPE_UNKNOWN,
+				nullptr,
+				d3d_device_create_flags,
+				feature_levels,
+				ARRAYSIZE(feature_levels),
+				D3D11_SDK_VERSION,
+				&m_d3d_device,
+				&feature_level,
+				&m_d3d_immediate_context);
+		}
 #endif
 
-		LOG_INFO("Successfully created D3D11 device and swap chain!");
-		LOG_INFO("Feature Level: {0:#x}", static_cast<int>(feature_level));
+		best_adapter->Release();
+		if (FAILED(hr))
+		{
+			LOG_WARN("Failed to create optional D3D11 compatibility device. HRESULT: 0x{0:X}", hr);
+			return false;
+		}
+
+		if (m_d3d_immediate_context)
+		{
+			m_d3d_immediate_context->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_d3d_user_annotation));
+		}
+
+		LOG_INFO("Created headless D3D11 compatibility device. Feature Level: {0:#x}", static_cast<int>(feature_level));
+		return true;
+	}
+
+	bool DolasRHI::InitializeD3D12CompatibilityResources()
+	{
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12Device* device = rhi ? rhi->GetDevice() : nullptr;
+		if (!device)
+		{
+			LOG_ERROR("D3D12 device is null while initializing DolasRHI compatibility resources.");
+			return false;
+		}
 
 		InitializeRasterizerStateCreateDesc();
 		InitializeDepthStencilStateCreateDesc();
 		InitializeBlendStateCreateDesc();
 		InitializePrimitiveTopology();
 		InitializeInputLayoutDescs();
+
+		if (!CreateD3D12UploadBuffer(device, sizeof(PerViewConstantBuffer), nullptr, &m_d3d12_per_view_parameters_buffer) ||
+			!CreateD3D12UploadBuffer(device, sizeof(PerFrameConstantBuffer), nullptr, &m_d3d12_per_frame_parameters_buffer) ||
+			!CreateD3D12UploadBuffer(device, sizeof(PerObjectConstantBuffer), nullptr, &m_d3d12_per_object_parameters_buffer) ||
+			!CreateD3D12UploadBuffer(device, 256, nullptr, &m_d3d12_dummy_constant_buffer))
+		{
+			return false;
+		}
+
+		D3D12_DESCRIPTOR_RANGE srv_ranges[2] = {};
+		srv_ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srv_ranges[0].NumDescriptors = kD3D12SrvTableSize;
+		srv_ranges[0].BaseShaderRegister = 0;
+		srv_ranges[0].RegisterSpace = 0;
+		srv_ranges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		srv_ranges[1] = srv_ranges[0];
+
+		D3D12_ROOT_PARAMETER root_parameters[7] = {};
+		root_parameters[kRootPerViewCBV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		root_parameters[kRootPerViewCBV].Descriptor.ShaderRegister = 0;
+		root_parameters[kRootPerViewCBV].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+		root_parameters[kRootPerFrameCBV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		root_parameters[kRootPerFrameCBV].Descriptor.ShaderRegister = 1;
+		root_parameters[kRootPerFrameCBV].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+		root_parameters[kRootPerObjectCBV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		root_parameters[kRootPerObjectCBV].Descriptor.ShaderRegister = 2;
+		root_parameters[kRootPerObjectCBV].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+		root_parameters[kRootVSGlobalCBV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		root_parameters[kRootVSGlobalCBV].Descriptor.ShaderRegister = 13;
+		root_parameters[kRootVSGlobalCBV].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		root_parameters[kRootPSGlobalCBV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		root_parameters[kRootPSGlobalCBV].Descriptor.ShaderRegister = 13;
+		root_parameters[kRootPSGlobalCBV].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		root_parameters[kRootVSSrvTable].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		root_parameters[kRootVSSrvTable].DescriptorTable.NumDescriptorRanges = 1;
+		root_parameters[kRootVSSrvTable].DescriptorTable.pDescriptorRanges = &srv_ranges[0];
+		root_parameters[kRootVSSrvTable].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		root_parameters[kRootPSSrvTable].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		root_parameters[kRootPSSrvTable].DescriptorTable.NumDescriptorRanges = 1;
+		root_parameters[kRootPSSrvTable].DescriptorTable.pDescriptorRanges = &srv_ranges[1];
+		root_parameters[kRootPSSrvTable].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		D3D12_STATIC_SAMPLER_DESC samplers[8] = {};
+		auto configure_sampler = [](D3D12_STATIC_SAMPLER_DESC& sampler, UINT shader_register, D3D12_TEXTURE_ADDRESS_MODE address_mode)
+		{
+			sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+			sampler.AddressU = address_mode;
+			sampler.AddressV = address_mode;
+			sampler.AddressW = address_mode;
+			sampler.MipLODBias = 0.0f;
+			sampler.MaxAnisotropy = 1;
+			sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+			sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+			sampler.MinLOD = 0.0f;
+			sampler.MaxLOD = D3D12_FLOAT32_MAX;
+			sampler.ShaderRegister = shader_register;
+			sampler.RegisterSpace = 0;
+			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		};
+		for (UINT i = 0; i < 5; ++i)
+		{
+			configure_sampler(samplers[i], i, D3D12_TEXTURE_ADDRESS_MODE_WRAP);
+		}
+		configure_sampler(samplers[5], 13, D3D12_TEXTURE_ADDRESS_MODE_WRAP);
+		configure_sampler(samplers[6], 14, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		configure_sampler(samplers[7], 15, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+
+		D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
+		root_signature_desc.NumParameters = ARRAYSIZE(root_parameters);
+		root_signature_desc.pParameters = root_parameters;
+		root_signature_desc.NumStaticSamplers = ARRAYSIZE(samplers);
+		root_signature_desc.pStaticSamplers = samplers;
+		root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+		ID3DBlob* signature_blob = nullptr;
+		ID3DBlob* error_blob = nullptr;
+		HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature_blob, &error_blob);
+		if (FAILED(hr))
+		{
+			if (error_blob)
+			{
+				LOG_ERROR("Failed to serialize D3D12 root signature: {0}", static_cast<const char*>(error_blob->GetBufferPointer()));
+			}
+			SafeRelease(error_blob);
+			return false;
+		}
+		SafeRelease(error_blob);
+
+		hr = device->CreateRootSignature(
+			0,
+			signature_blob->GetBufferPointer(),
+			signature_blob->GetBufferSize(),
+			IID_PPV_ARGS(&m_d3d12_root_signature));
+		SafeRelease(signature_blob);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create D3D12 root signature! HRESULT: 0x{0:X}", hr);
+			return false;
+		}
+
 		return true;
 	}
 
@@ -731,7 +1339,17 @@ namespace Dolas
 		solid_none_cull_desc.ScissorEnable = FALSE;
 		solid_none_cull_desc.MultisampleEnable = FALSE;
 		solid_none_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[RasterizerStateType_SolidNoneCull] = solid_none_cull_desc;
+		m_d3d11_state_cache->rasterizer_state_create_desc[RasterizerStateType_SolidNoneCull] = solid_none_cull_desc;
+		D3D12_RASTERIZER_DESC d3d12_solid_none_cull_desc = {};
+		d3d12_solid_none_cull_desc.FillMode = D3D12_FILL_MODE_SOLID;
+		d3d12_solid_none_cull_desc.CullMode = D3D12_CULL_MODE_NONE;
+		d3d12_solid_none_cull_desc.FrontCounterClockwise = FALSE;
+		d3d12_solid_none_cull_desc.DepthClipEnable = TRUE;
+		d3d12_solid_none_cull_desc.MultisampleEnable = FALSE;
+		d3d12_solid_none_cull_desc.AntialiasedLineEnable = FALSE;
+		d3d12_solid_none_cull_desc.ForcedSampleCount = 0;
+		d3d12_solid_none_cull_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+		m_d3d11_state_cache->d3d12_rasterizer_state_create_desc[RasterizerStateType_SolidNoneCull] = d3d12_solid_none_cull_desc;
 
 		D3D11_RASTERIZER_DESC solid_back_cull_desc = {};
 		solid_back_cull_desc.FillMode = D3D11_FILL_SOLID;
@@ -744,7 +1362,10 @@ namespace Dolas
 		solid_back_cull_desc.ScissorEnable = FALSE;
 		solid_back_cull_desc.MultisampleEnable = FALSE;
 		solid_back_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[RasterizerStateType_SolidBackCull] = solid_back_cull_desc;
+		m_d3d11_state_cache->rasterizer_state_create_desc[RasterizerStateType_SolidBackCull] = solid_back_cull_desc;
+		D3D12_RASTERIZER_DESC d3d12_solid_back_cull_desc = d3d12_solid_none_cull_desc;
+		d3d12_solid_back_cull_desc.CullMode = D3D12_CULL_MODE_BACK;
+		m_d3d11_state_cache->d3d12_rasterizer_state_create_desc[RasterizerStateType_SolidBackCull] = d3d12_solid_back_cull_desc;
 
 		D3D11_RASTERIZER_DESC solid_front_cull_desc = {};
 		solid_front_cull_desc.FillMode = D3D11_FILL_SOLID;
@@ -757,7 +1378,10 @@ namespace Dolas
 		solid_front_cull_desc.ScissorEnable = FALSE;
 		solid_front_cull_desc.MultisampleEnable = FALSE;
 		solid_front_cull_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[RasterizerStateType_SolidFrontCull] = solid_front_cull_desc;
+		m_d3d11_state_cache->rasterizer_state_create_desc[RasterizerStateType_SolidFrontCull] = solid_front_cull_desc;
+		D3D12_RASTERIZER_DESC d3d12_solid_front_cull_desc = d3d12_solid_none_cull_desc;
+		d3d12_solid_front_cull_desc.CullMode = D3D12_CULL_MODE_FRONT;
+		m_d3d11_state_cache->d3d12_rasterizer_state_create_desc[RasterizerStateType_SolidFrontCull] = d3d12_solid_front_cull_desc;
 
 		D3D11_RASTERIZER_DESC wireframe_desc = {};
 		wireframe_desc.FillMode = D3D11_FILL_WIREFRAME;
@@ -770,7 +1394,10 @@ namespace Dolas
 		wireframe_desc.ScissorEnable = FALSE;
 		wireframe_desc.MultisampleEnable = FALSE;
 		wireframe_desc.AntialiasedLineEnable = FALSE;
-		m_rasterizer_state_create_desc[RasterizerStateType_Wireframe] = wireframe_desc;
+		m_d3d11_state_cache->rasterizer_state_create_desc[RasterizerStateType_Wireframe] = wireframe_desc;
+		D3D12_RASTERIZER_DESC d3d12_wireframe_desc = d3d12_solid_back_cull_desc;
+		d3d12_wireframe_desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		m_d3d11_state_cache->d3d12_rasterizer_state_create_desc[RasterizerStateType_Wireframe] = d3d12_wireframe_desc;
 	}
 
 	void DolasRHI::InitializeDepthStencilStateCreateDesc()
@@ -787,8 +1414,22 @@ namespace Dolas
 		depth_write_less_stencil_read_static_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
 		depth_write_less_stencil_read_static_desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 		depth_write_less_stencil_read_static_desc.BackFace = depth_write_less_stencil_read_static_desc.FrontFace;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].first = depth_write_less_stencil_read_static_desc;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].second = StencilMaskEnum_Static;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].first = depth_write_less_stencil_read_static_desc;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].second = StencilMaskEnum_Static;
+		D3D12_DEPTH_STENCIL_DESC d3d12_depth_write_less_stencil_write_static_desc = {};
+		d3d12_depth_write_less_stencil_write_static_desc.DepthEnable = TRUE;
+		d3d12_depth_write_less_stencil_write_static_desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		d3d12_depth_write_less_stencil_write_static_desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		d3d12_depth_write_less_stencil_write_static_desc.StencilEnable = TRUE;
+		d3d12_depth_write_less_stencil_write_static_desc.StencilReadMask = 0xFF;
+		d3d12_depth_write_less_stencil_write_static_desc.StencilWriteMask = 0xFF;
+		d3d12_depth_write_less_stencil_write_static_desc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		d3d12_depth_write_less_stencil_write_static_desc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		d3d12_depth_write_less_stencil_write_static_desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+		d3d12_depth_write_less_stencil_write_static_desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		d3d12_depth_write_less_stencil_write_static_desc.BackFace = d3d12_depth_write_less_stencil_write_static_desc.FrontFace;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].first = d3d12_depth_write_less_stencil_write_static_desc;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthWriteLess_StencilWriteStatic].second = StencilMaskEnum_Static;
 
 		D3D11_DEPTH_STENCIL_DESC depth_disabled_stencil_disable_desc = {};
 		depth_disabled_stencil_disable_desc.DepthEnable = FALSE;
@@ -797,7 +1438,15 @@ namespace Dolas
 		depth_disabled_stencil_disable_desc.StencilEnable = FALSE;
 		depth_disabled_stencil_disable_desc.StencilReadMask = 0xFF;
 		depth_disabled_stencil_disable_desc.StencilWriteMask = 0xFF;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilDisable].first = depth_disabled_stencil_disable_desc;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilDisable].first = depth_disabled_stencil_disable_desc;
+		D3D12_DEPTH_STENCIL_DESC d3d12_depth_disabled_stencil_disable_desc = {};
+		d3d12_depth_disabled_stencil_disable_desc.DepthEnable = FALSE;
+		d3d12_depth_disabled_stencil_disable_desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		d3d12_depth_disabled_stencil_disable_desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		d3d12_depth_disabled_stencil_disable_desc.StencilEnable = FALSE;
+		d3d12_depth_disabled_stencil_disable_desc.StencilReadMask = 0xFF;
+		d3d12_depth_disabled_stencil_disable_desc.StencilWriteMask = 0xFF;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilDisable].first = d3d12_depth_disabled_stencil_disable_desc;
 
 		D3D11_DEPTH_STENCIL_DESC depth_disabled_stencil_read_sky_desc = {};
 		depth_disabled_stencil_read_sky_desc.DepthEnable = FALSE;
@@ -811,14 +1460,29 @@ namespace Dolas
 		depth_disabled_stencil_read_sky_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 		depth_disabled_stencil_read_sky_desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 		depth_disabled_stencil_read_sky_desc.BackFace = depth_disabled_stencil_read_sky_desc.FrontFace;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].first = depth_disabled_stencil_read_sky_desc;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].second = StencilMaskEnum_SKY;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].first = depth_disabled_stencil_read_sky_desc;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].second = StencilMaskEnum_SKY;
+		D3D12_DEPTH_STENCIL_DESC d3d12_depth_disabled_stencil_read_sky_desc = d3d12_depth_disabled_stencil_disable_desc;
+		d3d12_depth_disabled_stencil_read_sky_desc.StencilEnable = TRUE;
+		d3d12_depth_disabled_stencil_read_sky_desc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		d3d12_depth_disabled_stencil_read_sky_desc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		d3d12_depth_disabled_stencil_read_sky_desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+		d3d12_depth_disabled_stencil_read_sky_desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		d3d12_depth_disabled_stencil_read_sky_desc.BackFace = d3d12_depth_disabled_stencil_read_sky_desc.FrontFace;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].first = d3d12_depth_disabled_stencil_read_sky_desc;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthDisabled_StencilReadSky].second = StencilMaskEnum_SKY;
 
 		D3D11_DEPTH_STENCIL_DESC depth_read_only_desc = {};
         depth_read_only_desc.DepthEnable = TRUE;
         depth_read_only_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
         depth_read_only_desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-		m_depth_stencil_state_create_desc[DepthStencilStateType_DepthReadOnly].first = depth_read_only_desc;
+		m_d3d11_state_cache->depth_stencil_state_create_desc[DepthStencilStateType_DepthReadOnly].first = depth_read_only_desc;
+		D3D12_DEPTH_STENCIL_DESC d3d12_depth_read_only_desc = {};
+		d3d12_depth_read_only_desc.DepthEnable = TRUE;
+		d3d12_depth_read_only_desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		d3d12_depth_read_only_desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		d3d12_depth_read_only_desc.StencilEnable = FALSE;
+		m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[DepthStencilStateType_DepthReadOnly].first = d3d12_depth_read_only_desc;
 
 	}
 
@@ -837,7 +1501,20 @@ namespace Dolas
         opaque_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         opaque_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         opaque_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[BlendStateType_Opaque] = opaque_desc;
+        m_d3d11_state_cache->blend_state_create_desc[BlendStateType_Opaque] = opaque_desc;
+		D3D12_BLEND_DESC d3d12_opaque_desc = {};
+		d3d12_opaque_desc.AlphaToCoverageEnable = FALSE;
+		d3d12_opaque_desc.IndependentBlendEnable = FALSE;
+		auto& d3d12_opaque_rt = d3d12_opaque_desc.RenderTarget[0];
+		d3d12_opaque_rt.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		d3d12_opaque_rt.BlendEnable = FALSE;
+		d3d12_opaque_rt.SrcBlend = D3D12_BLEND_ONE;
+		d3d12_opaque_rt.DestBlend = D3D12_BLEND_ZERO;
+		d3d12_opaque_rt.BlendOp = D3D12_BLEND_OP_ADD;
+		d3d12_opaque_rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+		d3d12_opaque_rt.DestBlendAlpha = D3D12_BLEND_ZERO;
+		d3d12_opaque_rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		m_d3d11_state_cache->d3d12_blend_state_create_desc[BlendStateType_Opaque] = d3d12_opaque_desc;
 
         // AlphaBlend
 		D3D11_BLEND_DESC alpha_blend_desc = {};
@@ -851,7 +1528,17 @@ namespace Dolas
         alpha_blend_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         alpha_blend_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         alpha_blend_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[BlendStateType_AlphaBlend] = alpha_blend_desc;
+        m_d3d11_state_cache->blend_state_create_desc[BlendStateType_AlphaBlend] = alpha_blend_desc;
+		D3D12_BLEND_DESC d3d12_alpha_blend_desc = d3d12_opaque_desc;
+		auto& d3d12_alpha_blend_rt = d3d12_alpha_blend_desc.RenderTarget[0];
+		d3d12_alpha_blend_rt.BlendEnable = TRUE;
+		d3d12_alpha_blend_rt.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		d3d12_alpha_blend_rt.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		d3d12_alpha_blend_rt.BlendOp = D3D12_BLEND_OP_ADD;
+		d3d12_alpha_blend_rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+		d3d12_alpha_blend_rt.DestBlendAlpha = D3D12_BLEND_ZERO;
+		d3d12_alpha_blend_rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		m_d3d11_state_cache->d3d12_blend_state_create_desc[BlendStateType_AlphaBlend] = d3d12_alpha_blend_desc;
 
         // Additive
 		D3D11_BLEND_DESC additive_desc = {};
@@ -865,24 +1552,34 @@ namespace Dolas
         additive_rt.SrcBlendAlpha = D3D11_BLEND_ONE;
         additive_rt.DestBlendAlpha = D3D11_BLEND_ZERO;
         additive_rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        m_blend_state_create_desc[BlendStateType_Additive] = additive_desc;
+        m_d3d11_state_cache->blend_state_create_desc[BlendStateType_Additive] = additive_desc;
+		D3D12_BLEND_DESC d3d12_additive_desc = d3d12_alpha_blend_desc;
+		m_d3d11_state_cache->d3d12_blend_state_create_desc[BlendStateType_Additive] = d3d12_additive_desc;
 	}
 
 	void DolasRHI::InitializePrimitiveTopology()
 	{
-		m_d3d11_primitive_topology[PrimitiveTopology_TriangleList] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		m_d3d11_primitive_topology[PrimitiveTopology_TriangleStrip] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+		m_d3d11_state_cache->primitive_topology[PrimitiveTopology_TriangleList] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		m_d3d11_state_cache->primitive_topology[PrimitiveTopology_TriangleStrip] = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+		m_d3d11_state_cache->d3d12_primitive_topology[PrimitiveTopology_TriangleList] = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		m_d3d11_state_cache->d3d12_primitive_topology[PrimitiveTopology_TriangleStrip] = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+		m_d3d11_state_cache->d3d12_primitive_topology_type[PrimitiveTopology_TriangleList] = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		m_d3d11_state_cache->d3d12_primitive_topology_type[PrimitiveTopology_TriangleStrip] = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	}
 
 	void DolasRHI::InitializeInputLayoutDescs()
 	{
-		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_desc = m_input_element_descs[InputLayoutType_POS_3];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_desc = m_d3d11_state_cache->input_element_descs[InputLayoutType_POS_3];
 		pos_3_desc =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+		m_d3d11_state_cache->d3d12_input_element_descs[InputLayoutType_POS_3] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
 
-		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_desc = m_d3d11_state_cache->input_element_descs[InputLayoutType_POS_3_UV_2];
 		pos_3_uv_2_desc =
 		{
 			// POSITION 来自 slot 0，stride = 3 * 4 bytes，offset = 0
@@ -890,8 +1587,13 @@ namespace Dolas
 			// TEXCOORD 来自 slot 1，单独一个 UV buffer，每个顶点从 offset = 0 开始
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+		m_d3d11_state_cache->d3d12_input_element_descs[InputLayoutType_POS_3_UV_2] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
 
-		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_desc = m_d3d11_state_cache->input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3];
 		pos_3_uv_2_norm_3_desc =
 		{
 			// POSITION: slot 0
@@ -901,8 +1603,14 @@ namespace Dolas
 			// NORMAL:   slot 2
 			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+		m_d3d11_state_cache->d3d12_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
 
-		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_tang_3_desc = m_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3_TANG_3];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_uv_2_norm_3_tang_3_desc = m_d3d11_state_cache->input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3_TANG_3];
 		pos_3_uv_2_norm_3_tang_3_desc =
 		{
 			// POSITION: slot 0
@@ -914,14 +1622,26 @@ namespace Dolas
 			// TANGENT:  slot 3
 			{ "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
+		m_d3d11_state_cache->d3d12_input_element_descs[InputLayoutType_POS_3_UV_2_NORM_3_TANG_3] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
 
-		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_norm_3_desc = m_input_element_descs[InputLayoutType_POS_3_NORM_3];
+		std::vector<D3D11_INPUT_ELEMENT_DESC>& pos_3_norm_3_desc = m_d3d11_state_cache->input_element_descs[InputLayoutType_POS_3_NORM_3];
 		pos_3_norm_3_desc =
 		{
 			// POSITION: slot 0
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			// NORMAL:   slot 1
 			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+		m_d3d11_state_cache->d3d12_input_element_descs[InputLayoutType_POS_3_NORM_3] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 	}
 
@@ -958,7 +1678,18 @@ namespace Dolas
 		DOLAS_RETURN_NULL_IF_NULL(texture);
 
 		ID3D11Texture2D* d3d11_texture = texture->GetD3DTexture2D();
-		return CreateRenderTargetViewByD3D11Texture(d3d11_texture);
+		std::shared_ptr<RenderTargetView> render_target_view = nullptr;
+		if (d3d11_texture)
+		{
+			render_target_view = CreateRenderTargetViewByD3D11Texture(d3d11_texture);
+		}
+		else
+		{
+			render_target_view = std::make_shared<RenderTargetView>();
+		}
+		render_target_view->m_texture_id = texture_id;
+		render_target_view->m_d3d12_render_target_view = texture->GetD3D12RtvHandle();
+		return render_target_view;
 	}
 
 	std::shared_ptr<RenderTargetView> DolasRHI::CreateRenderTargetViewByD3D11Texture(ID3D11Texture2D* d3d_texture)
@@ -1000,14 +1731,17 @@ namespace Dolas
 
 		std::shared_ptr<RenderTargetView> render_target_view = std::make_shared<RenderTargetView>();
 
-		HR(m_d3d_device->CreateRenderTargetView(d3d_texture, &rtv_desc, &render_target_view->m_d3d_render_target_view));
+		if (m_d3d_device)
+		{
+			HR(m_d3d_device->CreateRenderTargetView(d3d_texture, &rtv_desc, &render_target_view->m_d3d_render_target_view));
+		}
 
 		return render_target_view;
 	}
 
 	ID3D11RasterizerState* DolasRHI::CreateRasterizerState(RasterizerStateType type)
 	{
-		D3D11_RASTERIZER_DESC desc = m_rasterizer_state_create_desc[type];
+		D3D11_RASTERIZER_DESC desc = m_d3d11_state_cache->rasterizer_state_create_desc[type];
 
 		ID3D11RasterizerState* rasterizer_state = nullptr;
 		HR(m_d3d_device->CreateRasterizerState(&desc, &rasterizer_state));
@@ -1017,8 +1751,8 @@ namespace Dolas
 
 	Bool DolasRHI::CreateDepthStencilState(DepthStencilStateType type)
 	{
-		D3D11_DEPTH_STENCIL_DESC desc = m_depth_stencil_state_create_desc[type].first;
-		UInt stencil_ref_value = m_depth_stencil_state_create_desc[type].second;
+		D3D11_DEPTH_STENCIL_DESC desc = m_d3d11_state_cache->depth_stencil_state_create_desc[type].first;
+		UInt stencil_ref_value = m_d3d11_state_cache->depth_stencil_state_create_desc[type].second;
 
 		ID3D11DepthStencilState* d3d_depth_stencil_state = nullptr;
 		HR(m_d3d_device->CreateDepthStencilState(&desc, &d3d_depth_stencil_state));
@@ -1030,18 +1764,18 @@ namespace Dolas
 
 	ID3D11BlendState* DolasRHI::CreateBlendState(BlendStateType type)
 	{
-		D3D11_BLEND_DESC desc = m_blend_state_create_desc[type];
+		D3D11_BLEND_DESC desc = m_d3d11_state_cache->blend_state_create_desc[type];
 		ID3D11BlendState* blend_state = nullptr;
 		HR(m_d3d_device->CreateBlendState(&desc, &blend_state));
 
 		return blend_state;
 	}
 
-	std::shared_ptr<InputLayout> DolasRHI::CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength)
+	std::shared_ptr<InputLayout> DolasRHI::CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, std::size_t BytecodeLength)
 	{
 		std::shared_ptr<InputLayout> input_layout = std::make_shared<InputLayout>();
 		ID3D11InputLayout* d3d11_input_layout = nullptr;
-		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_input_element_descs[input_layout_type];
+		const std::vector<D3D11_INPUT_ELEMENT_DESC>& input_element_desc = m_d3d11_state_cache->input_element_descs[input_layout_type];
         std::size_t elem_count_sz = input_element_desc.size();
         if (elem_count_sz > (std::size_t)(std::numeric_limits<UINT>::max)()) elem_count_sz = (std::size_t)(std::numeric_limits<UINT>::max)();
 		HR(m_d3d_device->CreateInputLayout(input_element_desc.data(), (UINT)elem_count_sz, pShaderBytecodeWithInputSignature, BytecodeLength, &d3d11_input_layout));
@@ -1060,6 +1794,220 @@ namespace Dolas
 		}
 		
 		return m_depth_stencil_states[type];
+	}
+
+	void DolasRHI::TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before_state, D3D12_RESOURCE_STATES after_state)
+	{
+		if (!resource || before_state == after_state)
+		{
+			return;
+		}
+
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (!command_list)
+		{
+			return;
+		}
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = resource;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrier.Transition.StateBefore = before_state;
+		barrier.Transition.StateAfter = after_state;
+		command_list->ResourceBarrier(1, &barrier);
+	}
+
+	void DolasRHI::TransitionTexture(Texture* texture, D3D12_RESOURCE_STATES after_state)
+	{
+		if (!texture || !texture->GetD3D12Resource())
+		{
+			return;
+		}
+
+		D3D12_RESOURCE_STATES before_state = texture->GetD3D12ResourceState();
+		TransitionResource(texture->GetD3D12Resource(), before_state, after_state);
+		texture->SetD3D12ResourceState(after_state);
+	}
+
+	void DolasRHI::UpdateD3D12UploadBuffer(ID3D12Resource* resource, const void* data, std::size_t size)
+	{
+		if (!resource || !data || size == 0)
+		{
+			return;
+		}
+
+		D3D12_RANGE read_range = { 0, 0 };
+		void* mapped_data = nullptr;
+		HRESULT hr = resource->Map(0, &read_range, &mapped_data);
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to map D3D12 constant buffer, HRESULT: 0x{0:X}", hr);
+			return;
+		}
+
+		memcpy(mapped_data, data, size);
+		D3D12_RANGE written_range = { 0, size };
+		resource->Unmap(0, &written_range);
+	}
+
+	void DolasRHI::BindD3D12GlobalResources()
+	{
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (!command_list || !m_d3d12_root_signature)
+		{
+			return;
+		}
+
+		command_list->SetGraphicsRootSignature(m_d3d12_root_signature);
+		if (m_d3d12_per_view_parameters_buffer)
+		{
+			command_list->SetGraphicsRootConstantBufferView(kRootPerViewCBV, m_d3d12_per_view_parameters_buffer->GetGPUVirtualAddress());
+		}
+		if (m_d3d12_per_frame_parameters_buffer)
+		{
+			command_list->SetGraphicsRootConstantBufferView(kRootPerFrameCBV, m_d3d12_per_frame_parameters_buffer->GetGPUVirtualAddress());
+		}
+		if (m_d3d12_per_object_parameters_buffer)
+		{
+			command_list->SetGraphicsRootConstantBufferView(kRootPerObjectCBV, m_d3d12_per_object_parameters_buffer->GetGPUVirtualAddress());
+		}
+		if (m_d3d12_dummy_constant_buffer)
+		{
+			command_list->SetGraphicsRootConstantBufferView(kRootVSGlobalCBV, m_d3d12_dummy_constant_buffer->GetGPUVirtualAddress());
+			command_list->SetGraphicsRootConstantBufferView(kRootPSGlobalCBV, m_d3d12_dummy_constant_buffer->GetGPUVirtualAddress());
+		}
+	}
+
+	void DolasRHI::BindD3D12SrvTable(std::shared_ptr<ShaderContext> shader_context, bool pixel_shader)
+	{
+		DOLAS_RETURN_IF_NULL(shader_context);
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12Device* device = rhi ? rhi->GetDevice() : nullptr;
+		ID3D12GraphicsCommandList* command_list = rhi ? rhi->GetCommandList() : nullptr;
+		if (!rhi || !device || !command_list)
+		{
+			return;
+		}
+
+		for (const auto& texture_pair : shader_context->GetSlotToTextureMap())
+		{
+			Texture* texture = g_dolas_engine.m_texture_manager->GetTextureByTextureID(texture_pair.second);
+			DOLAS_CONTINUE_IF_NULL(texture);
+			TransitionTexture(texture, pixel_shader ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
+
+		D3D12_CPU_DESCRIPTOR_HANDLE table_cpu = {};
+		D3D12_GPU_DESCRIPTOR_HANDLE table_gpu = {};
+		if (!rhi->AllocateTransientSrvDescriptorTable(kD3D12SrvTableSize, &table_cpu, &table_gpu))
+		{
+			return;
+		}
+
+		const UINT descriptor_size = rhi->GetSrvDescriptorSize();
+		D3D12_CPU_DESCRIPTOR_HANDLE null_srv = rhi->GetNullSrvDescriptorCpuHandle();
+		for (UINT slot = 0; slot < kD3D12SrvTableSize; ++slot)
+		{
+			D3D12_CPU_DESCRIPTOR_HANDLE dst = table_cpu;
+			dst.ptr += static_cast<SIZE_T>(slot) * descriptor_size;
+			device->CopyDescriptorsSimple(1, dst, null_srv, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		}
+
+		for (const auto& srv_pair : shader_context->GetSlotToD3D12SRVCpuMap())
+		{
+			if (srv_pair.first >= kD3D12SrvTableSize || srv_pair.second.ptr == 0)
+			{
+				continue;
+			}
+
+			D3D12_CPU_DESCRIPTOR_HANDLE dst = table_cpu;
+			dst.ptr += static_cast<SIZE_T>(srv_pair.first) * descriptor_size;
+			device->CopyDescriptorsSimple(1, dst, srv_pair.second, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		}
+
+		command_list->SetGraphicsRootDescriptorTable(pixel_shader ? kRootPSSrvTable : kRootVSSrvTable, table_gpu);
+	}
+
+	ID3D12PipelineState* DolasRHI::GetOrCreateD3D12PipelineState(RenderPrimitive* render_primitive)
+	{
+		DOLAS_RETURN_NULL_IF_NULL(render_primitive);
+		RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+		ID3D12Device* device = rhi ? rhi->GetDevice() : nullptr;
+		if (!device || !m_d3d12_root_signature || !m_current_vertex_context || !m_current_pixel_context)
+		{
+			return nullptr;
+		}
+
+		ShaderBytecodeView vs_bytecode = m_current_vertex_context->GetShaderBytecode();
+		ShaderBytecodeView ps_bytecode = m_current_pixel_context->GetShaderBytecode();
+		if (!vs_bytecode.IsValid() || !ps_bytecode.IsValid())
+		{
+			return nullptr;
+		}
+
+		std::size_t key = 0;
+		key = HashCombine(key, reinterpret_cast<std::size_t>(vs_bytecode.data));
+		key = HashCombine(key, vs_bytecode.size);
+		key = HashCombine(key, reinterpret_cast<std::size_t>(ps_bytecode.data));
+		key = HashCombine(key, ps_bytecode.size);
+		key = HashCombine(key, static_cast<std::size_t>(render_primitive->m_input_layout_type));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_rasterizer_state_type));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_depth_stencil_state_type));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_blend_state_type));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_primitive_topology));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_render_target_count));
+		key = HashCombine(key, static_cast<std::size_t>(m_current_dsv_format));
+		for (UINT i = 0; i < m_current_render_target_count; ++i)
+		{
+			key = HashCombine(key, static_cast<std::size_t>(m_current_rtv_formats[i]));
+		}
+
+		auto pso_iter = m_d3d12_pipeline_state_cache.find(key);
+		if (pso_iter != m_d3d12_pipeline_state_cache.end())
+		{
+			return pso_iter->second;
+		}
+
+		const std::vector<D3D12_INPUT_ELEMENT_DESC>& input_descs =
+			m_d3d11_state_cache->d3d12_input_element_descs[render_primitive->m_input_layout_type];
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
+		pso_desc.InputLayout = { input_descs.data(), static_cast<UINT>(input_descs.size()) };
+		pso_desc.pRootSignature = m_d3d12_root_signature;
+		pso_desc.VS = { vs_bytecode.data, vs_bytecode.size };
+		pso_desc.PS = { ps_bytecode.data, ps_bytecode.size };
+		pso_desc.RasterizerState = m_d3d11_state_cache->d3d12_rasterizer_state_create_desc[m_current_rasterizer_state_type];
+		pso_desc.BlendState = m_d3d11_state_cache->d3d12_blend_state_create_desc[m_current_blend_state_type];
+		pso_desc.DepthStencilState = m_d3d11_state_cache->d3d12_depth_stencil_state_create_desc[m_current_depth_stencil_state_type].first;
+		pso_desc.SampleMask = UINT_MAX;
+		pso_desc.PrimitiveTopologyType = m_d3d11_state_cache->d3d12_primitive_topology_type[m_current_primitive_topology];
+		pso_desc.NumRenderTargets = m_current_render_target_count;
+		for (UINT i = 0; i < m_current_render_target_count; ++i)
+		{
+			pso_desc.RTVFormats[i] = m_current_rtv_formats[i];
+		}
+		pso_desc.DSVFormat = m_current_dsv_format;
+		pso_desc.SampleDesc.Count = 1;
+		pso_desc.SampleDesc.Quality = 0;
+
+		ID3D12PipelineState* pipeline_state = nullptr;
+		HRESULT hr = device->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state));
+		if (FAILED(hr))
+		{
+			LOG_ERROR("Failed to create D3D12 graphics pipeline state! HRESULT: 0x{0:X}", hr);
+			return nullptr;
+		}
+
+		m_d3d12_pipeline_state_cache[key] = pipeline_state;
+		return pipeline_state;
+	}
+
+	void DolasRHI::RenderImGuiDrawData()
+	{
+		g_dolas_engine.m_imgui_manager->RenderDrawData(g_dolas_engine.m_render_hardware_interface->GetCommandList());
 	}
 
 } // namespace Dolas

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <imgui_impl_win32.h>
 #include "dolas_engine.h"
-#include "render/dolas_rhi.h"
+#include "dolas_render_hardware_interface.h"
 #include "manager/dolas_input_manager.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
@@ -28,7 +28,7 @@ namespace Dolas
 
     bool InputManager::Initialize()
     {
-        m_window_handle = g_dolas_engine.m_rhi->GetWindowHandle();
+        m_window_handle = g_dolas_engine.m_render_hardware_interface->GetWindowHandle();
         
         // Get the window center point
         RECT rect;

@@ -1,26 +1,52 @@
 #include <catch2/catch_test_macros.hpp>
 #include "dolas_asset_manager.h"
 #include "dolas_paths.h"
+#include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 
 using namespace Dolas;
 namespace fs = std::filesystem;
 
+namespace
+{
+    class ProjectContentDirGuard
+    {
+    public:
+        ProjectContentDirGuard(const fs::path& test_dir)
+            : m_original_project_dir(PathUtils::GetProjectContentDir())
+            , m_test_dir(test_dir)
+        {
+            fs::create_directories(m_test_dir);
+            PathUtils::SetProjectContentDirForDebug(m_test_dir.string());
+        }
+
+        ~ProjectContentDirGuard()
+        {
+            PathUtils::SetProjectContentDirForDebug(m_original_project_dir);
+            std::error_code ec;
+            fs::remove_all(m_test_dir, ec);
+        }
+
+    private:
+        std::string m_original_project_dir;
+        fs::path m_test_dir;
+    };
+
+    fs::path MakeUniqueTestDir()
+    {
+        static std::atomic_uint32_t s_counter {0};
+        const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+        return fs::current_path() / ("temp_test_assets_" + std::to_string(now) + "_" + std::to_string(s_counter.fetch_add(1)));
+    }
+}
+
 TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
 #if defined(DEBUG) || defined(_DEBUG)
-    // 备份原始项目路径
-    std::string originalProjectDir = PathUtils::GetProjectContentDir();
-    
     // 创建临时的测试资产目录
-    fs::path testDir = fs::current_path() / "temp_test_assets";
-    if (fs::exists(testDir)) {
-        fs::remove_all(testDir);
-    }
-    fs::create_directories(testDir);
-    
-    // 将项目内容目录重定向到临时目录
-    PathUtils::SetProjectContentDirForDebug(testDir.string());
+    fs::path testDir = MakeUniqueTestDir();
+    ProjectContentDirGuard projectContentDirGuard(testDir);
 
     AssetManagerNew manager;
 
@@ -97,14 +123,6 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
     SECTION("空路径应返回 nullptr") {
         const AssetBase* asset = manager.GetAsset("");
         REQUIRE(asset == nullptr);
-    }
-
-    // 清理测试环境
-    PathUtils::SetProjectContentDirForDebug(originalProjectDir);
-    try {
-        fs::remove_all(testDir);
-    } catch (...) {
-        // 忽略清理时的异常（例如文件被占用）
     }
 #else
     // Release build - skip this test as debug-only functions are not available

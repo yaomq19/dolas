@@ -23,15 +23,15 @@ set(IMGUI_HEADERS
     ${IMGUI_DIR}/imstb_truetype.h
 )
 
-# ImGui 后端文件（Win32 + DX11）
+# ImGui 后端文件（Win32 + DX12）
 set(IMGUI_BACKEND_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_win32.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_dx11.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_dx12.cpp
 )
 
 set(IMGUI_BACKEND_HEADERS
     ${IMGUI_DIR}/backends/imgui_impl_win32.h
-    ${IMGUI_DIR}/backends/imgui_impl_dx11.h
+    ${IMGUI_DIR}/backends/imgui_impl_dx12.h
 )
 
 # 创建 ImGui 静态库
@@ -51,9 +51,9 @@ target_include_directories(imgui PUBLIC
 # ImGui 需要的系统库（Windows）
 if(WIN32)
     target_link_libraries(imgui PUBLIC
-        d3d11
+        d3d12
         dxgi
-        d3dcompiler
+        dxguid
         dwmapi
     )
 endif()

@@ -1,8 +1,13 @@
 #ifndef DOLAS_BUFFER_H
 #define DOLAS_BUFFER_H
 
+#include <cstdint>
 #include <string>
-#include <d3d11.h>
+
+struct ID3D11Buffer;
+struct ID3D11ShaderResourceView;
+struct ID3D11UnorderedAccessView;
+struct ID3D12Resource;
 
 namespace Dolas
 {
@@ -59,6 +64,7 @@ namespace Dolas
         ID3D11Buffer* GetBuffer() const { return m_d3d_buffer; }
         ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shader_resource_view; }
         ID3D11UnorderedAccessView* GetUnorderedAccessView() const { return m_unordered_access_view; }
+        ID3D12Resource* GetD3D12Resource() const { return m_d3d12_resource; }
         
         BufferType GetBufferType() const { return m_buffer_type; }
         BufferUsage GetBufferUsage() const { return m_buffer_usage; }
@@ -71,14 +77,10 @@ namespace Dolas
         BufferUsage m_buffer_usage;
 
     private:
-        D3D11_USAGE ConvertToD3DUsage(BufferUsage usage);
-        UINT ConvertToD3DAccessFlags(BufferUsage usage);
-        UINT ConvertToD3DBindFlags(BufferType type, BufferUsage usage);
-        D3D11_MAP ConvertToD3DMapType(BufferAccess access);
-
         ID3D11Buffer* m_d3d_buffer = nullptr;
         ID3D11ShaderResourceView* m_shader_resource_view = nullptr;
         ID3D11UnorderedAccessView* m_unordered_access_view = nullptr;
+        ID3D12Resource* m_d3d12_resource = nullptr;
 
         uint32_t m_size = 0;
         uint32_t m_stride = 0;

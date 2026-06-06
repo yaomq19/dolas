@@ -1,6 +1,5 @@
 #include <string>
 #include <iostream>
-#include <d3dcompiler.h>
 #include <cstddef>  // for offsetof
 
 #include "dolas_paths.h"
@@ -9,6 +8,7 @@
 #include "manager/dolas_render_entity_manager.h"
 #include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
+#include "render/dolas_rhi.h"
 #include "render/dolas_render_entity.h"
 #include "render/dolas_render_primitive.h"
 #include "manager/dolas_render_primitive_manager.h"
@@ -55,7 +55,7 @@ namespace Dolas
     void RenderPipeline::Render(DolasRHI* rhi)
     {
         UserAnnotationScope scope(rhi, L"RenderPipeline");
-        rhi->UpdatePerFrameParameters();
+        g_dolas_engine.m_imgui_manager->Render();
         RenderView* render_view = TryGetRenderView();
         DOLAS_RETURN_IF_NULL(render_view);
 		RenderCamera* render_camera = TryGetRenderCamera(render_view);
@@ -88,6 +88,13 @@ namespace Dolas
             }
         }
 
+        const FLOAT editor_clear_color[4] = { 0.05f, 0.05f, 0.055f, 1.0f };
+        if (!rhi->BeginFrame(editor_clear_color))
+        {
+            return;
+        }
+
+        rhi->UpdatePerFrameParameters();
 		rhi->UpdatePerViewParameters(render_camera);
 
         ClearPass(rhi, render_view);
@@ -102,7 +109,6 @@ namespace Dolas
             DisplayWorldCoordinate();
         }
 
-    	ImGUIPass();
         DebugPass(rhi, render_view);
         PresentPass(rhi, render_view);
     }

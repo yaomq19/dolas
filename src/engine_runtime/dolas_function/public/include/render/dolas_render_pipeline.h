@@ -1,8 +1,7 @@
 #ifndef DOLAS_RENDER_PIPELINE_H
 #define DOLAS_RENDER_PIPELINE_H
-#include <d3d11.h>
 #include "dolas_hash.h"
-#include "render/dolas_rhi.h"
+#include "render/dolas_rhi_common.h"
 namespace Dolas
 {
     class DolasRHI;

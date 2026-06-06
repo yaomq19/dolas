@@ -1,11 +1,28 @@
 #ifndef DOLAS_RHI_COMMON_H
 #define DOLAS_RHI_COMMON_H
-#include <d3d11.h>
+#include <cstddef>
+#include <d3d12.h>
+
 #include "dolas_hash.h"
 #include "dolas_math.h"
 
+struct ID3D11RenderTargetView;
+struct ID3D11DepthStencilView;
+struct ID3D11RasterizerState;
+struct ID3D11DepthStencilState;
+struct ID3D11BlendState;
+struct ID3D11InputLayout;
+
 namespace Dolas
 {
+	struct ShaderBytecodeView
+	{
+		const void* data = nullptr;
+		std::size_t size = 0;
+
+		bool IsValid() const { return data != nullptr && size > 0; }
+	};
+
 	class RenderTargetView
 	{
 	public:
@@ -13,6 +30,8 @@ namespace Dolas
 		~RenderTargetView();
 
 		ID3D11RenderTargetView* m_d3d_render_target_view = nullptr;
+		TextureID m_texture_id = 0;
+		D3D12_CPU_DESCRIPTOR_HANDLE m_d3d12_render_target_view {};
 	};
 
 	class DepthStencilView
@@ -22,6 +41,8 @@ namespace Dolas
 		~DepthStencilView();
 
 		ID3D11DepthStencilView* m_d3d_depth_stencil_view = nullptr;
+		TextureID m_texture_id = 0;
+		D3D12_CPU_DESCRIPTOR_HANDLE m_d3d12_depth_stencil_view {};
 	};
 
 	class ViewPort
@@ -29,7 +50,12 @@ namespace Dolas
 	public:
 		ViewPort(Float top_left_x, Float top_left_y, Float width, Float height, Float min_depth, Float max_depth);
 		~ViewPort();
-		D3D11_VIEWPORT m_d3d_viewport;
+		Float m_top_left_x;
+		Float m_top_left_y;
+		Float m_width;
+		Float m_height;
+		Float m_min_depth;
+		Float m_max_depth;
 	};
 
 	enum RasterizerStateType : UInt

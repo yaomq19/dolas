@@ -3,7 +3,6 @@
 
 #include <string>
 #include <unordered_map>
-#include <d3d11.h>
 #include <memory>
 #include "dolas_hash.h"
 #include "render/dolas_shader.h"

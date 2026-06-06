@@ -1,12 +1,16 @@
 #ifndef DOLAS_TEXTURE_MANAGER_H
 #define DOLAS_TEXTURE_MANAGER_H
 
+#include <dxgiformat.h>
 #include <string>
 #include <unordered_map>
 #include <memory>
 #include "render/dolas_texture.h"
 #include "dolas_base.h"
 #include "dolas_hash.h"
+
+struct D3D11_TEXTURE2D_DESC;
+
 namespace Dolas
 {
     enum class DolasTextureUsage {

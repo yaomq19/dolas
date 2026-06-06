@@ -1,12 +1,12 @@
 #include <imgui.h>
+#include <imgui_impl_dx12.h>
 #include <imgui_internal.h> // DockBuilder API (docking 分支)
 #include <imgui_impl_win32.h>  // Win32 后端
-#include <imgui_impl_dx11.h>   // Direct3D 11 后端
 #include <ImGuizmo.h> // ImGuizmo - 3D gizmo 库
 #include <string>
 #include <algorithm>  // for std::max
 #include "dolas_engine.h"
-#include "render/dolas_rhi.h"
+#include "dolas_render_hardware_interface.h"
 #include "manager/dolas_imgui_manager.h"
 
 #include "manager/dolas_debug_draw_manager.h"
@@ -16,6 +16,35 @@
 #include "manager/dolas_timer_manager.h"
 #include "manager/dolas_shader_manager.h"
 #include "manager/dolas_render_pipeline_manager.h"
+
+namespace
+{
+    void AllocateImGuiSrvDescriptor(
+        ImGui_ImplDX12_InitInfo* info,
+        D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle,
+        D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
+    {
+        auto* rhi = static_cast<Dolas::RenderHardwareInterface*>(info->UserData);
+        if (!rhi || !rhi->AllocateSrvDescriptor(out_cpu_desc_handle, out_gpu_desc_handle))
+        {
+            *out_cpu_desc_handle = {};
+            *out_gpu_desc_handle = {};
+        }
+    }
+
+    void FreeImGuiSrvDescriptor(
+        ImGui_ImplDX12_InitInfo* info,
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_desc_handle,
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu_desc_handle)
+    {
+        auto* rhi = static_cast<Dolas::RenderHardwareInterface*>(info->UserData);
+        if (rhi)
+        {
+            rhi->FreeSrvDescriptor(cpu_desc_handle, gpu_desc_handle);
+        }
+    }
+}
+
 namespace Dolas
 {
 	struct FontConfig
@@ -74,15 +103,35 @@ namespace Dolas
         ImGui::StyleColorsDark();  // 或 ImGui::StyleColorsLight();
         
         // 3. 初始化平台/渲染后端
-        ImGui_ImplWin32_Init(g_dolas_engine.m_rhi->GetWindowHandle());
-        ImGui_ImplDX11_Init(g_dolas_engine.m_rhi->GetD3D11Device(), g_dolas_engine.m_rhi->GetD3D11DeviceContext());
+        RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+        if (!rhi)
+        {
+            return false;
+        }
+
+        ImGui_ImplWin32_Init(rhi->GetWindowHandle());
+
+        ImGui_ImplDX12_InitInfo init_info = {};
+        init_info.Device = rhi->GetDevice();
+        init_info.CommandQueue = rhi->GetCommandQueue();
+        init_info.NumFramesInFlight = RenderHardwareInterface::kFrameCount;
+        init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+        init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+        init_info.UserData = rhi;
+        init_info.SrvDescriptorHeap = rhi->GetSrvHeap();
+        init_info.SrvDescriptorAllocFn = AllocateImGuiSrvDescriptor;
+        init_info.SrvDescriptorFreeFn = FreeImGuiSrvDescriptor;
+        if (!ImGui_ImplDX12_Init(&init_info))
+        {
+            return false;
+        }
     
         return true;
     }
 
     bool ImGuiManager::Clear()
     {
-        ImGui_ImplDX11_Shutdown();
+        ImGui_ImplDX12_Shutdown();
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
         return true;
@@ -91,7 +140,7 @@ namespace Dolas
     void ImGuiManager::Render()
     {
         // 1. 开始新帧
-        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         
@@ -109,9 +158,30 @@ namespace Dolas
             RenderDebugToolsWindow();
         }
         
-        // 5. 渲染
+        // 5. 生成绘制数据，实际提交由渲染管线在同一个 DX12 frame 中完成
         ImGui::Render();
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        if (RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface)
+        {
+            DefWindowProcW(rhi->GetWindowHandle(), WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L"Dolas Engine - Main Window"));
+        }
+    }
+
+    void ImGuiManager::RenderDrawData(ID3D12GraphicsCommandList* command_list)
+    {
+        if (!command_list)
+        {
+            return;
+        }
+
+        RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+        if (!rhi)
+        {
+            return;
+        }
+
+        ID3D12DescriptorHeap* descriptor_heaps[] = { rhi->GetSrvHeap() };
+        command_list->SetDescriptorHeaps(1, descriptor_heaps);
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), command_list);
     }
 
     void ImGuiManager::TickPreRender()

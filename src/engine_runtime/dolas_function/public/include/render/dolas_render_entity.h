@@ -1,17 +1,16 @@
 #ifndef DOLA_RENDER_ENTITY_H
 #define DOLA_RENDER_ENTITY_H
 
-#include <d3d11.h>
 #include <vector>
 #include <string>
 #include <DirectXMath.h>
 #include <memory>
 #include "dolas_hash.h"
-#include "render/dolas_rhi.h"
 #include "render/dolas_transform.h"
 
 namespace Dolas
 {
+    class DolasRHI;
     class Material;
     struct RenderComponent
     {

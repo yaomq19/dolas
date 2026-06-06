@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include <d3d11.h>
+#include <vector>
 
 #include "dolas_hash.h"
 #include "render/dolas_rhi_common.h"

@@ -1,22 +1,48 @@
 #ifndef DOLAS_SHADER_H
 #define DOLAS_SHADER_H
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
-#include <d3d11.h>
-#include <d3dcompiler.h>
 #include <unordered_map>
-#include "render/dolas_rhi.h"
+#include <vector>
+#include <d3d12.h>
+#include "dolas_hash.h"
+#include "dolas_math.h"
+#include "render/dolas_rhi_common.h"
+
+struct ID3D10Blob;
+typedef ID3D10Blob ID3DBlob;
+struct ID3D11ShaderReflection;
+struct ID3D11ShaderResourceView;
+struct ID3D11Buffer;
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D12Resource;
+
 namespace Dolas
 {
+    struct ConstantBufferVariableInfo
+    {
+        std::string name;
+        UInt start_offset = 0;
+        UInt size = 0;
+        UInt flags = 0;
+    };
+
     struct ConstantBufferInfo
     {
-		D3D11_SHADER_BUFFER_DESC constant_buffer_desc;
-		std::vector<D3D11_SHADER_VARIABLE_DESC> variable_descs;
+        std::string name;
+        UInt size = 0;
+        UInt variable_count = 0;
+		std::vector<ConstantBufferVariableInfo> variable_descs;
     };
 
     struct ShaderReflectionInfo
     {
-        D3D11_SHADER_DESC shader_desc;
+        UInt constant_buffer_count = 0;
+        UInt bound_resource_count = 0;
+        UInt instruction_count = 0;
 		std::vector<ConstantBufferInfo> constant_buffer_descs;
     };
 
@@ -29,21 +55,25 @@ namespace Dolas
 
         virtual bool BuildFromFile(const std::string& file_path, const std::string& entry_point) = 0;
         virtual void Release();
-        virtual ID3DBlob* GetD3DShaderBlob();
+        ShaderBytecodeView GetShaderBytecode() const;
         void SetShaderResourceView(size_t slot, ID3D11ShaderResourceView* srv);
         void SetShaderResourceView(size_t slot, TextureID texture_id);
         void SetShaderResourceView(size_t slot, class Texture* texture);
         const std::unordered_map<size_t, ID3D11ShaderResourceView*>& GetSlotToSRVMap() const {return m_slot_to_srv_map;};
+        const std::unordered_map<size_t, TextureID>& GetSlotToTextureMap() const { return m_slot_to_texture_map; }
+        const std::unordered_map<size_t, D3D12_CPU_DESCRIPTOR_HANDLE>& GetSlotToD3D12SRVCpuMap() const { return m_slot_to_d3d12_srv_cpu_map; }
+        const std::unordered_map<size_t, D3D12_GPU_DESCRIPTOR_HANDLE>& GetSlotToD3D12SRVMap() const { return m_slot_to_d3d12_srv_map; }
         const ShaderReflectionInfo& GetShaderReflectionInfo() const {return m_shader_reflection_info;};
         void dumpShaderReflectionInfo() const;
 		ID3D11Buffer* GetGlobalConstantBuffer() { return m_global_constant_buffer; };
+		ID3D12Resource* GetD3D12GlobalConstantBuffer() { return m_d3d12_global_constant_buffer; };
         void ConvertTextureIDMapToSRVMap();
         // Global constant buffer data（已根据反射布局预打包好的原始字节）
         const std::vector<uint8_t>& GetGlobalConstantBufferData() const { return m_global_cb_data; }
         // 设置某个全局变量（按变量名写入 GlobalConstants cbuffer 对应区域）
         void SetGlobalVariable(const std::string& name, const Vector4& values);
     protected:
-        void AnalyzeConstantBuffers(UINT constant_buffers_count);
+        void AnalyzeConstantBuffers(UInt constant_buffers_count);
         void GenerateReflectionAndDesc();
         void CreateGlobalConstantBuffer();
         void PostBuildFromFile();
@@ -58,8 +88,11 @@ namespace Dolas
 
         std::unordered_map<size_t, TextureID> m_slot_to_texture_map;
         std::unordered_map<size_t, ID3D11ShaderResourceView*> m_slot_to_srv_map;
+        std::unordered_map<size_t, D3D12_CPU_DESCRIPTOR_HANDLE> m_slot_to_d3d12_srv_cpu_map;
+        std::unordered_map<size_t, D3D12_GPU_DESCRIPTOR_HANDLE> m_slot_to_d3d12_srv_map;
 
 		ID3D11Buffer* m_global_constant_buffer = nullptr;
+        ID3D12Resource* m_d3d12_global_constant_buffer = nullptr;
         std::vector<uint8_t> m_global_cb_data;
 
     }; // class ShaderContext

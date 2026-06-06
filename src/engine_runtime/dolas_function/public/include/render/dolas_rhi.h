@@ -1,18 +1,28 @@
 #ifndef DOLAS_RHI_H
 #define DOLAS_RHI_H
 
-#include <d3d11.h>
-#include <d3d11_1.h>
-#include <Windows.h>
-#include <vector>
+#include <cstddef>
 #include <memory>
-#if defined(DEBUG) || defined(_DEBUG)
-#include <d3d11sdklayers.h>  // For ID3D11Debug and ID3D11InfoQueue
-#endif
+#include <unordered_map>
+#include <vector>
+#include <d3d12.h>
 
 #include "dolas_hash.h"
 #include "dolas_math.h"
 #include "render/dolas_rhi_common.h"
+
+struct ID3D11BlendState;
+struct ID3D11Buffer;
+struct ID3D11ClassInstance;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+struct ID3D11RasterizerState;
+struct ID3D11Resource;
+struct ID3D11ShaderResourceView;
+struct ID3D11Texture2D;
+struct ID3DUserDefinedAnnotation;
+struct IDXGISwapChain;
+
 namespace Dolas
 {
 #ifndef DEFAULT_CLIENT_WIDTH
@@ -24,6 +34,8 @@ namespace Dolas
 #endif
 	class VertexContext;
 	class PixelContext;
+	class ShaderContext;
+	class RenderPrimitive;
 
 	// 渲染硬件接口(RHI)相关定义将在这里
 	class DolasRHI
@@ -33,9 +45,9 @@ namespace Dolas
 		~DolasRHI();
 		bool Initialize();
 		void Clear();
+		bool BeginFrame(const float clear_color[4]);
 		void Present(TextureID scene_result_texture_id);
 
-		HWND GetWindowHandle() const { return m_window_handle; }
 		ID3D11Device* GetD3D11Device() const { return m_d3d_device; }
 		ID3D11DeviceContext* GetD3D11DeviceContext() const { return m_d3d_immediate_context; }
 
@@ -76,10 +88,10 @@ namespace Dolas
 		void SetBlendState(BlendStateType type);
 		
 		// VertexContext
-		Bool BindVertexContext(std::shared_ptr<VertexContext> vertex_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindVertexContext(std::shared_ptr<VertexContext> vertex_context, ID3D11ClassInstance* const* class_instances = nullptr, unsigned int num_class_instances = 0);
 		
 		// PixelContext
-		Bool BindPixelContext(std::shared_ptr<PixelContext> pixel_context, ID3D11ClassInstance* const* class_instances = nullptr, UINT num_class_instances = 0);
+		Bool BindPixelContext(std::shared_ptr<PixelContext> pixel_context, ID3D11ClassInstance* const* class_instances = nullptr, unsigned int num_class_instances = 0);
 		
 		// Buffer
 
@@ -88,8 +100,8 @@ namespace Dolas
 		// DC
 		void DrawRenderPrimitive(RenderPrimitiveID render_primitive_id);
 	private:
-		bool InitializeWindow();
-		bool InitializeD3D();
+		bool InitializeD3D11CompatibilityDevice();
+		bool InitializeD3D12CompatibilityResources();
 
 		void InitializeRasterizerStateCreateDesc();
 		void InitializeDepthStencilStateCreateDesc();
@@ -101,7 +113,7 @@ namespace Dolas
 		ID3D11RasterizerState* CreateRasterizerState(RasterizerStateType type);
 		Bool CreateDepthStencilState(DepthStencilStateType type);
 		ID3D11BlendState* CreateBlendState(BlendStateType type);
-		std::shared_ptr<InputLayout> CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
+		std::shared_ptr<InputLayout> CreateInputLayout(InputLayoutType input_layout_type, const void* pShaderBytecodeWithInputSignature, std::size_t BytecodeLength);
 		const DepthStencilState& GetOrCreateDepthStencilState(DepthStencilStateType type);
 
 		// PrimitiveTopology
@@ -116,10 +128,17 @@ namespace Dolas
 
 		void DrawIndexed(UInt index_count);
 
+		void TransitionTexture(class Texture* texture, D3D12_RESOURCE_STATES after_state);
+		void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before_state, D3D12_RESOURCE_STATES after_state);
+		void UpdateD3D12UploadBuffer(ID3D12Resource* resource, const void* data, std::size_t size);
+		void BindD3D12GlobalResources();
+		void BindD3D12SrvTable(std::shared_ptr<ShaderContext> shader_context, bool pixel_shader);
+		ID3D12PipelineState* GetOrCreateD3D12PipelineState(RenderPrimitive* render_primitive);
+		void RenderImGuiDrawData();
+
 		ID3D11Device* m_d3d_device;
 		ID3D11DeviceContext* m_d3d_immediate_context;
 
-		HWND m_window_handle;
 		int m_client_width;
 		int m_client_height;
 
@@ -136,14 +155,27 @@ namespace Dolas
 		DepthStencilState m_depth_stencil_states[DepthStencilStateType_Count];
 		BlendState m_blend_states[BlendStateType_Count];
 
-		D3D11_RASTERIZER_DESC m_rasterizer_state_create_desc[RasterizerStateType_Count];
-		std::pair<D3D11_DEPTH_STENCIL_DESC, UInt> m_depth_stencil_state_create_desc[DepthStencilStateType_Count];
-		D3D11_BLEND_DESC m_blend_state_create_desc[BlendStateType_Count];
+		struct D3D11StateCache;
+		std::unique_ptr<D3D11StateCache> m_d3d11_state_cache;
 
-		D3D11_PRIMITIVE_TOPOLOGY m_d3d11_primitive_topology[PrimitiveTopology_Count];
-		std::vector<D3D11_INPUT_ELEMENT_DESC> m_input_element_descs[InputLayoutType_Count];
+		ShaderBytecodeView m_current_vs_bytecode;
+		std::shared_ptr<VertexContext> m_current_vertex_context;
+		std::shared_ptr<PixelContext> m_current_pixel_context;
 
-		ID3DBlob* m_current_vs_blob = nullptr;
+		ID3D12Resource* m_d3d12_per_frame_parameters_buffer = nullptr;
+		ID3D12Resource* m_d3d12_per_view_parameters_buffer = nullptr;
+		ID3D12Resource* m_d3d12_per_object_parameters_buffer = nullptr;
+		ID3D12Resource* m_d3d12_dummy_constant_buffer = nullptr;
+		ID3D12RootSignature* m_d3d12_root_signature = nullptr;
+		std::unordered_map<std::size_t, ID3D12PipelineState*> m_d3d12_pipeline_state_cache;
+		DXGI_FORMAT m_current_rtv_formats[8] {};
+		DXGI_FORMAT m_current_dsv_format = DXGI_FORMAT_UNKNOWN;
+		UINT m_current_render_target_count = 0;
+		RasterizerStateType m_current_rasterizer_state_type = RasterizerStateType_SolidBackCull;
+		DepthStencilStateType m_current_depth_stencil_state_type = DepthStencilStateType_DepthWriteLess_StencilWriteStatic;
+		BlendStateType m_current_blend_state_type = BlendStateType_Opaque;
+		PrimitiveTopology m_current_primitive_topology = PrimitiveTopology_TriangleList;
+		bool m_d3d12_frame_started = false;
 	};
 
 	// RAII scope for GPU events

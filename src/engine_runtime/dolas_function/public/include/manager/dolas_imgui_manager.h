@@ -3,6 +3,8 @@
 
 #include "dolas_base.h"
 #include <imgui.h>  // 需要完整定义以使用 ImVec2
+struct ID3D12GraphicsCommandList;
+
 namespace Dolas
 {
     enum class FontStyle : UInt
@@ -23,6 +25,7 @@ namespace Dolas
         bool Initialize();
         bool Clear();
         void Render();
+        void RenderDrawData(ID3D12GraphicsCommandList* command_list);
 
         void TickPreRender();
         

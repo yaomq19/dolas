@@ -1,7 +1,5 @@
 #include <fstream>
 #include <iostream>
-#include <d3d11shader.h>
-#include <d3dcompiler.h>
 #include "dolas_paths.h"
 #include "dolas_base.h"
 #include "dolas_engine.h"
@@ -10,6 +8,7 @@
 #include "render/dolas_render_entity.h"
 #include "render/dolas_material.h"
 #include "render/dolas_dx_trace.h"
+#include "render/dolas_rhi.h"
 #include "render/dolas_shader.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "render/dolas_render_primitive.h"

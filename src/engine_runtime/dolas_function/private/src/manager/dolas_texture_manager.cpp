@@ -2,13 +2,19 @@
 #include <iostream>
 #include <fstream>
 
+#include <d3d11.h>
+
 #include "dolas_engine.h"
+#include "dolas_render_hardware_interface.h"
 #include "render/dolas_rhi.h"
 #include "manager/dolas_texture_manager.h"
 #include "render/dolas_texture.h"
 #include "dolas_base.h"
 #include "dolas_string_util.h"
 #include "dolas_paths.h"
+#include <algorithm>
+#include <cstring>
+#include <vector>
 #include "DirectXTex.h"
 #include "dolas_log_system_manager.h"
 #include "render/dolas_dx_trace.h"
@@ -25,6 +31,522 @@ namespace Dolas
     #else
         (void)object; (void)name;
     #endif
+    }
+
+    static void SetD3D12DebugName(ID3D12Object* object, const std::wstring& name)
+    {
+    #if defined(DEBUG) || defined(_DEBUG)
+        if (object && !name.empty())
+        {
+            object->SetName(name.c_str());
+        }
+    #else
+        (void)object; (void)name;
+    #endif
+    }
+
+    template<typename T>
+    static void SafeRelease(T*& ptr)
+    {
+        if (ptr)
+        {
+            ptr->Release();
+            ptr = nullptr;
+        }
+    }
+
+    static D3D12_RESOURCE_DIMENSION ConvertToD3D12ResourceDimension(DirectX::TEX_DIMENSION dimension)
+    {
+        switch (dimension)
+        {
+        case DirectX::TEX_DIMENSION_TEXTURE1D: return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+        case DirectX::TEX_DIMENSION_TEXTURE2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        case DirectX::TEX_DIMENSION_TEXTURE3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        default:                               return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        }
+    }
+
+    static DolasTextureType ConvertToDolasTextureType(const DirectX::TexMetadata& metadata)
+    {
+        if (metadata.IsCubemap())
+        {
+            return DolasTextureType::TEXTURE_CUBE;
+        }
+
+        if (metadata.dimension == DirectX::TEX_DIMENSION_TEXTURE3D)
+        {
+            return DolasTextureType::TEXTURE_3D;
+        }
+
+        if (metadata.dimension == DirectX::TEX_DIMENSION_TEXTURE2D && metadata.arraySize > 1)
+        {
+            return DolasTextureType::TEXTURE_ARRAY_2D;
+        }
+
+        return DolasTextureType::TEXTURE_2D;
+    }
+
+    static DXGI_FORMAT ConvertDepthResourceToDsvFormat(DXGI_FORMAT format)
+    {
+        switch (format)
+        {
+        case DXGI_FORMAT_R24G8_TYPELESS:    return DXGI_FORMAT_D24_UNORM_S8_UINT;
+        case DXGI_FORMAT_R32_TYPELESS:      return DXGI_FORMAT_D32_FLOAT;
+        case DXGI_FORMAT_R16_TYPELESS:      return DXGI_FORMAT_D16_UNORM;
+        case DXGI_FORMAT_R32G8X24_TYPELESS: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+        default:                            return format;
+        }
+    }
+
+    static DXGI_FORMAT ConvertDepthResourceToSrvFormat(DXGI_FORMAT format)
+    {
+        switch (format)
+        {
+        case DXGI_FORMAT_R24G8_TYPELESS:
+        case DXGI_FORMAT_D24_UNORM_S8_UINT:
+            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        case DXGI_FORMAT_R32_TYPELESS:
+        case DXGI_FORMAT_D32_FLOAT:
+            return DXGI_FORMAT_R32_FLOAT;
+        case DXGI_FORMAT_R16_TYPELESS:
+        case DXGI_FORMAT_D16_UNORM:
+            return DXGI_FORMAT_R16_UNORM;
+        case DXGI_FORMAT_R32G8X24_TYPELESS:
+        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        default:
+            return format;
+        }
+    }
+
+    static D3D12_SHADER_RESOURCE_VIEW_DESC CreateD3D12SrvDescFromMetadata(const DirectX::TexMetadata& metadata)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+        srv_desc.Format = metadata.format;
+        srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+        const UINT mip_levels = static_cast<UINT>(std::max<size_t>(1, metadata.mipLevels));
+        const UINT array_size = static_cast<UINT>(std::max<size_t>(1, metadata.arraySize));
+
+        switch (metadata.dimension)
+        {
+        case DirectX::TEX_DIMENSION_TEXTURE1D:
+            if (array_size > 1)
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+                srv_desc.Texture1DArray.MipLevels = mip_levels;
+                srv_desc.Texture1DArray.ArraySize = array_size;
+            }
+            else
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+                srv_desc.Texture1D.MipLevels = mip_levels;
+            }
+            break;
+        case DirectX::TEX_DIMENSION_TEXTURE3D:
+            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+            srv_desc.Texture3D.MipLevels = mip_levels;
+            break;
+        case DirectX::TEX_DIMENSION_TEXTURE2D:
+        default:
+            if (metadata.IsCubemap())
+            {
+                const UINT cube_count = std::max<UINT>(1, array_size / 6);
+                if (cube_count > 1)
+                {
+                    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+                    srv_desc.TextureCubeArray.MipLevels = mip_levels;
+                    srv_desc.TextureCubeArray.NumCubes = cube_count;
+                }
+                else
+                {
+                    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                    srv_desc.TextureCube.MipLevels = mip_levels;
+                }
+            }
+            else if (array_size > 1)
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                srv_desc.Texture2DArray.MipLevels = mip_levels;
+                srv_desc.Texture2DArray.ArraySize = array_size;
+            }
+            else
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                srv_desc.Texture2D.MipLevels = mip_levels;
+            }
+            break;
+        }
+
+        return srv_desc;
+    }
+
+    static D3D12_SHADER_RESOURCE_VIEW_DESC CreateD3D12Texture2DSrvDesc(
+        DXGI_FORMAT format,
+        UINT mip_levels,
+        UINT array_size,
+        UINT sample_count)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+        srv_desc.Format = ConvertDepthResourceToSrvFormat(format);
+        srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+        if (sample_count > 1)
+        {
+            if (array_size > 1)
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+                srv_desc.Texture2DMSArray.ArraySize = array_size;
+            }
+            else
+            {
+                srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+            }
+        }
+        else if (array_size > 1)
+        {
+            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            srv_desc.Texture2DArray.MipLevels = std::max<UINT>(1, mip_levels);
+            srv_desc.Texture2DArray.ArraySize = array_size;
+        }
+        else
+        {
+            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srv_desc.Texture2D.MipLevels = std::max<UINT>(1, mip_levels);
+        }
+
+        return srv_desc;
+    }
+
+    static bool CreateD3D12TextureFromScratchImage(
+        const DirectX::ScratchImage& image,
+        const DirectX::TexMetadata& metadata,
+        const std::wstring& debug_name,
+        Texture* texture)
+    {
+        RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+        ID3D12Device* device = rhi ? rhi->GetDevice() : nullptr;
+        if (!rhi || !device || !texture)
+        {
+            LOG_ERROR("CreateD3D12TextureFromScratchImage: D3D12 device or texture is null");
+            return false;
+        }
+
+        const UINT subresource_count = static_cast<UINT>(image.GetImageCount());
+        const DirectX::Image* images = image.GetImages();
+        if (subresource_count == 0 || !images)
+        {
+            LOG_ERROR("CreateD3D12TextureFromScratchImage: ScratchImage has no image data");
+            return false;
+        }
+
+        D3D12_RESOURCE_DESC texture_desc = {};
+        texture_desc.Dimension = ConvertToD3D12ResourceDimension(metadata.dimension);
+        texture_desc.Width = static_cast<UINT64>(metadata.width);
+        texture_desc.Height = static_cast<UINT>(metadata.height);
+        texture_desc.DepthOrArraySize = static_cast<UINT16>(
+            metadata.dimension == DirectX::TEX_DIMENSION_TEXTURE3D ? metadata.depth : metadata.arraySize);
+        texture_desc.MipLevels = static_cast<UINT16>(std::max<size_t>(1, metadata.mipLevels));
+        texture_desc.Format = metadata.format;
+        texture_desc.SampleDesc.Count = 1;
+        texture_desc.SampleDesc.Quality = 0;
+        texture_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        texture_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+        D3D12_HEAP_PROPERTIES default_heap_properties = {};
+        default_heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+        default_heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        default_heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        default_heap_properties.CreationNodeMask = 1;
+        default_heap_properties.VisibleNodeMask = 1;
+
+        ID3D12Resource* d3d12_resource = nullptr;
+        HRESULT hr = device->CreateCommittedResource(
+            &default_heap_properties,
+            D3D12_HEAP_FLAG_NONE,
+            &texture_desc,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            nullptr,
+            IID_PPV_ARGS(&d3d12_resource));
+        if (FAILED(hr))
+        {
+            LOG_ERROR("CreateD3D12TextureFromScratchImage: failed to create texture, HRESULT: 0x{0:X}", hr);
+            return false;
+        }
+
+        std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(subresource_count);
+        std::vector<UINT> num_rows(subresource_count);
+        std::vector<UINT64> row_sizes_in_bytes(subresource_count);
+        UINT64 upload_buffer_size = 0;
+        device->GetCopyableFootprints(
+            &texture_desc,
+            0,
+            subresource_count,
+            0,
+            layouts.data(),
+            num_rows.data(),
+            row_sizes_in_bytes.data(),
+            &upload_buffer_size);
+
+        D3D12_RESOURCE_DESC upload_desc = {};
+        upload_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        upload_desc.Width = upload_buffer_size;
+        upload_desc.Height = 1;
+        upload_desc.DepthOrArraySize = 1;
+        upload_desc.MipLevels = 1;
+        upload_desc.Format = DXGI_FORMAT_UNKNOWN;
+        upload_desc.SampleDesc.Count = 1;
+        upload_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        upload_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+        D3D12_HEAP_PROPERTIES upload_heap_properties = {};
+        upload_heap_properties.Type = D3D12_HEAP_TYPE_UPLOAD;
+        upload_heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        upload_heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        upload_heap_properties.CreationNodeMask = 1;
+        upload_heap_properties.VisibleNodeMask = 1;
+
+        ID3D12Resource* upload_resource = nullptr;
+        hr = device->CreateCommittedResource(
+            &upload_heap_properties,
+            D3D12_HEAP_FLAG_NONE,
+            &upload_desc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&upload_resource));
+        if (FAILED(hr))
+        {
+            LOG_ERROR("CreateD3D12TextureFromScratchImage: failed to create upload resource, HRESULT: 0x{0:X}", hr);
+            SafeRelease(d3d12_resource);
+            return false;
+        }
+
+        uint8_t* mapped_data = nullptr;
+        D3D12_RANGE read_range = { 0, 0 };
+        hr = upload_resource->Map(0, &read_range, reinterpret_cast<void**>(&mapped_data));
+        if (FAILED(hr))
+        {
+            LOG_ERROR("CreateD3D12TextureFromScratchImage: failed to map upload resource, HRESULT: 0x{0:X}", hr);
+            SafeRelease(upload_resource);
+            SafeRelease(d3d12_resource);
+            return false;
+        }
+
+        for (UINT subresource_index = 0; subresource_index < subresource_count; ++subresource_index)
+        {
+            const DirectX::Image& source_image = images[subresource_index];
+            const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& layout = layouts[subresource_index];
+            uint8_t* destination_subresource = mapped_data + layout.Offset;
+            const UINT64 row_size = std::min<UINT64>(row_sizes_in_bytes[subresource_index], source_image.rowPitch);
+            const UINT depth = std::max<UINT>(1, layout.Footprint.Depth);
+
+            for (UINT z = 0; z < depth; ++z)
+            {
+                uint8_t* destination_slice = destination_subresource +
+                    static_cast<size_t>(z) * layout.Footprint.RowPitch * num_rows[subresource_index];
+                const uint8_t* source_slice = source_image.pixels + static_cast<size_t>(z) * source_image.slicePitch;
+
+                for (UINT row = 0; row < num_rows[subresource_index]; ++row)
+                {
+                    memcpy(
+                        destination_slice + static_cast<size_t>(row) * layout.Footprint.RowPitch,
+                        source_slice + static_cast<size_t>(row) * source_image.rowPitch,
+                        static_cast<size_t>(row_size));
+                }
+            }
+        }
+
+        D3D12_RANGE written_range = { 0, static_cast<SIZE_T>(upload_buffer_size) };
+        upload_resource->Unmap(0, &written_range);
+
+        const bool submitted = rhi->ExecuteImmediate([&](ID3D12GraphicsCommandList* command_list) -> bool
+        {
+            for (UINT subresource_index = 0; subresource_index < subresource_count; ++subresource_index)
+            {
+                D3D12_TEXTURE_COPY_LOCATION destination = {};
+                destination.pResource = d3d12_resource;
+                destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                destination.SubresourceIndex = subresource_index;
+
+                D3D12_TEXTURE_COPY_LOCATION source = {};
+                source.pResource = upload_resource;
+                source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                source.PlacedFootprint = layouts[subresource_index];
+
+                command_list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+            }
+
+            D3D12_RESOURCE_BARRIER barrier = {};
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Transition.pResource = d3d12_resource;
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            command_list->ResourceBarrier(1, &barrier);
+            return true;
+        });
+
+        SafeRelease(upload_resource);
+        if (!submitted)
+        {
+            SafeRelease(d3d12_resource);
+            return false;
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle = {};
+        D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle = {};
+        if (!rhi->AllocateSrvDescriptor(&srv_cpu_handle, &srv_gpu_handle))
+        {
+            SafeRelease(d3d12_resource);
+            return false;
+        }
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = CreateD3D12SrvDescFromMetadata(metadata);
+        device->CreateShaderResourceView(d3d12_resource, &srv_desc, srv_cpu_handle);
+
+        texture->SetD3D12Resource(d3d12_resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        texture->SetD3D12SrvHandles(srv_cpu_handle, srv_gpu_handle);
+        SetD3D12DebugName(texture->GetD3D12Resource(), debug_name);
+        return true;
+    }
+
+    static bool CreateD3D12TextureFromD3D11Desc(Texture* texture, const D3D11_TEXTURE2D_DESC* d3d11_desc)
+    {
+        RenderHardwareInterface* rhi = g_dolas_engine.m_render_hardware_interface;
+        ID3D12Device* device = rhi ? rhi->GetDevice() : nullptr;
+        if (!rhi || !device || !texture || !d3d11_desc)
+        {
+            LOG_ERROR("CreateD3D12TextureFromD3D11Desc: invalid input");
+            return false;
+        }
+
+        const bool is_render_target = (d3d11_desc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0;
+        const bool is_depth_stencil = (d3d11_desc->BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0;
+        const bool is_shader_resource = (d3d11_desc->BindFlags & D3D11_BIND_SHADER_RESOURCE) != 0;
+
+        D3D12_RESOURCE_FLAGS resource_flags = D3D12_RESOURCE_FLAG_NONE;
+        if (is_render_target)
+        {
+            resource_flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        if (is_depth_stencil)
+        {
+            resource_flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        D3D12_RESOURCE_DESC resource_desc = {};
+        resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        resource_desc.Width = d3d11_desc->Width;
+        resource_desc.Height = d3d11_desc->Height;
+        resource_desc.DepthOrArraySize = static_cast<UINT16>(std::max<UINT>(1, d3d11_desc->ArraySize));
+        resource_desc.MipLevels = static_cast<UINT16>(std::max<UINT>(1, d3d11_desc->MipLevels));
+        resource_desc.Format = d3d11_desc->Format;
+        resource_desc.SampleDesc = d3d11_desc->SampleDesc;
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        resource_desc.Flags = resource_flags;
+
+        D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_CLEAR_VALUE clear_value = {};
+        D3D12_CLEAR_VALUE* clear_value_ptr = nullptr;
+
+        if (is_depth_stencil)
+        {
+            initial_state = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            clear_value.Format = ConvertDepthResourceToDsvFormat(d3d11_desc->Format);
+            clear_value.DepthStencil.Depth = 1.0f;
+            clear_value.DepthStencil.Stencil = 0;
+            clear_value_ptr = &clear_value;
+        }
+        else if (is_render_target)
+        {
+            initial_state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            clear_value.Format = d3d11_desc->Format;
+            clear_value.Color[0] = 0.0f;
+            clear_value.Color[1] = 0.0f;
+            clear_value.Color[2] = 0.0f;
+            clear_value.Color[3] = 1.0f;
+            clear_value_ptr = &clear_value;
+        }
+        else if (is_shader_resource)
+        {
+            initial_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        }
+
+        D3D12_HEAP_PROPERTIES heap_properties = {};
+        heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+        heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        heap_properties.CreationNodeMask = 1;
+        heap_properties.VisibleNodeMask = 1;
+
+        ID3D12Resource* d3d12_resource = nullptr;
+        HRESULT hr = device->CreateCommittedResource(
+            &heap_properties,
+            D3D12_HEAP_FLAG_NONE,
+            &resource_desc,
+            initial_state,
+            clear_value_ptr,
+            IID_PPV_ARGS(&d3d12_resource));
+        if (FAILED(hr))
+        {
+            LOG_ERROR("CreateD3D12TextureFromD3D11Desc: failed to create texture, HRESULT: 0x{0:X}", hr);
+            return false;
+        }
+
+        if (is_render_target)
+        {
+            D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = {};
+            if (!rhi->AllocateRtvDescriptor(&rtv_handle))
+            {
+                SafeRelease(d3d12_resource);
+                return false;
+            }
+
+            D3D12_RENDER_TARGET_VIEW_DESC rtv_desc = {};
+            rtv_desc.Format = d3d11_desc->Format;
+            rtv_desc.ViewDimension = d3d11_desc->SampleDesc.Count > 1 ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
+            device->CreateRenderTargetView(d3d12_resource, &rtv_desc, rtv_handle);
+            texture->SetD3D12RtvHandle(rtv_handle);
+        }
+
+        if (is_depth_stencil)
+        {
+            D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle = {};
+            if (!rhi->AllocateDsvDescriptor(&dsv_handle))
+            {
+                SafeRelease(d3d12_resource);
+                return false;
+            }
+
+            D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc = {};
+            dsv_desc.Format = ConvertDepthResourceToDsvFormat(d3d11_desc->Format);
+            dsv_desc.ViewDimension = d3d11_desc->SampleDesc.Count > 1 ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+            device->CreateDepthStencilView(d3d12_resource, &dsv_desc, dsv_handle);
+            texture->SetD3D12DsvHandle(dsv_handle);
+        }
+
+        if (is_shader_resource)
+        {
+            D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle = {};
+            D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle = {};
+            if (!rhi->AllocateSrvDescriptor(&srv_cpu_handle, &srv_gpu_handle))
+            {
+                SafeRelease(d3d12_resource);
+                return false;
+            }
+
+            D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = CreateD3D12Texture2DSrvDesc(
+                d3d11_desc->Format,
+                d3d11_desc->MipLevels,
+                d3d11_desc->ArraySize,
+                d3d11_desc->SampleDesc.Count);
+            device->CreateShaderResourceView(d3d12_resource, &srv_desc, srv_cpu_handle);
+            texture->SetD3D12SrvHandles(srv_cpu_handle, srv_gpu_handle);
+        }
+
+        texture->SetD3D12Resource(d3d12_resource, initial_state);
+        return true;
     }
     TextureManager::TextureManager()
     {
@@ -71,10 +593,6 @@ namespace Dolas
     TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)
     {
         std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-
-        // 创建纹理资源
-        ID3D11Resource* d3d_resource = nullptr;
-        ID3D11ShaderResourceView* d3d_shader_resource_view = nullptr;
         std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
         
         // 使用 DirectXTex 的现代 API
@@ -88,38 +606,60 @@ namespace Dolas
             &metadata,
             image));
 
-        // 创建纹理和 Shader Resource View
-        HR(DirectX::CreateTexture(
-            g_dolas_engine.m_rhi->GetD3D11Device(),
-            image.GetImages(),
-            image.GetImageCount(),
-            metadata,
-            &d3d_resource));
-
-
-        // 创建 Shader Resource View
-        HR(DirectX::CreateShaderResourceView(
-            g_dolas_engine.m_rhi->GetD3D11Device(),
-            image.GetImages(),
-            image.GetImageCount(),
-            metadata,
-            &d3d_shader_resource_view));
-
-
-        // 获取ID3D11Texture2D接口
-        ID3D11Texture2D* d3d_texture_2d = nullptr;
-        HR(d3d_resource->QueryInterface(
-            __uuidof(ID3D11Texture2D),
-            reinterpret_cast<void**>(&d3d_texture_2d)));
-        // 释放原始资源引用（已经通过QueryInterface获得了新的引用）
-        d3d_resource->Release();
-
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
         // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
         texture->m_file_id = HashConverter::StringHash(texture_file_path);
-        texture->m_d3d_texture_2d = d3d_texture_2d;
-        texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
+        texture->m_texture_type = ConvertToDolasTextureType(metadata);
+        texture->m_texture_format = ConvertToTextureFormat(metadata.format);
+        texture->m_width = static_cast<uint32_t>(metadata.width);
+        texture->m_height = static_cast<uint32_t>(metadata.height);
+        texture->m_mip_levels = static_cast<uint32_t>(metadata.mipLevels);
+        if (!CreateD3D12TextureFromScratchImage(image, metadata, texture_file_path_w, texture))
+        {
+            LOG_ERROR("Failed to create D3D12 DDS texture: {0}", texture_file_path);
+            texture->Release();
+            DOLAS_DELETE(texture);
+            return TEXTURE_ID_EMPTY;
+        }
+
+        ID3D11Device* d3d11_device = g_dolas_engine.m_rhi ? g_dolas_engine.m_rhi->GetD3D11Device() : nullptr;
+        if (d3d11_device)
+        {
+            ID3D11Resource* d3d_resource = nullptr;
+            HRESULT hr = DirectX::CreateTexture(
+                d3d11_device,
+                image.GetImages(),
+                image.GetImageCount(),
+                metadata,
+                &d3d_resource);
+            if (SUCCEEDED(hr) && d3d_resource)
+            {
+                hr = d3d_resource->QueryInterface(
+                    __uuidof(ID3D11Texture2D),
+                    reinterpret_cast<void**>(&texture->m_d3d_texture_2d));
+                if (FAILED(hr))
+                {
+                    LOG_WARN("TextureManager::CreateTextureFromDDSFile: failed to create optional D3D11 texture mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+                }
+                d3d_resource->Release();
+            }
+            else
+            {
+                LOG_WARN("TextureManager::CreateTextureFromDDSFile: failed to create optional D3D11 resource mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+            }
+
+            hr = DirectX::CreateShaderResourceView(
+                d3d11_device,
+                image.GetImages(),
+                image.GetImageCount(),
+                metadata,
+                &texture->m_d3d_shader_resource_view);
+            if (FAILED(hr))
+            {
+                LOG_WARN("TextureManager::CreateTextureFromDDSFile: failed to create optional D3D11 SRV mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+            }
+        }
 
         // Debug names for RenderDoc
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + texture_file_path);
@@ -134,10 +674,6 @@ namespace Dolas
     TextureID TextureManager::CreateTextureFromHDRFile(const std::string& file_name)
     {
         std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-
-        // 创建纹理资源
-        ID3D11Resource* d3d_resource = nullptr;
-        ID3D11ShaderResourceView* d3d_shader_resource_view = nullptr;
         std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
         
         // 使用 DirectXTex 的 HDR 加载 API
@@ -150,40 +686,60 @@ namespace Dolas
             &metadata,
             image));
 
-
-        // 创建纹理
-        HR(DirectX::CreateTexture(
-            g_dolas_engine.m_rhi->GetD3D11Device(),
-            image.GetImages(),
-            image.GetImageCount(),
-            metadata,
-            &d3d_resource));
-
-
-        // 创建 Shader Resource View
-        HR(DirectX::CreateShaderResourceView(
-            g_dolas_engine.m_rhi->GetD3D11Device(),
-            image.GetImages(),
-            image.GetImageCount(),
-            metadata,
-            &d3d_shader_resource_view));
-
-
-        // 获取ID3D11Texture2D接口
-        ID3D11Texture2D* d3d_texture_2d = nullptr;
-        HR(d3d_resource->QueryInterface(
-            __uuidof(ID3D11Texture2D),
-            reinterpret_cast<void**>(&d3d_texture_2d)));
-
-        // 释放原始资源引用（已经通过QueryInterface获得了新的引用）
-        d3d_resource->Release();
-
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
         // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
         texture->m_file_id = HashConverter::StringHash(texture_file_path);
-        texture->m_d3d_texture_2d = d3d_texture_2d;
-        texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
+        texture->m_texture_type = ConvertToDolasTextureType(metadata);
+        texture->m_texture_format = ConvertToTextureFormat(metadata.format);
+        texture->m_width = static_cast<uint32_t>(metadata.width);
+        texture->m_height = static_cast<uint32_t>(metadata.height);
+        texture->m_mip_levels = static_cast<uint32_t>(metadata.mipLevels);
+        if (!CreateD3D12TextureFromScratchImage(image, metadata, texture_file_path_w, texture))
+        {
+            LOG_ERROR("Failed to create D3D12 HDR texture: {0}", texture_file_path);
+            texture->Release();
+            DOLAS_DELETE(texture);
+            return TEXTURE_ID_EMPTY;
+        }
+
+        ID3D11Device* d3d11_device = g_dolas_engine.m_rhi ? g_dolas_engine.m_rhi->GetD3D11Device() : nullptr;
+        if (d3d11_device)
+        {
+            ID3D11Resource* d3d_resource = nullptr;
+            HRESULT hr = DirectX::CreateTexture(
+                d3d11_device,
+                image.GetImages(),
+                image.GetImageCount(),
+                metadata,
+                &d3d_resource);
+            if (SUCCEEDED(hr) && d3d_resource)
+            {
+                hr = d3d_resource->QueryInterface(
+                    __uuidof(ID3D11Texture2D),
+                    reinterpret_cast<void**>(&texture->m_d3d_texture_2d));
+                if (FAILED(hr))
+                {
+                    LOG_WARN("TextureManager::CreateTextureFromHDRFile: failed to create optional D3D11 texture mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+                }
+                d3d_resource->Release();
+            }
+            else
+            {
+                LOG_WARN("TextureManager::CreateTextureFromHDRFile: failed to create optional D3D11 resource mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+            }
+
+            hr = DirectX::CreateShaderResourceView(
+                d3d11_device,
+                image.GetImages(),
+                image.GetImageCount(),
+                metadata,
+                &texture->m_d3d_shader_resource_view);
+            if (FAILED(hr))
+            {
+                LOG_WARN("TextureManager::CreateTextureFromHDRFile: failed to create optional D3D11 SRV mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+            }
+        }
 
         // Debug names for RenderDoc
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D_HDR: ") + texture_file_path);
@@ -198,10 +754,6 @@ namespace Dolas
 	TextureID TextureManager::CreateTextureFromPNGFile(const std::string& file_name)
 	{
 		std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-
-		// 创建纹理资源
-		ID3D11Resource* d3d_resource = nullptr;
-		ID3D11ShaderResourceView* d3d_shader_resource_view = nullptr;
 		std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
 
 		// 使用 DirectXTex 的 WIC 加载 API (支持 PNG, JPG, BMP 等)
@@ -215,36 +767,59 @@ namespace Dolas
 			&metadata,
 			image));
 
-		// 创建纹理
-		HR(DirectX::CreateTexture(
-			g_dolas_engine.m_rhi->GetD3D11Device(),
-			image.GetImages(),
-			image.GetImageCount(),
-			metadata,
-			&d3d_resource));
-
-		// 创建 Shader Resource View
-		HR(DirectX::CreateShaderResourceView(
-			g_dolas_engine.m_rhi->GetD3D11Device(),
-			image.GetImages(),
-			image.GetImageCount(),
-			metadata,
-			&d3d_shader_resource_view));
-
-		// 获取ID3D11Texture2D接口
-		ID3D11Texture2D* d3d_texture_2d = nullptr;
-		HR(d3d_resource->QueryInterface(
-			__uuidof(ID3D11Texture2D),
-			reinterpret_cast<void**>(&d3d_texture_2d)));
-
-		// 释放原始资源引用（已经通过QueryInterface获得了新的引用）
-		d3d_resource->Release();
-
 		Texture* texture = DOLAS_NEW(Texture);
 		texture->m_is_from_file = true;
 		texture->m_file_id = HashConverter::StringHash(texture_file_path);
-		texture->m_d3d_texture_2d = d3d_texture_2d;
-		texture->m_d3d_shader_resource_view = d3d_shader_resource_view;
+		texture->m_texture_type = ConvertToDolasTextureType(metadata);
+		texture->m_texture_format = ConvertToTextureFormat(metadata.format);
+		texture->m_width = static_cast<uint32_t>(metadata.width);
+		texture->m_height = static_cast<uint32_t>(metadata.height);
+		texture->m_mip_levels = static_cast<uint32_t>(metadata.mipLevels);
+		if (!CreateD3D12TextureFromScratchImage(image, metadata, texture_file_path_w, texture))
+		{
+			LOG_ERROR("Failed to create D3D12 PNG texture: {0}", texture_file_path);
+			texture->Release();
+			DOLAS_DELETE(texture);
+			return TEXTURE_ID_EMPTY;
+		}
+
+		ID3D11Device* d3d11_device = g_dolas_engine.m_rhi ? g_dolas_engine.m_rhi->GetD3D11Device() : nullptr;
+		if (d3d11_device)
+		{
+			ID3D11Resource* d3d_resource = nullptr;
+			HRESULT hr = DirectX::CreateTexture(
+				d3d11_device,
+				image.GetImages(),
+				image.GetImageCount(),
+				metadata,
+				&d3d_resource);
+			if (SUCCEEDED(hr) && d3d_resource)
+			{
+				hr = d3d_resource->QueryInterface(
+					__uuidof(ID3D11Texture2D),
+					reinterpret_cast<void**>(&texture->m_d3d_texture_2d));
+				if (FAILED(hr))
+				{
+					LOG_WARN("TextureManager::CreateTextureFromPNGFile: failed to create optional D3D11 texture mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+				}
+				d3d_resource->Release();
+			}
+			else
+			{
+				LOG_WARN("TextureManager::CreateTextureFromPNGFile: failed to create optional D3D11 resource mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+			}
+
+			hr = DirectX::CreateShaderResourceView(
+				d3d11_device,
+				image.GetImages(),
+				image.GetImageCount(),
+				metadata,
+				&texture->m_d3d_shader_resource_view);
+			if (FAILED(hr))
+			{
+				LOG_WARN("TextureManager::CreateTextureFromPNGFile: failed to create optional D3D11 SRV mirror for {0}, HRESULT: 0x{1:X}", texture_file_path, hr);
+			}
+		}
 
 		// Debug names for RenderDoc
 		SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D_PNG: ") + texture_file_path);
@@ -376,6 +951,12 @@ namespace Dolas
         TextureID texture_handle,
         const D3D11_TEXTURE2D_DESC* pDesc)
     {
+        if (!pDesc)
+        {
+            LOG_ERROR("TextureManager::D3DCreateTexture2D: texture description is null");
+            return false;
+        }
+
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = false;
         texture->m_file_id = TEXTURE_ID_EMPTY;
@@ -385,11 +966,28 @@ namespace Dolas
         texture->m_height = pDesc->Height;
         texture->m_mip_levels = pDesc->MipLevels;
 
-        g_dolas_engine.m_rhi->GetD3D11Device()->CreateTexture2D(pDesc, nullptr, &texture->m_d3d_texture_2d);
+        if (!CreateD3D12TextureFromD3D11Desc(texture, pDesc))
+        {
+            LOG_ERROR("TextureManager::D3DCreateTexture2D: Failed to create D3D12 texture");
+            texture->Release();
+            DOLAS_DELETE(texture);
+            return false;
+        }
+
+        ID3D11Device* d3d11_device = g_dolas_engine.m_rhi ? g_dolas_engine.m_rhi->GetD3D11Device() : nullptr;
+        if (d3d11_device)
+        {
+            HRESULT hr = d3d11_device->CreateTexture2D(pDesc, nullptr, &texture->m_d3d_texture_2d);
+            if (FAILED(hr))
+            {
+                LOG_WARN("TextureManager::D3DCreateTexture2D: failed to create optional D3D11 texture mirror, HRESULT: 0x{0:X}", hr);
+            }
+        }
 
         // Debug name using string id registry if present
         std::string tex_name = ID_TO_STRING(texture_handle);
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + tex_name);
+        SetD3D12DebugName(texture->GetD3D12Resource(), StringUtil::StringToWString(std::string("Tex2D: ") + tex_name));
 
         m_textures[texture_handle] = texture;
 
