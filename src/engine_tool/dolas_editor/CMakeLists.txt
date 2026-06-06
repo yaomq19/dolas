@@ -10,4 +10,9 @@ add_executable(DolasEditor
 
 target_link_libraries(DolasEditor PRIVATE DolasFunction)
 
+# Windows 资源文件（图标等）
+if(WIN32)
+    target_sources(DolasEditor PRIVATE ${CMAKE_SOURCE_DIR}/rc/Dolas.rc)
+endif()
+
 set_target_properties(DolasEditor PROPERTIES FOLDER "EngineTool")

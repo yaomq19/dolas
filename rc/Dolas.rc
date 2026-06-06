@@ -1,0 +1,12 @@
+// Dolas Engine - Windows Resource File
+// Defines the application icon and metadata
+
+// Use 101 as a standard application icon ID
+#define IDI_ICON_MAIN 101
+
+// Main application icon
+IDI_ICON_MAIN ICON "Dolas.ico"
+
+#ifndef RC_INVOKED
+// Ensure UNICODE builds define these
+#endif

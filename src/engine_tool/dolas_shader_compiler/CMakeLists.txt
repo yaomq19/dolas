@@ -28,11 +28,14 @@ target_include_directories(ShaderCompiler PRIVATE
 if(WIN32)
     # 链接D3DCompiler库
     target_link_libraries(ShaderCompiler d3dcompiler)
-    
+
     # 设置为控制台应用程序
     set_target_properties(ShaderCompiler PROPERTIES
         WIN32_EXECUTABLE FALSE
     )
+
+    # 资源文件（图标等）
+    target_sources(ShaderCompiler PRIVATE ${CMAKE_SOURCE_DIR}/rc/Dolas.rc)
 endif()
 
 # 编译选项

@@ -13,6 +13,11 @@ target_link_libraries(DolasTest PRIVATE Catch2::Catch2WithMain)
 target_compile_features(DolasTest PRIVATE cxx_std_20)
 target_compile_options(DolasTest PRIVATE /utf-8)
 
+# Windows 资源文件（图标等）
+if(WIN32)
+    target_sources(DolasTest PRIVATE ${CMAKE_SOURCE_DIR}/rc/Dolas.rc)
+endif()
+
 # IDE 文件夹归类
 set_target_properties(DolasTest PROPERTIES FOLDER "EngineTest")
 

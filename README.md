@@ -31,7 +31,7 @@ dolas/
 ├── third_party/                # Third-party dependencies (git submodules)
 ├── content/                    # Raw assets (shaders, textures, materials, etc.)
 ├── docs/                       # Documentation and specifications
-├── build/                      # CMake build output directory
+├── build/                      # CMake build output (build/debug/, build/release/)
 └── CMakeLists.txt
 ```
 
@@ -57,31 +57,31 @@ git submodule update --init --recursive
 ### 2. Configure
 
 ```bash
-cmake -B build -G "Visual Studio 17 2022" -A x64
+cmake --preset debug
 ```
 
 ### 3. Build
 
 ```bash
 # Debug
-cmake --build build --config Debug -j16
+cmake --build --preset debug -j16
 
 # Release
-cmake --build build --config Release -j16
+cmake --build --preset release -j16
 ```
 
 ### 4. Run
 
-Executables are output to `build/bin/`:
+Executables are output to `build/<preset>/bin/`:
 
-- **Editor**: `build/bin/Debug/DolasEditor.exe`
-- **Shader Compiler**: `build/bin/Debug/ShaderCompiler.exe`
-- **Unit Tests**: `build/bin/Debug/DolasTest.exe`
+- **Editor**: `build/debug/bin/DolasEditor.exe`
+- **Shader Compiler**: `build/debug/bin/ShaderCompiler.exe`
+- **Unit Tests**: `build/debug/bin/DolasTest.exe`
 
 Run all tests via CTest:
 
 ```bash
-cd build && ctest --config Debug
+cd build/debug && ctest --config Debug
 ```
 
 ## Architecture

@@ -1,5 +1,6 @@
 # CMake构建目录
 build/
+cmake-build-*/
 
 # Mesh 文件 - 体积较大，不纳入版本控制
 content/mesh/
