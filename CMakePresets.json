@@ -24,6 +24,32 @@
       "inherits": "vs2022",
       "displayName": "VS2022 Release",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "macos",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Unix Makefiles"
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "inherits": "macos",
+      "displayName": "macOS Vulkan Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DOLAS_RENDER_BACKEND": "Vulkan",
+        "ENABLE_VULKAN": "ON"
+      }
+    },
+    {
+      "name": "macos-vulkan-release",
+      "inherits": "macos",
+      "displayName": "macOS Vulkan Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DOLAS_RENDER_BACKEND": "Vulkan",
+        "ENABLE_VULKAN": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -36,6 +62,14 @@
       "name": "vs2022-release",
       "configurePreset": "vs2022-release",
       "configuration": "Release"
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "configurePreset": "macos-vulkan-debug"
+    },
+    {
+      "name": "macos-vulkan-release",
+      "configurePreset": "macos-vulkan-release"
     }
   ],
   "testPresets": [
@@ -48,6 +82,16 @@
       "name": "vs2022-release",
       "configurePreset": "vs2022-release",
       "configuration": "Release"
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "configurePreset": "macos-vulkan-debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "macos-vulkan-release",
+      "configurePreset": "macos-vulkan-release",
+      "output": { "outputOnFailure": true }
     }
   ]
 }

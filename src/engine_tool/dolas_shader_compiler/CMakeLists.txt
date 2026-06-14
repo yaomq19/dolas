@@ -50,4 +50,11 @@ target_compile_definitions(ShaderCompiler PRIVATE
     SHADER_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/shader"
 )
 
+if(DOLAS_GLSLANG_VALIDATOR_EXECUTABLE)
+    target_compile_definitions(ShaderCompiler PRIVATE
+        DOLAS_GLSLANG_VALIDATOR_EXECUTABLE="${DOLAS_GLSLANG_VALIDATOR_EXECUTABLE}"
+        DOLAS_SHADER_SPIRV_OUTPUT_DIR="${CMAKE_BINARY_DIR}/compiled_shaders"
+    )
+endif()
+
 set_target_properties(ShaderCompiler PROPERTIES FOLDER "EngineTool")

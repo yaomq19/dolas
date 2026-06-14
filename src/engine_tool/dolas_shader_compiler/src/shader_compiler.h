@@ -46,6 +46,8 @@ private:
     // Windows特定的D3D编译实现
 #ifdef _WIN32
     CompilationResult CompileHLSLShader(const std::string& filepath, const std::string& entry_point, const std::string& target);
+#else
+    CompilationResult CompileHLSLToSpirvShader(const std::string& filepath, const std::string& entry_point, const std::string& target);
 #endif
 };
 

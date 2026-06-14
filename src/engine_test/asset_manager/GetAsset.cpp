@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 
 namespace
 {
+#if !defined(NDEBUG)
     class ProjectContentDirGuard
     {
     public:
@@ -33,6 +34,7 @@ namespace
         std::string m_original_project_dir;
         fs::path m_test_dir;
     };
+#endif
 
     fs::path MakeUniqueTestDir()
     {
@@ -43,7 +45,7 @@ namespace
 }
 
 TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
-#if defined(DEBUG) || defined(_DEBUG)
+#if !defined(NDEBUG)
     // 创建临时的测试资产目录
     fs::path testDir = MakeUniqueTestDir();
     ProjectContentDirGuard projectContentDirGuard(testDir);

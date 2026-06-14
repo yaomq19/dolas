@@ -12,6 +12,7 @@ namespace fs = std::filesystem;
 
 namespace
 {
+#if !defined(NDEBUG)
     class ProjectContentDirGuard
     {
     public:
@@ -34,6 +35,7 @@ namespace
         std::string m_original_project_dir;
         fs::path m_test_dir;
     };
+#endif
 
     fs::path MakeUniqueTestDir()
     {
@@ -58,7 +60,7 @@ static const char* kCameraXmlTemplate = R"(<?xml version="1.0" encoding="UTF-8"?
 
 TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager][ParseField]")
 {
-#if defined(DEBUG) || defined(_DEBUG)
+#if !defined(NDEBUG)
     fs::path testDir = MakeUniqueTestDir();
     ProjectContentDirGuard projectContentDirGuard(testDir);
 

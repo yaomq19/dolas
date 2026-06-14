@@ -35,7 +35,7 @@ target_link_libraries(DolasCore PRIVATE TracyClient)
 target_compile_definitions(DolasCore PRIVATE ENGINE_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content/")
 
 target_compile_features(DolasCore PRIVATE cxx_std_20)
-target_compile_options(DolasCore PRIVATE /utf-8)
+dolas_enable_utf8(DolasCore)
 
 set_target_properties(DolasCore PROPERTIES FOLDER "EngineRuntime")
 
