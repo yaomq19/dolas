@@ -7,14 +7,21 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <d3dcompiler.h>
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 #pragma comment(lib, "d3dcompiler.lib")
+#else
+#include <array>
+#include <cstdio>
+#include <sys/wait.h>
+#endif
 
 // Custom include handler that prefixes include paths with a given root directory
+#ifdef _WIN32
 class DirectoryIncludeHandler : public ID3DInclude
 {
 public:
@@ -161,8 +168,7 @@ CompilationResult ShaderCompiler::CompileShader(const std::string& filepath, con
 #ifdef _WIN32
         result = CompileHLSLShader(filepath, actual_entry, actual_target);
 #else
-        result.error_message = "HLSL compilation not supported on current platform";
-        LOG_ERROR(result.error_message);
+        result = CompileHLSLToSpirvShader(filepath, actual_entry, actual_target);
 #endif
         
     } catch (const std::exception& e) {
@@ -257,6 +263,142 @@ CompilationResult ShaderCompiler::CompileHLSLShader(const std::string& filepath,
         result.bytecode_size = std::to_string(shader_blob->GetBufferSize()) + " bytes";
     }
 
+    return result;
+}
+#endif
+
+#ifndef _WIN32
+namespace
+{
+    std::string ShellQuote(const std::string& value)
+    {
+        std::string quoted = "'";
+        for (char ch : value)
+        {
+            if (ch == '\'')
+            {
+                quoted += "'\\''";
+            }
+            else
+            {
+                quoted += ch;
+            }
+        }
+        quoted += "'";
+        return quoted;
+    }
+
+    std::string StageFromTarget(const std::string& target)
+    {
+        if (target.rfind("vs_", 0) == 0) return "vert";
+        if (target.rfind("ps_", 0) == 0) return "frag";
+        if (target.rfind("gs_", 0) == 0) return "geom";
+        if (target.rfind("cs_", 0) == 0) return "comp";
+        if (target.rfind("hs_", 0) == 0) return "tesc";
+        if (target.rfind("ds_", 0) == 0) return "tese";
+        return "";
+    }
+
+    std::string GetGlslangValidatorPath()
+    {
+#ifdef DOLAS_GLSLANG_VALIDATOR_EXECUTABLE
+        return DOLAS_GLSLANG_VALIDATOR_EXECUTABLE;
+#else
+        return "glslangValidator";
+#endif
+    }
+
+    std::filesystem::path GetSpirvOutputDirectory()
+    {
+#ifdef DOLAS_SHADER_SPIRV_OUTPUT_DIR
+        return std::filesystem::path(DOLAS_SHADER_SPIRV_OUTPUT_DIR);
+#else
+        return std::filesystem::current_path() / "compiled_shaders";
+#endif
+    }
+
+    int CommandExitCode(int status)
+    {
+        if (status == -1)
+        {
+            return -1;
+        }
+        if (WIFEXITED(status))
+        {
+            return WEXITSTATUS(status);
+        }
+        return status;
+    }
+}
+
+CompilationResult ShaderCompiler::CompileHLSLToSpirvShader(const std::string& filepath, const std::string& entry_point, const std::string& target)
+{
+    CompilationResult result;
+    result.filename = FileUtils::GetFilename(filepath);
+    result.success = false;
+    result.shader_model = target + " -> spirv";
+    result.entry_point = entry_point;
+
+    const std::string stage = StageFromTarget(target);
+    if (stage.empty())
+    {
+        result.error_message = "Unsupported shader target for SPIR-V compilation: " + target;
+        return result;
+    }
+
+    std::filesystem::path output_dir = GetSpirvOutputDirectory();
+    std::error_code ec;
+    std::filesystem::create_directories(output_dir, ec);
+    if (ec)
+    {
+        result.error_message = "Failed to create SPIR-V output directory: " + ec.message();
+        return result;
+    }
+
+    std::filesystem::path input_path(filepath);
+    std::filesystem::path output_path = output_dir / (input_path.stem().string() + "_" + entry_point + ".spv");
+    const std::string include_dir = m_include_directory.empty()
+        ? input_path.parent_path().string()
+        : m_include_directory;
+
+    std::ostringstream command;
+    command << ShellQuote(GetGlslangValidatorPath())
+            << " -V --target-env vulkan1.2 -D"
+            << " --hlsl-offsets --hlsl-iomap"
+            << " -S " << ShellQuote(stage)
+            << " -e " << ShellQuote(entry_point)
+            << " -I" << ShellQuote(include_dir)
+            << " -o " << ShellQuote(output_path.string())
+            << " " << ShellQuote(filepath)
+            << " 2>&1";
+
+    std::array<char, 512> buffer {};
+    std::string command_output;
+    FILE* pipe = popen(command.str().c_str(), "r");
+    if (!pipe)
+    {
+        result.error_message = "Failed to launch glslangValidator";
+        return result;
+    }
+
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr)
+    {
+        command_output += buffer.data();
+    }
+
+    const int exit_code = CommandExitCode(pclose(pipe));
+    if (exit_code != 0)
+    {
+        result.error_message = command_output.empty()
+            ? ("glslangValidator failed with exit code " + std::to_string(exit_code))
+            : command_output;
+        return result;
+    }
+
+    result.success = true;
+    result.error_message.clear();
+    const size_t bytecode_size = FileUtils::GetFileSize(output_path.string());
+    result.bytecode_size = std::to_string(bytecode_size) + " bytes SPIR-V";
     return result;
 }
 #endif

@@ -24,6 +24,6 @@ target_include_directories(DolasCommon PRIVATE
 target_link_libraries(DolasCommon PRIVATE spdlog::spdlog_header_only)
 
 target_compile_features(DolasCommon PRIVATE cxx_std_20)
-target_compile_options(DolasCommon PRIVATE /utf-8)
+dolas_enable_utf8(DolasCommon)
 
 set_target_properties(DolasCommon PROPERTIES FOLDER "EngineRuntime")

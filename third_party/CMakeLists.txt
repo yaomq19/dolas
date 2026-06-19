@@ -23,16 +23,29 @@ set(IMGUI_HEADERS
     ${IMGUI_DIR}/imstb_truetype.h
 )
 
-# ImGui 后端文件（Win32 + DX12）
-set(IMGUI_BACKEND_SOURCES
-    ${IMGUI_DIR}/backends/imgui_impl_win32.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_dx12.cpp
-)
+if(APPLE AND DOLAS_RENDER_BACKEND STREQUAL "Vulkan")
+    # ImGui 后端文件（GLFW + Vulkan）
+    set(IMGUI_BACKEND_SOURCES
+        ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+    )
 
-set(IMGUI_BACKEND_HEADERS
-    ${IMGUI_DIR}/backends/imgui_impl_win32.h
-    ${IMGUI_DIR}/backends/imgui_impl_dx12.h
-)
+    set(IMGUI_BACKEND_HEADERS
+        ${IMGUI_DIR}/backends/imgui_impl_glfw.h
+        ${IMGUI_DIR}/backends/imgui_impl_vulkan.h
+    )
+else()
+    # ImGui 后端文件（Win32 + DX12）
+    set(IMGUI_BACKEND_SOURCES
+        ${IMGUI_DIR}/backends/imgui_impl_win32.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_dx12.cpp
+    )
+
+    set(IMGUI_BACKEND_HEADERS
+        ${IMGUI_DIR}/backends/imgui_impl_win32.h
+        ${IMGUI_DIR}/backends/imgui_impl_dx12.h
+    )
+endif()
 
 # 创建 ImGui 静态库
 add_library(imgui STATIC
@@ -56,15 +69,18 @@ if(WIN32)
         dxguid
         dwmapi
     )
+elseif(APPLE AND DOLAS_RENDER_BACKEND STREQUAL "Vulkan")
+    target_link_libraries(imgui PUBLIC
+        Vulkan::Vulkan
+        ${DOLAS_GLFW_TARGET}
+    )
 endif()
 
 # 设置 ImGui 的编译选项
 target_compile_features(imgui PUBLIC cxx_std_11)
 
 # 如果是 MSVC，设置为 UTF-8 编码
-if(MSVC)
-    target_compile_options(imgui PRIVATE /utf-8)
-endif()
+dolas_enable_utf8(imgui)
 
 # 将 ImGui 组织到 IDE 的 "ThirdParty" 文件夹中
 set_target_properties(imgui PROPERTIES FOLDER "ThirdParty")
@@ -77,7 +93,13 @@ set(ASSIMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assimp)
 option(ASSIMP_BUILD_TESTS "Build Assimp tests" OFF)
 option(ASSIMP_BUILD_ASSIMP_TOOLS "Build Assimp tools" OFF)
 option(ASSIMP_BUILD_SAMPLES "Build Assimp samples" OFF)
-option(ASSIMP_BUILD_ZLIB "Build Assimp's own zlib" ON)
+if(APPLE)
+    option(ASSIMP_BUILD_ZLIB "Build Assimp's own zlib" OFF)
+    set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
+else()
+    option(ASSIMP_BUILD_ZLIB "Build Assimp's own zlib" ON)
+    set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+endif()
 option(ASSIMP_INSTALL "Install Assimp" OFF)
 option(ASSIMP_NO_EXPORT "Disable Assimp exporters" OFF)
 option(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT "Build all exporters by default" OFF)
@@ -148,21 +170,23 @@ if(TARGET spdlog_headers_for_ide)
 endif()
 
 # ============ DirectXTex ============
-# DirectXTex - Texture processing library
-set(DIRECTXTEX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DirectXTex)
+# DirectXTex - Texture processing library (Windows only)
+if(WIN32)
+    set(DIRECTXTEX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DirectXTex)
 
-# 配置 DirectXTex 构建选项
-set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-set(BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
-set(BUILD_DX11 ON CACHE BOOL "" FORCE)
-set(BUILD_DX12 OFF CACHE BOOL "" FORCE)
+    # 配置 DirectXTex 构建选项
+    set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    set(BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+    set(BUILD_DX11 ON CACHE BOOL "" FORCE)
+    set(BUILD_DX12 OFF CACHE BOOL "" FORCE)
 
-# 添加 DirectXTex 子目录
-add_subdirectory(${DIRECTXTEX_DIR})
+    # 添加 DirectXTex 子目录
+    add_subdirectory(${DIRECTXTEX_DIR})
 
-# 将 DirectXTex 组织到 IDE 的 "ThirdParty" 文件夹中
-if(TARGET DirectXTex)
-    set_target_properties(DirectXTex PROPERTIES FOLDER "ThirdParty")
+    # 将 DirectXTex 组织到 IDE 的 "ThirdParty" 文件夹中
+    if(TARGET DirectXTex)
+        set_target_properties(DirectXTex PROPERTIES FOLDER "ThirdParty")
+    endif()
 endif()
 
 # ============ Tracy ============
@@ -231,9 +255,7 @@ target_link_libraries(imguizmo PUBLIC imgui)
 target_compile_features(imguizmo PUBLIC cxx_std_11)
 
 # 如果是 MSVC，设置为 UTF-8 编码
-if(MSVC)
-    target_compile_options(imguizmo PRIVATE /utf-8)
-endif()
+dolas_enable_utf8(imguizmo)
 
 # 将 ImGuizmo 组织到 IDE 的 "ThirdParty" 文件夹中
 set_target_properties(imguizmo PROPERTIES

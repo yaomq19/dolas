@@ -6,6 +6,11 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 # 递归搜索当前目录下的所有.h文件
 file(GLOB_RECURSE HEADERS "*.h")
 
+if(NOT WIN32)
+    list(FILTER SOURCES EXCLUDE REGEX "dolas_render_hardware_interface\\.cpp$")
+    list(FILTER HEADERS EXCLUDE REGEX "dolas_render_hardware_interface\\.h$")
+endif()
+
 # ============ IDE文件组织结构设置 ============
 # 遍历所有源文件和头文件
 foreach(source IN LISTS SOURCES HEADERS)
@@ -23,7 +28,9 @@ target_sources(DolasPlatform PRIVATE ${SOURCES} ${HEADERS})
 target_link_libraries(DolasPlatform PRIVATE DolasCommon)
 
 # 链接 D3D12 库
-target_link_libraries(DolasPlatform PRIVATE d3d12.lib dxgi.lib dxguid.lib)
+if(WIN32)
+    target_link_libraries(DolasPlatform PRIVATE d3d12.lib dxgi.lib dxguid.lib)
+endif()
 
 target_include_directories(DolasPlatform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/public/include
@@ -33,6 +40,6 @@ target_include_directories(DolasPlatform PRIVATE
 )
 
 target_compile_features(DolasPlatform PRIVATE cxx_std_20)
-target_compile_options(DolasPlatform PRIVATE /utf-8)
+dolas_enable_utf8(DolasPlatform)
 
 set_target_properties(DolasPlatform PROPERTIES FOLDER "EngineRuntime")

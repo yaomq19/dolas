@@ -4,11 +4,16 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include <filesystem>
 #include <iostream>
-#include <Windows.h>
 #include <vector>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <mach-o/dyld.h>
+#endif
 
 namespace Dolas
 {
@@ -93,7 +98,11 @@ namespace Dolas
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
         std::tm local_tm;
+#ifdef _WIN32
         localtime_s(&local_tm, &now_time_t);
+#else
+        localtime_r(&now_time_t, &local_tm);
+#endif
             
         // Format timestamp as filename: dolas_2025-10-18_22-47-15.log
         std::ostringstream timestamp_stream;
@@ -107,6 +116,7 @@ namespace Dolas
             
         // Get project root directory and create full path for log file
         // Get executable directory and create full path for log file (use `log/` in the same folder as the exe)
+#ifdef _WIN32
         char exe_path[MAX_PATH] = {0};
         DWORD len = GetModuleFileNameA(nullptr, exe_path, MAX_PATH);
         std::filesystem::path exe_file;
@@ -118,6 +128,25 @@ namespace Dolas
         {
             exe_file = std::filesystem::current_path(); // fallback to current path
         }
+#else
+        std::filesystem::path exe_file;
+        uint32_t exe_path_size = 0;
+        _NSGetExecutablePath(nullptr, &exe_path_size);
+        std::vector<char> exe_path(exe_path_size + 1, '\0');
+        if (_NSGetExecutablePath(exe_path.data(), &exe_path_size) == 0)
+        {
+            std::error_code canonical_ec;
+            exe_file = std::filesystem::weakly_canonical(std::filesystem::path(exe_path.data()), canonical_ec);
+            if (canonical_ec)
+            {
+                exe_file = std::filesystem::path(exe_path.data());
+            }
+        }
+        else
+        {
+            exe_file = std::filesystem::current_path(); // fallback to current path
+        }
+#endif
         std::filesystem::path log_dir = exe_file.parent_path() / "log";
         std::filesystem::path log_file = log_dir / timestamp_stream.str();
         m_log_file_path = log_file.string();
@@ -170,4 +199,3 @@ namespace Dolas
         return true;
     }
 }
-

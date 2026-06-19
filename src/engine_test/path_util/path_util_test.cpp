@@ -4,7 +4,7 @@
 using namespace Dolas;
 
 TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
-#if defined(DEBUG) || defined(_DEBUG)
+#if !defined(NDEBUG)
     // 准备测试环境
     std::string originalEngineDir = PathUtils::GetEngineContentDir();
     std::string originalProjectDir = PathUtils::GetProjectContentDir();

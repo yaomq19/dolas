@@ -66,7 +66,7 @@ namespace Dolas
 		return GetEngineContentDir() + SHADER_DIR_NAME;
 	}
 
-#if defined(DEBUG) | defined(_DEBUG)
+#if !defined(NDEBUG)
 	void PathUtils::SetEngineContentDirForDebug(const std::string& engine_content_dir)
 	{
 		g_engine_content_directory_path = engine_content_dir;

@@ -30,7 +30,7 @@ target_include_directories(DolasFunction PRIVATE
 )
 
 target_compile_features(DolasFunction PRIVATE cxx_std_20)
-target_compile_options(DolasFunction PRIVATE /utf-8)
+dolas_enable_utf8(DolasFunction)
 
 target_link_libraries(DolasFunction PRIVATE DolasCommon)
 target_link_libraries(DolasFunction PRIVATE DolasResource)
@@ -48,8 +48,10 @@ target_compile_definitions(DolasFunction PRIVATE TRACY_ENABLE)
 target_link_libraries(DolasFunction PRIVATE tinyxml2)
 # 链接 Assimp（来自 third_party 子模块）
 target_link_libraries(DolasFunction PRIVATE assimp)
-# 链接 DirectXTex（来自 third_party 子模块）
-target_link_libraries(DolasFunction PRIVATE DirectXTex)
+if(WIN32)
+    # 链接 DirectXTex（来自 third_party 子模块）
+    target_link_libraries(DolasFunction PRIVATE DirectXTex)
+endif()
 
 # 链接 ImGui（来自 third_party 子模块）
 target_link_libraries(DolasFunction PRIVATE imgui)

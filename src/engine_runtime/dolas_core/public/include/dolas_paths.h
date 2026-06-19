@@ -13,7 +13,7 @@ namespace Dolas {
         static std::optional<std::string> CombineToFullPath(const std::string& relative_path);
         static std::string GetShadersSourceDir();
 
-#if defined(DEBUG) | defined(_DEBUG)
+#if !defined(NDEBUG)
         static void SetEngineContentDirForDebug(const std::string& engine_content_dir);
         static void SetProjectContentDirForDebug(const std::string& project_content_dir);
 #endif
@@ -24,4 +24,4 @@ namespace Dolas {
     };
 } // namespace Dolas
 
-#endif // DOLAS_PATHS_H 
+#endif // DOLAS_PATHS_H
