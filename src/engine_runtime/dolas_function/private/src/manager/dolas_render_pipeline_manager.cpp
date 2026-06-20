@@ -38,7 +38,8 @@ namespace Dolas
 
     RenderPipeline* RenderPipelineManager::GetRenderPipelineByID(RenderPipelineID id)
     {
-        return m_render_pipelines[id];
+        auto pipeline_iter = m_render_pipelines.find(id);
+        return (pipeline_iter != m_render_pipelines.end()) ? pipeline_iter->second : nullptr;
     }
 
     Bool RenderPipelineManager::CreateRenderPipelineByID(RenderPipelineID id)

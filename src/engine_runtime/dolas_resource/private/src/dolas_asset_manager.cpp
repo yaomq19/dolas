@@ -7,6 +7,10 @@
 #include <vector>
 #include <map>
 #include <cstring>
+#include <cerrno>
+#include <cctype>
+#include <cstdlib>
+#include <limits>
 
 namespace Dolas
 {
@@ -148,39 +152,39 @@ namespace Dolas
             if (!raw)
                 return true;
 
-            std::string t = raw;
-            // trim
-            auto isSpace = [](unsigned char c) { return std::isspace(c) != 0; };
-            while (!t.empty() && isSpace((unsigned char)t.front())) t.erase(t.begin());
-            while (!t.empty() && isSpace((unsigned char)t.back())) t.pop_back();
+            std::string text = raw;
+            // Trim ASCII whitespace before name or numeric parsing.
+            auto isSpace = [](unsigned char character) { return std::isspace(character) != 0; };
+            while (!text.empty() && isSpace((unsigned char)text.front())) text.erase(text.begin());
+            while (!text.empty() && isSpace((unsigned char)text.back())) text.pop_back();
 
-            UInt u = 0;
+            UInt enum_value = 0;
             bool matched = false;
 
-            // match against enum name/display/alias (case-insensitive for ASCII)
+            // Match against enum name/display/alias (case-insensitive for ASCII).
             if (f.enumItems && f.enumItemCount > 0)
             {
-                auto eqNoCase = [](const std::string& a, const char* b) -> bool {
-                    if (!b) return false;
-                    const std::string bb(b);
-                    if (a.size() != bb.size()) return false;
-                    for (size_t i = 0; i < a.size(); i++)
+                auto eqNoCase = [](const std::string& left, const char* right) -> bool {
+                    if (!right) return false;
+                    const std::string right_text(right);
+                    if (left.size() != right_text.size()) return false;
+                    for (size_t index = 0; index < left.size(); index++)
                     {
-                        const unsigned char ca = (unsigned char)a[i];
-                        const unsigned char cb = (unsigned char)bb[i];
-                        const unsigned char la = (unsigned char)std::tolower(ca);
-                        const unsigned char lb = (unsigned char)std::tolower(cb);
-                        if (la != lb) return false;
+                        const unsigned char left_character = (unsigned char)left[index];
+                        const unsigned char right_character = (unsigned char)right_text[index];
+                        const unsigned char left_lower = (unsigned char)std::tolower(left_character);
+                        const unsigned char right_lower = (unsigned char)std::tolower(right_character);
+                        if (left_lower != right_lower) return false;
                     }
                     return true;
                 };
 
-                for (std::size_t i = 0; i < f.enumItemCount; i++)
+                for (std::size_t index = 0; index < f.enumItemCount; index++)
                 {
-                    const auto& it = f.enumItems[i];
-                    if (eqNoCase(t, it.name) || eqNoCase(t, it.display) || eqNoCase(t, it.alias))
+                    const auto& enum_item = f.enumItems[index];
+                    if (eqNoCase(text, enum_item.name) || eqNoCase(text, enum_item.display) || eqNoCase(text, enum_item.alias))
                     {
-                        u = (UInt)it.value;
+                        enum_value = (UInt)enum_item.value;
                         matched = true;
                         break;
                     }
@@ -189,12 +193,19 @@ namespace Dolas
 
             if (!matched)
             {
-                // numeric fallback
-                u = (UInt)std::strtoul(t.c_str(), nullptr, 10);
+                char* end_ptr = nullptr;
+                errno = 0;
+                unsigned long parsed_value = std::strtoul(text.c_str(), &end_ptr, 10);
+                if (text.empty() || end_ptr == text.c_str() || *end_ptr != '\0' || errno == ERANGE || parsed_value > std::numeric_limits<UInt>::max())
+                {
+                    LOG_ERROR("Invalid enum value '{0}' for field '{1}'", text, f.name);
+                    return false;
+                }
+                enum_value = static_cast<UInt>(parsed_value);
             }
 
             // The field is an enum class with underlying UInt. Avoid strict-aliasing UB by memcpy.
-            std::memcpy(base + f.offset, &u, sizeof(UInt));
+            std::memcpy(base + f.offset, &enum_value, sizeof(UInt));
             return true;
         }
         case RsdFieldType::FloatValue:

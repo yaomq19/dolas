@@ -12,6 +12,7 @@ content/texture/*.hdr
 src/engine/rsd/
 
 imgui.ini
+*~
 
 draft/
 

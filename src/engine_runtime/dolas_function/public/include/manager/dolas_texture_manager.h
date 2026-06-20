@@ -52,6 +52,8 @@ namespace Dolas
 		// 返回: 指向纹理的指针，如果未找到则返回nullptr
         Texture* GetTextureByTextureID(TextureID texture_id);
 
+        Bool DestroyTextureByID(TextureID texture_id);
+
 		// 从文件创建纹理
 		// file_name: 纹理文件名
 		// 返回: 纹理ID，如果创建失败则返回 TEXTURE_ID_EMPTY

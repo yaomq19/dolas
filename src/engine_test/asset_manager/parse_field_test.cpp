@@ -168,11 +168,8 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
         REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 0);
     }
 
-    SECTION("Invalid enum string falls back to numeric 0 (not nullptr)")
+    SECTION("Invalid enum string fails parsing")
     {
-        // EnumUInt parser always returns true — unmatched strings fall through
-        // to strtoul() numeric parsing, which yields 0 for non-numeric input.
-        // So the parse succeeds with the default numeric value (Perspective = 0).
         fs::path cameraPath = testDir / "invalid_enum.camera";
         {
             std::ofstream ofs(cameraPath);
@@ -182,9 +179,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
         }
 
         CameraRSD* camera = manager.GetRsdAsset<CameraRSD>("invalid_enum.camera");
-        REQUIRE(camera != nullptr);
-        // strtoul("NonExistentValue") returns 0 → Perspective
-        REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 0);
+        REQUIRE(camera == nullptr);
     }
 
 #else

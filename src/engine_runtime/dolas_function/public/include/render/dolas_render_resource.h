@@ -16,13 +16,13 @@ namespace Dolas
     {
         friend class RenderResourceManager;
     public:
-        TextureID m_gbuffer_a_id;
-        TextureID m_gbuffer_b_id;
-        TextureID m_gbuffer_c_id;
-        TextureID m_gbuffer_d_id;
-        TextureID m_depth_stencil_id;
-        TextureID m_scene_result_id;
+        TextureID m_gbuffer_a_id = TEXTURE_ID_EMPTY;
+        TextureID m_gbuffer_b_id = TEXTURE_ID_EMPTY;
+        TextureID m_gbuffer_c_id = TEXTURE_ID_EMPTY;
+        TextureID m_gbuffer_d_id = TEXTURE_ID_EMPTY;
+        TextureID m_depth_stencil_id = TEXTURE_ID_EMPTY;
+        TextureID m_scene_result_id = TEXTURE_ID_EMPTY;
     }; // class RenderResource
 } // namespace Dolas
 
-#endif // DOLAS_RENDER_RESOURCE_H 
+#endif // DOLAS_RENDER_RESOURCE_H

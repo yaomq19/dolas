@@ -25,12 +25,13 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
 
     bool BufferManager::Clear()
     {
-        for (auto it = m_buffers.begin(); it != m_buffers.end(); ++it)
+        for (auto buffer_iter = m_buffers.begin(); buffer_iter != m_buffers.end(); ++buffer_iter)
         {
-            Buffer* buffer = it->second;
+            Buffer* buffer = buffer_iter->second;
             if (buffer)
             {
                 buffer->Release();
+                DOLAS_DELETE(buffer);
             }
         }
         m_buffers.clear();
@@ -46,7 +47,8 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
         // 创建缓冲区
         if (!buffer->CreateBuffer(type, usage, size, stride, initial_data))
         {
-
+            buffer->Release();
+            DOLAS_DELETE(buffer);
             return BUFFER_ID_EMPTY;
         }
 
@@ -70,6 +72,8 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
         // 创建顶点缓冲区
         if (!buffer->CreateVertexBuffer(vertex_data.size() * sizeof(Float), vertex_data.data(), usage))
         {
+            buffer->Release();
+            DOLAS_DELETE(buffer);
             return BUFFER_ID_EMPTY;
         }
 
@@ -91,6 +95,8 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
         // 创建索引缓冲区
         if (!buffer->CreateIndexBuffer(size, initial_data, usage))
         {
+            buffer->Release();
+            DOLAS_DELETE(buffer);
             return BUFFER_ID_EMPTY;
         }
 
@@ -107,6 +113,8 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
         // 创建常量缓冲区
         if (!buffer->CreateConstantBuffer(size, initial_data, usage))
         {
+            buffer->Release();
+            DOLAS_DELETE(buffer);
             return BUFFER_ID_EMPTY;
         }
 
@@ -124,6 +132,8 @@ static std::atomic<UInt> s_next_buffer_id{ 1 };
         if (!buffer->CreateStructuredBuffer(element_count, element_size, initial_data, usage))
         {
             LOG_ERROR("BufferManager::CreateStructuredBuffer: Failed to create structured buffer: {0}", buffer_id);
+            buffer->Release();
+            DOLAS_DELETE(buffer);
             return BUFFER_ID_EMPTY;
         }
 

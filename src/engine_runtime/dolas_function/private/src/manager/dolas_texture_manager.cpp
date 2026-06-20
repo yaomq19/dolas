@@ -564,6 +564,11 @@ namespace Dolas
 		//TextureID sky_box_texture_id = CreateTextureFromDDSFile("texture/sky_box.dds");
         // 使用 HDR 文件加载天空盒纹理
         TextureID sky_box_texture_id = CreateTextureFromHDRFile("texture/golden_gate_hills_4k.hdr");
+        if (sky_box_texture_id == TEXTURE_ID_EMPTY)
+        {
+            LOG_ERROR("TextureManager::Initialize: failed to load required skybox texture");
+            return false;
+        }
         
         m_global_textures[GlobalTextureType::GLOBAL_TEXTURE_SKY_BOX] = sky_box_texture_id;
 
@@ -572,15 +577,17 @@ namespace Dolas
 
     bool TextureManager::Clear()
     {
-        for (auto it = m_textures.begin(); it != m_textures.end(); ++it)
+        for (auto texture_iter = m_textures.begin(); texture_iter != m_textures.end(); ++texture_iter)
         {
-            Texture* texture = it->second;
+            Texture* texture = texture_iter->second;
             if (texture)
             {
                 texture->Release();
+                DOLAS_DELETE(texture);
             }
         }
         m_textures.clear();
+        m_global_textures.clear();
         return true;
     }
 
@@ -588,6 +595,25 @@ namespace Dolas
     {
         auto it = m_textures.find(texture_id);
         return (it != m_textures.end()) ? it->second : nullptr;
+    }
+
+    Bool TextureManager::DestroyTextureByID(TextureID texture_id)
+    {
+        auto texture_iter = m_textures.find(texture_id);
+        if (texture_iter == m_textures.end())
+        {
+            return false;
+        }
+
+        Texture* texture = texture_iter->second;
+        if (texture)
+        {
+            texture->Release();
+            DOLAS_DELETE(texture);
+        }
+        m_textures.erase(texture_iter);
+
+        return true;
     }
 
     TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)
@@ -600,11 +626,16 @@ namespace Dolas
         DirectX::ScratchImage image;
         
         // 从 DDS 文件加载
-        HR(DirectX::LoadFromDDSFile(
+        HRESULT load_hr = DirectX::LoadFromDDSFile(
             texture_file_path_w.c_str(),
             DirectX::DDS_FLAGS_NONE,
             &metadata,
-            image));
+            image);
+        if (FAILED(load_hr))
+        {
+            LOG_ERROR("TextureManager::CreateTextureFromDDSFile: failed to load {0}, HRESULT: 0x{1:X}", texture_file_path, load_hr);
+            return TEXTURE_ID_EMPTY;
+        }
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
@@ -665,6 +696,7 @@ namespace Dolas
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + texture_file_path);
         SetD3DDebugName(texture->m_d3d_shader_resource_view, std::string("SRV: ") + texture_file_path);
         
+        DestroyTextureByID(texture->m_file_id);
         m_textures[texture->m_file_id] = texture;
         
         LOG_INFO("Successfully loaded texture: {0}", texture_file_path);
@@ -681,10 +713,15 @@ namespace Dolas
         DirectX::ScratchImage image;
         
         // 从 HDR 文件加载
-        HR(DirectX::LoadFromHDRFile(
+        HRESULT load_hr = DirectX::LoadFromHDRFile(
             texture_file_path_w.c_str(),
             &metadata,
-            image));
+            image);
+        if (FAILED(load_hr))
+        {
+            LOG_ERROR("TextureManager::CreateTextureFromHDRFile: failed to load {0}, HRESULT: 0x{1:X}", texture_file_path, load_hr);
+            return TEXTURE_ID_EMPTY;
+        }
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
@@ -745,6 +782,7 @@ namespace Dolas
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D_HDR: ") + texture_file_path);
         SetD3DDebugName(texture->m_d3d_shader_resource_view, std::string("SRV_HDR: ") + texture_file_path);
         
+        DestroyTextureByID(texture->m_file_id);
         m_textures[texture->m_file_id] = texture;
         
         LOG_INFO("Successfully loaded HDR texture: {0}", texture_file_path);
@@ -761,11 +799,16 @@ namespace Dolas
 		DirectX::ScratchImage image;
 
 		// 从 WIC 文件加载
-		HR(DirectX::LoadFromWICFile(
+		HRESULT load_hr = DirectX::LoadFromWICFile(
 			texture_file_path_w.c_str(),
 			DirectX::WIC_FLAGS_NONE,
 			&metadata,
-			image));
+			image);
+		if (FAILED(load_hr))
+		{
+			LOG_ERROR("TextureManager::CreateTextureFromPNGFile: failed to load {0}, HRESULT: 0x{1:X}", texture_file_path, load_hr);
+			return TEXTURE_ID_EMPTY;
+		}
 
 		Texture* texture = DOLAS_NEW(Texture);
 		texture->m_is_from_file = true;
@@ -825,6 +868,7 @@ namespace Dolas
 		SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D_PNG: ") + texture_file_path);
 		SetD3DDebugName(texture->m_d3d_shader_resource_view, std::string("SRV_PNG: ") + texture_file_path);
 
+		DestroyTextureByID(texture->m_file_id);
 		m_textures[texture->m_file_id] = texture;
 
 		LOG_INFO("Successfully loaded PNG texture: {0}", texture_file_path);
@@ -989,6 +1033,7 @@ namespace Dolas
         SetD3DDebugName(texture->m_d3d_texture_2d, std::string("Tex2D: ") + tex_name);
         SetD3D12DebugName(texture->GetD3D12Resource(), StringUtil::StringToWString(std::string("Tex2D: ") + tex_name));
 
+        DestroyTextureByID(texture_handle);
         m_textures[texture_handle] = texture;
 
         return true;
