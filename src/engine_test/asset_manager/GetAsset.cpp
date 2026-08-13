@@ -1,10 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
+#include "dolas_asset_path.h"
 #include "dolas_asset_manager.h"
 #include "dolas_paths.h"
 #include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <string_view>
 
 using namespace Dolas;
 namespace fs = std::filesystem;
@@ -42,6 +44,13 @@ namespace
         const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
         return fs::current_path() / ("temp_test_assets_" + std::to_string(now) + "_" + std::to_string(s_counter.fetch_add(1)));
     }
+
+    AssetPath RequireAssetPath(std::string_view value)
+    {
+        const auto asset_path = AssetPath::Parse(value);
+        REQUIRE(asset_path.has_value());
+        return *asset_path;
+    }
 }
 
 TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
@@ -59,7 +68,7 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
             ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root></root>";
         }
 
-        const AssetBase* asset = manager.GetAsset("_project/valid_asset.ast");
+        const AssetBase* asset = manager.GetAsset(RequireAssetPath("_project/valid_asset.ast"));
         
         REQUIRE(asset != nullptr);
     }
@@ -71,15 +80,15 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
             ofs << "<root></root>";
         }
 
-        const AssetBase* firstCall = manager.GetAsset("_project/cache_test.ast");
-        const AssetBase* secondCall = manager.GetAsset("_project/cache_test.ast");
+        const AssetBase* firstCall = manager.GetAsset(RequireAssetPath("_project/cache_test.ast"));
+        const AssetBase* secondCall = manager.GetAsset(RequireAssetPath("_project//./cache_test.ast"));
         
         REQUIRE(firstCall != nullptr);
         REQUIRE(firstCall == secondCall);
     }
 
     SECTION("加载不存在的文件应返回 nullptr") {
-        const AssetBase* asset = manager.GetAsset("_project/non_existent.ast");
+        const AssetBase* asset = manager.GetAsset(RequireAssetPath("_project/non_existent.ast"));
         REQUIRE(asset == nullptr);
     }
 
@@ -90,7 +99,7 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
             ofs << "This is not XML content";
         }
 
-        const AssetBase* asset = manager.GetAsset("_project/invalid_xml.ast");
+        const AssetBase* asset = manager.GetAsset(RequireAssetPath("_project/invalid_xml.ast"));
         REQUIRE(asset == nullptr);
     }
 
@@ -101,7 +110,7 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
             ofs << ""; // 空文件
         }
 
-        const AssetBase* asset = manager.GetAsset("_project/no_root.ast");
+        const AssetBase* asset = manager.GetAsset(RequireAssetPath("_project/no_root.ast"));
         REQUIRE(asset == nullptr);
     }
 
@@ -113,17 +122,7 @@ TEST_CASE("AssetManagerNew::GetAsset Unit Tests", "[AssetManager]") {
             ofs << "dummy binary data";
         }
 
-        const AssetBase* asset = manager.GetAsset("_project/texture.png");
-        REQUIRE(asset == nullptr);
-    }
-
-    SECTION("路径前缀无效应返回 nullptr") {
-        const AssetBase* asset = manager.GetAsset("invalid_prefix/asset.ast");
-        REQUIRE(asset == nullptr);
-    }
-
-    SECTION("空路径应返回 nullptr") {
-        const AssetBase* asset = manager.GetAsset("");
+        const AssetBase* asset = manager.GetAsset(RequireAssetPath("_project/texture.png"));
         REQUIRE(asset == nullptr);
     }
 #else

@@ -1,6 +1,6 @@
 ﻿<asset>
-  <vertex_shader type="RawReference">shader/deferred_shading/deferred_shading_vs.hlsl</vertex_shader>
-  <pixel_shader type="RawReference">shader/deferred_shading/deferred_shading_ps.hlsl</pixel_shader>
+  <vertex_shader type="RawReference">_engine/shader/deferred_shading/deferred_shading_vs.hlsl</vertex_shader>
+  <pixel_shader type="RawReference">_engine/shader/deferred_shading/deferred_shading_ps.hlsl</pixel_shader>
   <vertex_shader_global_variables type="Map" />
   <pixel_shader_global_variables type="Map" />
   <pixel_shader_texture type="Map" />

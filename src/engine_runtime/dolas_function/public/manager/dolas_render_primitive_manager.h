@@ -1,13 +1,13 @@
 #ifndef DOLAS_RENDER_PRIMITIVE_MANAGER_H
 #define DOLAS_RENDER_PRIMITIVE_MANAGER_H
 
-#include <string>
 #include <unordered_map>
 #include <memory>
 #include "render/dolas_rhi_common.h"
 #include "dolas_hash.h"
 namespace Dolas
 {
+    class AssetPath;
     class RenderPrimitive;
 
 	enum BaseGeometryType : UInt
@@ -46,7 +46,7 @@ namespace Dolas
         RenderPrimitive* GetRenderPrimitiveByID(RenderPrimitiveID render_primitive_id) const;
 
         // 从 .mesh 文件创建 RenderPrimitive，返回对应的 RenderPrimitiveID
-        RenderPrimitiveID CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name);
+        RenderPrimitiveID CreateRenderPrimitiveFromMeshFile(const AssetPath& asset_path);
     private:
 		Bool InitializeSphereGeometry();
 		Bool InitializeQuadGeometry();

@@ -7,5 +7,5 @@
   <color type="DynamicArray" element="Float" />
   <indices type="DynamicArray" element="UInt" />
   <topology type="Enum">TriangleList</topology>
-  <material type="AssetReference">scene/default_scene/entities/hammer/hammer.material</material>
+  <material type="AssetReference">_engine/scene/default_scene/entities/hammer/hammer.material</material>
 </asset>

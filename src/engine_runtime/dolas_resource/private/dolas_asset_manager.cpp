@@ -40,23 +40,6 @@ namespace Dolas
         return true;
     }
 
-    std::optional<AssetPath> AssetManager::ParseLegacyAssetPath(std::string_view file_name)
-    {
-        if (file_name.empty())
-        {
-            return std::nullopt;
-        }
-
-        if (file_name.front() == '_' || file_name.front() == '/' || file_name.front() == '\\')
-        {
-            return AssetPath::Parse(file_name);
-        }
-
-        std::string mounted_path{"_engine/"};
-        mounted_path.append(file_name);
-        return AssetPath::Parse(mounted_path);
-    }
-
     static Bool LoadXmlFileInternal(const std::string& file_path, tinyxml2::XMLDocument& xml_doc)
     {
         const auto ret = xml_doc.LoadFile(file_path.c_str());
@@ -458,18 +441,18 @@ namespace Dolas
     {
     }
 
-    const AssetBase* AssetManagerNew::GetAsset(const std::string& relative_file_path)
+    const AssetBase* AssetManagerNew::GetAsset(const AssetPath& asset_path)
     {
-        if (m_assets.contains(relative_file_path))
+        if (const auto it = m_assets.find(asset_path); it != m_assets.end())
         {
-            return m_assets.at(relative_file_path).get();
+            return it->second.get();
         }
         
-        LoadAsset(relative_file_path);
+        LoadAsset(asset_path);
         
-        if (m_assets.contains(relative_file_path))
+        if (const auto it = m_assets.find(asset_path); it != m_assets.end())
         {
-            return m_assets.at(relative_file_path).get();
+            return it->second.get();
         }
         return nullptr;
     }
@@ -499,34 +482,29 @@ namespace Dolas
         return nullptr; // to do
     }
 
-    Bool AssetManagerNew::LoadAsset(const std::string& relative_file_path)
+    Bool AssetManagerNew::LoadAsset(const AssetPath& asset_path)
     {
-        if (relative_file_path.empty())
+        const auto absolute_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!absolute_path)
         {
-            LOG_ERROR("Relative file path is empty");
+            LOG_ERROR("Failed to resolve asset path: {}", asset_path.GetString());
             return false;
         }
 
-        auto absolute_path = PathUtils::CombineToFullPath(relative_file_path);
-        if (!absolute_path.has_value())
+        const std::string absolute_path_string = absolute_path->string();
+        if (absolute_path_string.ends_with(".ast"))
         {
-            LOG_ERROR("Failed to get absolute path for asset: {}", relative_file_path);
-            return false;
-        }
-
-        if (absolute_path.value().ends_with(".ast"))
-        {
-            if (auto result = LoadXmlAsset(absolute_path.value()))
+            if (auto result = LoadXmlAsset(absolute_path_string))
             {
-                m_assets[relative_file_path] = std::move(result);
+                m_assets[asset_path] = std::move(result);
                 return true;
             }
         }
         else
         {
-            if (auto result = LoadRawAsset(absolute_path.value()))
+            if (auto result = LoadRawAsset(absolute_path_string))
             {
-                m_assets[relative_file_path] = std::move(result);
+                m_assets[asset_path] = std::move(result);
                 return true;
             }
         }

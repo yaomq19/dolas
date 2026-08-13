@@ -2,6 +2,7 @@
 #include "manager/dolas_render_scene_manager.h"
 #include "render/dolas_render_scene.h"
 #include "dolas_engine.h"
+#include "dolas_asset_path.h"
 #include "dolas_asset_manager.h"
 #include "dolas_log_system_manager.h"
 #include "manager/dolas_render_entity_manager.h"
@@ -47,11 +48,11 @@ namespace Dolas
         return (it != m_render_scenes.end()) ? it->second : nullptr;
     }
 
-    Bool RenderSceneManager::CreateRenderSceneByID(RenderSceneID id, const std::string& file_name)
+    Bool RenderSceneManager::CreateRenderSceneByID(RenderSceneID id, const AssetPath& asset_path)
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		const SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(file_name);
+		const SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(asset_path);
 		DOLAS_RETURN_FALSE_IF_NULL(scene_rsd);
 
 		RenderScene* render_scene = DOLAS_NEW(RenderScene);
@@ -60,7 +61,13 @@ namespace Dolas
         // 直接从 SceneRSD 构建 RenderScene（不再依赖旧 SceneAsset/SceneEntity）
         for (const auto& item : scene_rsd->entities)
         {
-            const std::string& entity_file = item.entities;
+            const auto entity_asset_path = AssetPath::Parse(item.entities);
+            if (!entity_asset_path)
+            {
+                LOG_ERROR("Invalid entity asset path in scene {0}: {1}", asset_path.GetString(), item.entities);
+                continue;
+            }
+
             const Vector3 position = item.entity_positions;
             const Vector3 scale = item.entity_scales;
 
@@ -68,7 +75,7 @@ namespace Dolas
             const Vector4 rotv = item.entity_rotations;
             const Quaternion rotation(rotv.w, rotv.x, rotv.y, rotv.z);
 
-            RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_file, position, rotation, scale);
+            RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(*entity_asset_path, position, rotation, scale);
             if (render_entity_id != RENDER_ENTITY_ID_EMPTY)
             {
                 render_scene->m_render_entities.push_back(render_entity_id);

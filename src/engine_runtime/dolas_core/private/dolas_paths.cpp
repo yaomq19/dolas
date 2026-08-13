@@ -42,18 +42,6 @@ namespace Dolas
 		return (std::filesystem::path{root_directory} / relative_path).lexically_normal();
 	}
 
-	std::optional<std::string> PathUtils::CombineToFullPath(const std::string& relative_path)
-	{
-		const auto asset_path = AssetPath::Parse(relative_path);
-		if (!asset_path)
-		{
-			return std::nullopt;
-		}
-
-		const auto full_path = ResolveAssetPath(*asset_path);
-		return full_path ? std::optional<std::string>{full_path->generic_string()} : std::nullopt;
-	}
-
 	std::string PathUtils::GetShadersSourceDir() {
 		return GetEngineContentDir() + SHADER_DIR_NAME;
 	}

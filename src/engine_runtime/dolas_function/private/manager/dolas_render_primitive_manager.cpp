@@ -9,7 +9,6 @@
 #include "dolas_engine.h"
 #include "manager/dolas_buffer_manager.h"
 #include "render/dolas_render_primitive.h"
-#include "dolas_paths.h"
 #include "dolas_asset_manager.h"
 #include "dolas_log_system_manager.h"
 #include "render/dolas_rhi_common.h"
@@ -54,16 +53,16 @@ namespace Dolas
 		return render_primitive_id;
 	}
 
-    RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name)
+    RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const AssetPath& asset_path)
     {
-        const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file_name);
+        const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(asset_path);
         if (!mesh_rsd)
         {
-            LOG_ERROR("Failed to load mesh file: {0}", mesh_file_name);
+            LOG_ERROR("Failed to load mesh file: {0}", asset_path.GetString());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
-        RenderPrimitiveID primitive_id = HashConverter::StringHash(PathUtils::GetEngineContentDir() + mesh_file_name);
+        RenderPrimitiveID primitive_id = HashConverter::StringHash(asset_path.GetString());
 
         // 如果已经创建过，直接返回
         if (GetRenderPrimitiveByID(primitive_id) != nullptr)
@@ -114,7 +113,7 @@ namespace Dolas
         }
         else
         {
-            LOG_ERROR("Mesh file {0} has no position data", mesh_file_name);
+            LOG_ERROR("Mesh file {0} has no position data", asset_path.GetString());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
@@ -137,7 +136,7 @@ namespace Dolas
 
         if (!success)
         {
-            LOG_ERROR("Failed to create render primitive for {0}", mesh_file_name);
+            LOG_ERROR("Failed to create render primitive for {0}", asset_path.GetString());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 

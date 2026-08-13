@@ -2,6 +2,7 @@
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
 #include "manager/dolas_render_pipeline_manager.h"
+#include "dolas_asset_path.h"
 #include "dolas_engine.h"
 #include "manager/dolas_render_resource_manager.h"
 #include "render/dolas_render_pipeline.h"
@@ -83,14 +84,18 @@ namespace Dolas
 
         RenderSceneManager* render_scene_manager = g_dolas_engine.m_render_scene_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_scene_manager);
-        ret = render_scene_manager->CreateRenderSceneByID(render_view->m_render_scene_id, "scene/default_scene/default_scene.scene");
+        const auto scene_asset_path = AssetPath::Parse("_engine/scene/default_scene/default_scene.scene");
+        DOLAS_RETURN_FALSE_IF_FALSE(scene_asset_path.has_value());
+        ret = render_scene_manager->CreateRenderSceneByID(render_view->m_render_scene_id, *scene_asset_path);
         DOLAS_RETURN_FALSE_IF_FALSE(ret);
         RenderScene* render_scene = render_scene_manager->GetRenderSceneByID(render_view->m_render_scene_id);
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);
 
         RenderCameraManager* render_camera_manager = g_dolas_engine.m_render_camera_manager;
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera_manager);
-        ret = render_camera_manager->CreateRenderCameraByID(render_view->m_render_camera_id, "camera/default.camera");
+        const auto camera_asset_path = AssetPath::Parse("_engine/camera/default.camera");
+        DOLAS_RETURN_FALSE_IF_FALSE(camera_asset_path.has_value());
+        ret = render_camera_manager->CreateRenderCameraByID(render_view->m_render_camera_id, *camera_asset_path);
 		DOLAS_RETURN_FALSE_IF_FALSE(ret);
 		RenderCamera* render_camera = render_camera_manager->GetRenderCameraByID(render_view->m_render_camera_id);
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);

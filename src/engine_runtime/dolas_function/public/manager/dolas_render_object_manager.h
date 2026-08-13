@@ -10,6 +10,7 @@
 
 namespace Dolas
 {
+    class AssetPath;
     class RenderObject;
     
     /**
@@ -34,9 +35,9 @@ namespace Dolas
         // Object creation and management
         RenderObjectID CreateRenderObject();
         RenderObjectID CreateRenderObject(const std::string& name);
-        RenderObjectID CreateRenderObjectFromEntity(const std::string& entity_file_name);
-        RenderObjectID CreateRenderObjectFromEntity(const std::string& entity_file_name, const Vector3& position);
-        RenderObjectID CreateRenderObjectFromEntity(const std::string& entity_file_name, 
+        RenderObjectID CreateRenderObjectFromEntity(const AssetPath& asset_path);
+        RenderObjectID CreateRenderObjectFromEntity(const AssetPath& asset_path, const Vector3& position);
+        RenderObjectID CreateRenderObjectFromEntity(const AssetPath& asset_path,
                                                    const Vector3& position, 
                                                    const Vector3& rotation, 
                                                    const Vector3& scale);

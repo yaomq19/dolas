@@ -49,16 +49,16 @@ namespace Dolas
         return true;
     }
 
-	std::shared_ptr<VertexContext> ShaderManager::GetOrCreateVertexContext(const std::string& file_path, const std::string& entry_point)
+	std::shared_ptr<VertexContext> ShaderManager::GetOrCreateVertexContext(const AssetPath& asset_path, const std::string& entry_point)
 	{
-        std::string key = GenerateShaderKey(file_path, entry_point);
+        const std::string key = GenerateShaderKey(asset_path, entry_point);
         
         VertexShader* vertex_shader = nullptr;
         auto it = m_vertex_shaders.find(key);
         if (it == m_vertex_shaders.end())
         {
             // 动态类型为 VertexShader，函数返回类型是 VertexContext* 以保持兼容
-            VertexContext* created = CreateVertexShader(file_path, entry_point);
+            VertexContext* created = CreateVertexShader(asset_path, entry_point);
             if (!created)
             {
                 return nullptr;
@@ -75,15 +75,15 @@ namespace Dolas
         return std::shared_ptr<VertexContext>(vertex_shader, [](VertexContext*) {});
     }
 
-    std::shared_ptr<PixelContext> ShaderManager::GetOrCreatePixelContext(const std::string& file_path, const std::string& entry_point)
+    std::shared_ptr<PixelContext> ShaderManager::GetOrCreatePixelContext(const AssetPath& asset_path, const std::string& entry_point)
     {
-        std::string key = GenerateShaderKey(file_path, entry_point);
+        const std::string key = GenerateShaderKey(asset_path, entry_point);
 
         PixelShader* pixel_shader = nullptr;
         auto it = m_pixel_shaders.find(key);
         if (it == m_pixel_shaders.end())
         {
-            PixelContext* created = CreatePixelShader(file_path, entry_point);
+            PixelContext* created = CreatePixelShader(asset_path, entry_point);
             if (!created)
             {
                 return nullptr;
@@ -126,49 +126,62 @@ namespace Dolas
         LOG_INFO("/*****************************************/");
     }
 
-    VertexContext* ShaderManager::CreateVertexShader(const std::string& file_path, const std::string& entry_point)
+    VertexContext* ShaderManager::CreateVertexShader(const AssetPath& asset_path, const std::string& entry_point)
     {
-        std::string shader_path = PathUtils::GetEngineContentDir() + file_path;
+        const auto shader_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!shader_path)
+        {
+            LOG_ERROR("Failed to resolve vertex shader asset path: {0}", asset_path.GetString());
+            return nullptr;
+        }
+
+        const std::string shader_file_path = shader_path->string();
 
         // 创建着色器对象
         VertexContext* vertex_context = DOLAS_NEW(VertexContext);
         
         // 加载着色器
-        if (!vertex_context->BuildFromFile(shader_path, entry_point))
+        if (!vertex_context->BuildFromFile(shader_file_path, entry_point))
         {
-            LOG_ERROR("Failed to load shader from {0}", shader_path);
+            LOG_ERROR("Failed to load shader from {0}", shader_file_path);
             vertex_context->Release();
             DOLAS_DELETE(vertex_context);
             return nullptr;
         }
 
         vertex_context->PostBuildFromFile();
-        LOG_INFO("Successfully created shader from {0}", shader_path);
+        LOG_INFO("Successfully created shader from {0}", shader_file_path);
         return vertex_context;
     }
 
-    PixelContext* ShaderManager::CreatePixelShader(const std::string& file_path, const std::string& entry_point)
+    PixelContext* ShaderManager::CreatePixelShader(const AssetPath& asset_path, const std::string& entry_point)
     {
-        std::string shader_path = PathUtils::GetEngineContentDir() + file_path;
+        const auto shader_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!shader_path)
+        {
+            LOG_ERROR("Failed to resolve pixel shader asset path: {0}", asset_path.GetString());
+            return nullptr;
+        }
+
+        const std::string shader_file_path = shader_path->string();
 
         PixelContext* pixel_context = DOLAS_NEW(PixelContext);
-        if (!pixel_context->BuildFromFile(shader_path, entry_point))
+        if (!pixel_context->BuildFromFile(shader_file_path, entry_point))
         {
-            LOG_ERROR("Failed to load shader from {0}", shader_path);
+            LOG_ERROR("Failed to load shader from {0}", shader_file_path);
             pixel_context->Release();
             DOLAS_DELETE(pixel_context);
             return nullptr;
         }
 
         pixel_context->PostBuildFromFile();
-        LOG_INFO("Successfully created shader from {0}", shader_path);
+        LOG_INFO("Successfully created shader from {0}", shader_file_path);
         return pixel_context;
     }
 
-    std::string ShaderManager::GenerateShaderKey(const std::string& file_path, const std::string& entry_point)
+    std::string ShaderManager::GenerateShaderKey(const AssetPath& asset_path, const std::string& entry_point)
     {
-        return file_path + "_" + entry_point;
-        // return file_path + "_" + entry_point + "_" + std::to_string(std::hash<std::string>{}(file_path + "_" + entry_point));
+        return asset_path.GetString() + "_" + entry_point;
     }
 
 } // namespace Dolas

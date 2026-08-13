@@ -34,4 +34,4 @@
 - 新接口应传递 `AssetPath`，不要在调用处拼接 Content 根目录和文件名。
 - `AssetPath` 会统一路径分隔符、折叠重复分隔符并移除 `.` 路径段。
 - 绝对路径、空资产路径、未知挂载、`..` 目录穿越和非便携文件名字符均视为非法。
-- `AssetManager::GetRsdAsset(std::string_view)` 仅用于兼容旧代码；没有挂载前缀时按 `_engine/` 解析。新增调用应显式构造 `AssetPath`。
+- 所有资产加载接口都接收 `AssetPath`；资产文件中的引用也必须显式包含 `_engine/` 或 `_project/` 挂载前缀。

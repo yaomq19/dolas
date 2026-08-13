@@ -2,9 +2,7 @@
 #define DOLAS_ASSET_MANAGER_H
 
 #include <memory>
-#include <optional>
 #include <string>
-#include <string_view>
 #include <typeindex>
 #include <unordered_map>
 #include <utility>
@@ -44,14 +42,9 @@ namespace Dolas
         template<class TRsd>
         [[nodiscard]] const TRsd* GetRsdAsset(const AssetPath& asset_path);
 
-        // Compatibility entry point. Unmounted paths are interpreted as engine assets.
-        template<class TRsd>
-        [[nodiscard]] const TRsd* GetRsdAsset(std::string_view file_name);
-
     protected:
         // 只在 cpp 内部实现（避免其他模块感知 XML/tinyxml2）
         bool LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount);
-        [[nodiscard]] static std::optional<AssetPath> ParseLegacyAssetPath(std::string_view file_name);
 
         template<class TRsd>
         RsdCache<TRsd>& GetTypedCache()
@@ -93,13 +86,6 @@ namespace Dolas
         return &inserted->second;
     }
 
-    template<class TRsd>
-    const TRsd* AssetManager::GetRsdAsset(std::string_view file_name)
-    {
-        const auto asset_path = ParseLegacyAssetPath(file_name);
-        return asset_path ? GetRsdAsset<TRsd>(*asset_path) : nullptr;
-    }
-
     class AssetBase
     {
         
@@ -125,16 +111,16 @@ namespace Dolas
     public:
         AssetManagerNew();
         ~AssetManagerNew();
-        const AssetBase* GetAsset(const std::string& relative_file_path);
+        const AssetBase* GetAsset(const AssetPath& asset_path);
         
     private:
-        Bool LoadAsset(const std::string& relative_file_path);
+        Bool LoadAsset(const AssetPath& asset_path);
     private:
         std::unique_ptr<XmlAsset> LoadXmlAsset(const std::string& absolute_path);
         std::unique_ptr<RawAsset> LoadRawAsset(const std::string& absolute_path);
         
     private:
-        std::unordered_map<std::string, std::unique_ptr<AssetBase>> m_assets;
+        std::unordered_map<AssetPath, std::unique_ptr<AssetBase>, AssetPathHash> m_assets;
     };
 }
 #endif // DOLAS_ASSET_MANAGER_H

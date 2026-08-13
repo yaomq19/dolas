@@ -1,7 +1,7 @@
 <asset>
   <entities type="DynamicArray" element="OneEntity">
     <item>
-      <entities type="AssetReference">scene/default_scene/entities/ground_plane/ground_plane.entity</entities>
+      <entities type="AssetReference">_engine/scene/default_scene/entities/ground_plane/ground_plane.entity</entities>
       <entity_positions type="Vector3">
         <x>0</x>
         <y>0</y>
@@ -20,7 +20,7 @@
       </entity_scales>
     </item>
     <item>
-      <entities type="AssetReference">scene/default_scene/entities/sphere_0/sphere_0.entity</entities>
+      <entities type="AssetReference">_engine/scene/default_scene/entities/sphere_0/sphere_0.entity</entities>
       <entity_positions type="Vector3">
         <x>0</x>
         <y>0</y>
@@ -39,7 +39,7 @@
       </entity_scales>
     </item>
     <item>
-      <entities type="AssetReference">scene/default_scene/entities/hammer/hammer.entity</entities>
+      <entities type="AssetReference">_engine/scene/default_scene/entities/hammer/hammer.entity</entities>
       <entity_positions type="Vector3">
         <x>0</x>
         <y>0</y>

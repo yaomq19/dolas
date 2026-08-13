@@ -9,6 +9,7 @@
 #include "dolas_hash.h"
 namespace Dolas
 {
+    class AssetPath;
     class Material;
     class VertexContext;
     class PixelContext;
@@ -29,12 +30,12 @@ namespace Dolas
         bool Initialize();
         bool Clear();
         void InitializeGlobalMaterial();
-        MaterialID CreateMaterial(const std::string& file_name);
+        MaterialID CreateMaterial(const AssetPath& asset_path);
         Material* GetMaterialByID(MaterialID material_id);
         Material* GetGlobalMaterial(GlobalMaterialType global_material_type);
     private:
-        std::shared_ptr<VertexContext> CreateVertexContext(const std::string& file_path, const std::string& entry_point);
-        std::shared_ptr<PixelContext>  CreatePixelContext(const std::string& file_path, const std::string& entry_point);
+        std::shared_ptr<VertexContext> CreateVertexContext(const AssetPath& asset_path, const std::string& entry_point);
+        std::shared_ptr<PixelContext>  CreatePixelContext(const AssetPath& asset_path, const std::string& entry_point);
 
         std::unordered_map<MaterialID, Material*> m_materials;
         std::array<MaterialID, static_cast<UInt>(GlobalMaterialType::Count)> m_global_materials;

@@ -2,7 +2,6 @@
 #define DOLAS_TEXTURE_MANAGER_H
 
 #include <dxgiformat.h>
-#include <string>
 #include <unordered_map>
 #include <memory>
 #include "render/dolas_texture.h"
@@ -13,6 +12,7 @@ struct D3D11_TEXTURE2D_DESC;
 
 namespace Dolas
 {
+    class AssetPath;
     enum class DolasTextureUsage {
         Immutable,      // 只读纹理 (CPU不可访问，GPU只读)
         Dynamic,        // 动态纹理 (CPU频繁写，GPU读)
@@ -55,13 +55,13 @@ namespace Dolas
         Bool DestroyTextureByID(TextureID texture_id);
 
 		// 从文件创建纹理
-		// file_name: 纹理文件名
+		// asset_path: 带挂载点的纹理资产路径
 		// 返回: 纹理ID，如果创建失败则返回 TEXTURE_ID_EMPTY
-        TextureID CreateTextureFromDDSFile(const std::string& file_name);
+        TextureID CreateTextureFromDDSFile(const AssetPath& asset_path);
 
-        TextureID CreateTextureFromHDRFile(const std::string& file_name);
+        TextureID CreateTextureFromHDRFile(const AssetPath& asset_path);
 
-		TextureID CreateTextureFromPNGFile(const std::string& file_name);
+		TextureID CreateTextureFromPNGFile(const AssetPath& asset_path);
 
         Texture* GetGlobalTexture(GlobalTextureType global_texture_type);
 

@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "dolas_paths.h"
 
+#include <string_view>
+
 using namespace Dolas;
 
 namespace
@@ -26,9 +28,16 @@ namespace
         std::string m_project_root;
     };
 #endif
+
+    AssetPath RequireAssetPath(std::string_view value)
+    {
+        const auto asset_path = AssetPath::Parse(value);
+        REQUIRE(asset_path.has_value());
+        return *asset_path;
+    }
 }
 
-TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
+TEST_CASE("PathUtils::ResolveAssetPath Tests", "[PathUtils]") {
 #if !defined(NDEBUG)
     const PathRootsGuard roots_guard;
 
@@ -37,38 +46,28 @@ TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
     
     SECTION("Testing _engine prefix") {
         // 测试正常拼接（带斜杠）
-        auto result = PathUtils::CombineToFullPath("_engine/textures/stone.png");
+        const auto result = PathUtils::ResolveAssetPath(RequireAssetPath("_engine/textures/stone.png"));
         REQUIRE(result.has_value());
-        REQUIRE(result.value() == "C:/Engine/Content/textures/stone.png"); // 应该没有双斜杠
+        REQUIRE(result->generic_string() == "C:/Engine/Content/textures/stone.png"); // 应该没有双斜杠
 
-        auto normalized = PathUtils::CombineToFullPath("_engine\\textures//./stone.png/");
+        const auto normalized = PathUtils::ResolveAssetPath(RequireAssetPath("_engine\\textures//./stone.png/"));
         REQUIRE(normalized.has_value());
-        REQUIRE(normalized.value() == "C:/Engine/Content/textures/stone.png");
+        REQUIRE(normalized->generic_string() == "C:/Engine/Content/textures/stone.png");
     }
 
     SECTION("Testing _project prefix") {
         PathUtils::SetProjectContentDirForDebug("D:/MyGame/Content");
         
         // 正常拼接
-        auto resultValid = PathUtils::CombineToFullPath("_project/models/hero.fbx");
+        const AssetPath project_asset_path = RequireAssetPath("_project/models/hero.fbx");
+        const auto resultValid = PathUtils::ResolveAssetPath(project_asset_path);
         REQUIRE(resultValid.has_value());
-        REQUIRE(resultValid.value() == "D:/MyGame/Content/models/hero.fbx"); // 应该自动补全斜杠
+        REQUIRE(resultValid->generic_string() == "D:/MyGame/Content/models/hero.fbx"); // 应该自动补全斜杠
 
         // 项目路径未设置的情况
         PathUtils::SetProjectContentDirForDebug("");
-        auto resultEmpty = PathUtils::CombineToFullPath("_project/models/hero.fbx");
+        const auto resultEmpty = PathUtils::ResolveAssetPath(project_asset_path);
         REQUIRE_FALSE(resultEmpty.has_value());
-    }
-
-    SECTION("Testing invalid prefixes") {
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("engine/text.txt").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("/_engine/text.txt").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine2/text.txt").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/../text.txt").has_value());
-        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/C:/text.txt").has_value());
     }
 #else
     // Release build - skip this test as debug-only functions are not available

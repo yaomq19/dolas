@@ -2,12 +2,12 @@
 #define DOLAS_RENDER_SCENE_MANAGER_H
 
 #include <unordered_map>
-#include <string>
 
 #include "dolas_hash.h"
 
 namespace Dolas
 {
+    class AssetPath;
     class RenderScene;
     class RenderSceneManager
     {
@@ -19,7 +19,7 @@ namespace Dolas
         bool Clear();
 
         RenderScene* GetRenderSceneByID(RenderSceneID id);
-		Bool CreateRenderSceneByID(RenderSceneID id, const std::string& file_name);
+		Bool CreateRenderSceneByID(RenderSceneID id, const AssetPath& asset_path);
     private:
         std::unordered_map<RenderSceneID, RenderScene*> m_render_scenes;
         const static RenderSceneID RENDER_SCENE_ID_MAIN;

@@ -15,7 +15,6 @@ namespace Dolas {
         static std::string GetEngineContentDir();
         static std::string GetProjectContentDir();
         [[nodiscard]] static std::optional<std::filesystem::path> ResolveAssetPath(const AssetPath& asset_path);
-        static std::optional<std::string> CombineToFullPath(const std::string& relative_path);
         static std::string GetShadersSourceDir();
 
 #if !defined(NDEBUG)

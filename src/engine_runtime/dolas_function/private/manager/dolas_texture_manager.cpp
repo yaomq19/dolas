@@ -561,9 +561,15 @@ namespace Dolas
     bool TextureManager::Initialize()
     {
         // initialize global textures
-		//TextureID sky_box_texture_id = CreateTextureFromDDSFile("texture/sky_box.dds");
         // 使用 HDR 文件加载天空盒纹理
-        TextureID sky_box_texture_id = CreateTextureFromHDRFile("texture/golden_gate_hills_4k.hdr");
+        const auto sky_box_asset_path = AssetPath::Parse("_engine/texture/golden_gate_hills_4k.hdr");
+        if (!sky_box_asset_path)
+        {
+            LOG_ERROR("TextureManager::Initialize: invalid skybox asset path");
+            return false;
+        }
+
+        TextureID sky_box_texture_id = CreateTextureFromHDRFile(*sky_box_asset_path);
         if (sky_box_texture_id == TEXTURE_ID_EMPTY)
         {
             LOG_ERROR("TextureManager::Initialize: failed to load required skybox texture");
@@ -616,10 +622,17 @@ namespace Dolas
         return true;
     }
 
-    TextureID TextureManager::CreateTextureFromDDSFile(const std::string& file_name)
+    TextureID TextureManager::CreateTextureFromDDSFile(const AssetPath& asset_path)
     {
-        std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-        std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
+        const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!resolved_path)
+        {
+            LOG_ERROR("TextureManager::CreateTextureFromDDSFile: failed to resolve {0}", asset_path.GetString());
+            return TEXTURE_ID_EMPTY;
+        }
+
+        const std::string texture_file_path = resolved_path->string();
+        const std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
         
         // 使用 DirectXTex 的现代 API
         DirectX::TexMetadata metadata;
@@ -639,8 +652,8 @@ namespace Dolas
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
-        // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
-        texture->m_file_id = HashConverter::StringHash(texture_file_path);
+        // 使用规范逻辑资产路径计算稳定 ID，不依赖本机 Content 根目录。
+        texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
         texture->m_texture_type = ConvertToDolasTextureType(metadata);
         texture->m_texture_format = ConvertToTextureFormat(metadata.format);
         texture->m_width = static_cast<uint32_t>(metadata.width);
@@ -703,10 +716,17 @@ namespace Dolas
         return texture->m_file_id;
     }
 
-    TextureID TextureManager::CreateTextureFromHDRFile(const std::string& file_name)
+    TextureID TextureManager::CreateTextureFromHDRFile(const AssetPath& asset_path)
     {
-        std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-        std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
+        const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!resolved_path)
+        {
+            LOG_ERROR("TextureManager::CreateTextureFromHDRFile: failed to resolve {0}", asset_path.GetString());
+            return TEXTURE_ID_EMPTY;
+        }
+
+        const std::string texture_file_path = resolved_path->string();
+        const std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
         
         // 使用 DirectXTex 的 HDR 加载 API
         DirectX::TexMetadata metadata;
@@ -725,8 +745,8 @@ namespace Dolas
 
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
-        // 使用运行时文件路径字符串计算唯一哈希，不能用 STRING_ID 宏（那只对编译期字面量安全）
-        texture->m_file_id = HashConverter::StringHash(texture_file_path);
+        // 使用规范逻辑资产路径计算稳定 ID，不依赖本机 Content 根目录。
+        texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
         texture->m_texture_type = ConvertToDolasTextureType(metadata);
         texture->m_texture_format = ConvertToTextureFormat(metadata.format);
         texture->m_width = static_cast<uint32_t>(metadata.width);
@@ -789,10 +809,17 @@ namespace Dolas
         return texture->m_file_id;
     }
 
-	TextureID TextureManager::CreateTextureFromPNGFile(const std::string& file_name)
+	TextureID TextureManager::CreateTextureFromPNGFile(const AssetPath& asset_path)
 	{
-		std::string texture_file_path = PathUtils::GetEngineContentDir() + file_name;
-		std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
+		const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
+		if (!resolved_path)
+		{
+			LOG_ERROR("TextureManager::CreateTextureFromPNGFile: failed to resolve {0}", asset_path.GetString());
+			return TEXTURE_ID_EMPTY;
+		}
+
+		const std::string texture_file_path = resolved_path->string();
+		const std::wstring texture_file_path_w = StringUtil::StringToWString(texture_file_path);
 
 		// 使用 DirectXTex 的 WIC 加载 API (支持 PNG, JPG, BMP 等)
 		DirectX::TexMetadata metadata;
@@ -812,7 +839,7 @@ namespace Dolas
 
 		Texture* texture = DOLAS_NEW(Texture);
 		texture->m_is_from_file = true;
-		texture->m_file_id = HashConverter::StringHash(texture_file_path);
+		texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
 		texture->m_texture_type = ConvertToDolasTextureType(metadata);
 		texture->m_texture_format = ConvertToTextureFormat(metadata.format);
 		texture->m_width = static_cast<uint32_t>(metadata.width);
