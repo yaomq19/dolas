@@ -487,7 +487,7 @@ namespace Dolas
         const auto absolute_path = PathUtils::ResolveAssetPath(asset_path);
         if (!absolute_path)
         {
-            LOG_ERROR("Failed to resolve asset path: {}", asset_path.GetString());
+            LOG_ERROR("Failed to resolve asset path: {}", asset_path.GetCanonicalPath());
             return false;
         }
 

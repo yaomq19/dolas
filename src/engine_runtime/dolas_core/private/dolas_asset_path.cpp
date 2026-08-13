@@ -113,13 +113,13 @@ namespace Dolas
         return m_relative_path;
     }
 
-    const std::string& AssetPath::GetString() const noexcept
+    const std::string& AssetPath::GetCanonicalPath() const noexcept
     {
         return m_canonical_path;
     }
 
     std::size_t AssetPathHash::operator()(const AssetPath& path) const noexcept
     {
-        return std::hash<std::string_view>{}(path.GetString());
+        return std::hash<std::string_view>{}(path.GetCanonicalPath());
     }
 }

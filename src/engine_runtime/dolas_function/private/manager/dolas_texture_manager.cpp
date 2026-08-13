@@ -627,7 +627,7 @@ namespace Dolas
         const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
         if (!resolved_path)
         {
-            LOG_ERROR("TextureManager::CreateTextureFromDDSFile: failed to resolve {0}", asset_path.GetString());
+            LOG_ERROR("TextureManager::CreateTextureFromDDSFile: failed to resolve {0}", asset_path.GetCanonicalPath());
             return TEXTURE_ID_EMPTY;
         }
 
@@ -653,7 +653,7 @@ namespace Dolas
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
         // 使用规范逻辑资产路径计算稳定 ID，不依赖本机 Content 根目录。
-        texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
+        texture->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         texture->m_texture_type = ConvertToDolasTextureType(metadata);
         texture->m_texture_format = ConvertToTextureFormat(metadata.format);
         texture->m_width = static_cast<uint32_t>(metadata.width);
@@ -721,7 +721,7 @@ namespace Dolas
         const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
         if (!resolved_path)
         {
-            LOG_ERROR("TextureManager::CreateTextureFromHDRFile: failed to resolve {0}", asset_path.GetString());
+            LOG_ERROR("TextureManager::CreateTextureFromHDRFile: failed to resolve {0}", asset_path.GetCanonicalPath());
             return TEXTURE_ID_EMPTY;
         }
 
@@ -746,7 +746,7 @@ namespace Dolas
         Texture* texture = DOLAS_NEW(Texture);
         texture->m_is_from_file = true;
         // 使用规范逻辑资产路径计算稳定 ID，不依赖本机 Content 根目录。
-        texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
+        texture->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         texture->m_texture_type = ConvertToDolasTextureType(metadata);
         texture->m_texture_format = ConvertToTextureFormat(metadata.format);
         texture->m_width = static_cast<uint32_t>(metadata.width);
@@ -814,7 +814,7 @@ namespace Dolas
 		const auto resolved_path = PathUtils::ResolveAssetPath(asset_path);
 		if (!resolved_path)
 		{
-			LOG_ERROR("TextureManager::CreateTextureFromPNGFile: failed to resolve {0}", asset_path.GetString());
+			LOG_ERROR("TextureManager::CreateTextureFromPNGFile: failed to resolve {0}", asset_path.GetCanonicalPath());
 			return TEXTURE_ID_EMPTY;
 		}
 
@@ -839,7 +839,7 @@ namespace Dolas
 
 		Texture* texture = DOLAS_NEW(Texture);
 		texture->m_is_from_file = true;
-		texture->m_file_id = HashConverter::StringHash(asset_path.GetString());
+		texture->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
 		texture->m_texture_type = ConvertToDolasTextureType(metadata);
 		texture->m_texture_format = ConvertToTextureFormat(metadata.format);
 		texture->m_width = static_cast<uint32_t>(metadata.width);

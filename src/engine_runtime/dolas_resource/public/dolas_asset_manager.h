@@ -68,7 +68,7 @@ namespace Dolas
         }
 
         std::unordered_map<std::string, TRsd>& cache = GetTypedCache<TRsd>().map;
-        const auto it = cache.find(asset_path.GetString());
+        const auto it = cache.find(asset_path.GetCanonicalPath());
 
         if (it != cache.end())
         {
@@ -81,7 +81,7 @@ namespace Dolas
             return nullptr;
         }
 
-        const auto [inserted, was_inserted] = cache.emplace(asset_path.GetString(), std::move(value));
+        const auto [inserted, was_inserted] = cache.emplace(asset_path.GetCanonicalPath(), std::move(value));
         (void)was_inserted;
         return &inserted->second;
     }

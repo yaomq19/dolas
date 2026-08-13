@@ -54,7 +54,7 @@ namespace Dolas
 
         // 创建 RenderEntity
         RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
-        render_entity->m_file_id = HashConverter::StringHash(asset_path.GetString());
+        render_entity->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         render_entity->m_pose.m_postion = position;
         render_entity->m_pose.m_rotation = rotation;
         render_entity->m_pose.m_scale = scale;
@@ -67,7 +67,7 @@ namespace Dolas
             const auto mesh_asset_path = AssetPath::Parse(mesh_file);
             if (!mesh_asset_path)
             {
-                LOG_ERROR("Invalid mesh asset path in entity {0}: {1}", asset_path.GetString(), mesh_file);
+                LOG_ERROR("Invalid mesh asset path in entity {0}: {1}", asset_path.GetCanonicalPath(), mesh_file);
                 continue;
             }
 
@@ -87,7 +87,7 @@ namespace Dolas
                 }
                 else
                 {
-                    LOG_ERROR("Invalid material asset path in mesh {0}: {1}", mesh_asset_path->GetString(), mesh_rsd->material);
+                    LOG_ERROR("Invalid material asset path in mesh {0}: {1}", mesh_asset_path->GetCanonicalPath(), mesh_rsd->material);
                 }
             }
 
@@ -112,7 +112,7 @@ namespace Dolas
 
     RenderEntity* RenderEntityManager::GetRenderEntityByAssetPath(const AssetPath& asset_path)
     {
-        const RenderEntityID render_entity_id = HashConverter::StringHash(asset_path.GetString());
+        const RenderEntityID render_entity_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         return GetRenderEntityByID(render_entity_id);
     }
 }

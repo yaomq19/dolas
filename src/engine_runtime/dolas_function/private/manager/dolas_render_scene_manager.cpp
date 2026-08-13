@@ -64,7 +64,7 @@ namespace Dolas
             const auto entity_asset_path = AssetPath::Parse(item.entities);
             if (!entity_asset_path)
             {
-                LOG_ERROR("Invalid entity asset path in scene {0}: {1}", asset_path.GetString(), item.entities);
+                LOG_ERROR("Invalid entity asset path in scene {0}: {1}", asset_path.GetCanonicalPath(), item.entities);
                 continue;
             }
 

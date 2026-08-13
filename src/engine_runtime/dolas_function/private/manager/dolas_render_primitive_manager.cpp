@@ -58,11 +58,11 @@ namespace Dolas
         const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(asset_path);
         if (!mesh_rsd)
         {
-            LOG_ERROR("Failed to load mesh file: {0}", asset_path.GetString());
+            LOG_ERROR("Failed to load mesh file: {0}", asset_path.GetCanonicalPath());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
-        RenderPrimitiveID primitive_id = HashConverter::StringHash(asset_path.GetString());
+        RenderPrimitiveID primitive_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
 
         // 如果已经创建过，直接返回
         if (GetRenderPrimitiveByID(primitive_id) != nullptr)
@@ -113,7 +113,7 @@ namespace Dolas
         }
         else
         {
-            LOG_ERROR("Mesh file {0} has no position data", asset_path.GetString());
+            LOG_ERROR("Mesh file {0} has no position data", asset_path.GetCanonicalPath());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
@@ -136,7 +136,7 @@ namespace Dolas
 
         if (!success)
         {
-            LOG_ERROR("Failed to create render primitive for {0}", asset_path.GetString());
+            LOG_ERROR("Failed to create render primitive for {0}", asset_path.GetCanonicalPath());
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 

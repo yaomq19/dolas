@@ -21,7 +21,7 @@ namespace Dolas
 
         [[nodiscard]] AssetMount GetMount() const noexcept;
         [[nodiscard]] std::string_view GetRelativePath() const noexcept;
-        [[nodiscard]] const std::string& GetString() const noexcept;
+        [[nodiscard]] const std::string& GetCanonicalPath() const noexcept;
 
         friend bool operator==(const AssetPath&, const AssetPath&) = default;
 

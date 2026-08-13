@@ -131,7 +131,7 @@ namespace Dolas
         const auto shader_path = PathUtils::ResolveAssetPath(asset_path);
         if (!shader_path)
         {
-            LOG_ERROR("Failed to resolve vertex shader asset path: {0}", asset_path.GetString());
+            LOG_ERROR("Failed to resolve vertex shader asset path: {0}", asset_path.GetCanonicalPath());
             return nullptr;
         }
 
@@ -159,7 +159,7 @@ namespace Dolas
         const auto shader_path = PathUtils::ResolveAssetPath(asset_path);
         if (!shader_path)
         {
-            LOG_ERROR("Failed to resolve pixel shader asset path: {0}", asset_path.GetString());
+            LOG_ERROR("Failed to resolve pixel shader asset path: {0}", asset_path.GetCanonicalPath());
             return nullptr;
         }
 
@@ -181,7 +181,7 @@ namespace Dolas
 
     std::string ShaderManager::GenerateShaderKey(const AssetPath& asset_path, const std::string& entry_point)
     {
-        return asset_path.GetString() + "_" + entry_point;
+        return asset_path.GetCanonicalPath() + "_" + entry_point;
     }
 
 } // namespace Dolas

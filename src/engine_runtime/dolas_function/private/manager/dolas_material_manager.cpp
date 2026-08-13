@@ -82,7 +82,7 @@ namespace Dolas
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
-        material->m_file_id = HashConverter::StringHash(asset_path.GetString());
+        material->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         // 顶点着色器
         if (!material_rsd->vertex_shader.empty())
         {
@@ -93,7 +93,7 @@ namespace Dolas
             }
             else
             {
-                LOG_ERROR("Invalid vertex shader asset path in material {0}: {1}", asset_path.GetString(), material_rsd->vertex_shader);
+                LOG_ERROR("Invalid vertex shader asset path in material {0}: {1}", asset_path.GetCanonicalPath(), material_rsd->vertex_shader);
             }
         }
 
@@ -107,7 +107,7 @@ namespace Dolas
             }
             else
             {
-                LOG_ERROR("Invalid pixel shader asset path in material {0}: {1}", asset_path.GetString(), material_rsd->pixel_shader);
+                LOG_ERROR("Invalid pixel shader asset path in material {0}: {1}", asset_path.GetCanonicalPath(), material_rsd->pixel_shader);
             }
         }
 
@@ -123,7 +123,7 @@ namespace Dolas
 				const auto texture_asset_path = AssetPath::Parse(texture_file_name);
 				if (!texture_asset_path)
 				{
-					LOG_ERROR("Invalid texture asset path in material {0}: {1}", asset_path.GetString(), texture_file_name);
+					LOG_ERROR("Invalid texture asset path in material {0}: {1}", asset_path.GetCanonicalPath(), texture_file_name);
 					continue;
 				}
 
@@ -138,7 +138,7 @@ namespace Dolas
                 }
                 else
                 {
-                    LOG_ERROR("Unsupported texture format for material: {0}, texture: {1}", asset_path.GetString(), texture_file_name);
+                    LOG_ERROR("Unsupported texture format for material: {0}, texture: {1}", asset_path.GetCanonicalPath(), texture_file_name);
                     continue;
 				}
 

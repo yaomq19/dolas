@@ -14,7 +14,7 @@ TEST_CASE("AssetPath parses and canonicalizes logical asset paths", "[AssetPath]
     REQUIRE(engine_path.has_value());
     REQUIRE(engine_path->GetMount() == AssetMount::Engine);
     REQUIRE(std::string{engine_path->GetRelativePath()} == "textures/stone.png");
-    REQUIRE(engine_path->GetString() == "_engine/textures/stone.png");
+    REQUIRE(engine_path->GetCanonicalPath() == "_engine/textures/stone.png");
 
     const auto project_path = AssetPath::Parse("_project/models/hero.fbx");
     REQUIRE(project_path.has_value());
