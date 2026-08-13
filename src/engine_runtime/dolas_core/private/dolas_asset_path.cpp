@@ -8,10 +8,14 @@ namespace Dolas
 {
     namespace
     {
+        // Mount prefixes are part of an asset's canonical logical identity.
         constexpr std::string_view k_engine_prefix{"_engine/"};
         constexpr std::string_view k_project_prefix{"_project/"};
+
+        // These characters are unsafe or non-portable in file names.
         constexpr std::string_view k_invalid_path_characters{"<>:\"|?*"};
 
+        // Validates one path segment without consulting the filesystem.
         [[nodiscard]] bool IsPortablePathSegment(std::string_view segment) noexcept
         {
             return std::ranges::none_of(segment, [](const char character)
@@ -22,6 +26,7 @@ namespace Dolas
         }
     }
 
+    // Private construction preserves the invariants enforced by Parse().
     AssetPath::AssetPath(AssetMount mount, std::string relative_path, std::string canonical_path)
         : m_mount{mount}
         , m_relative_path{std::move(relative_path)}
@@ -36,6 +41,7 @@ namespace Dolas
             return std::nullopt;
         }
 
+        // Accept either slash style and normalize separators to forward slashes.
         std::string normalized{value};
         std::ranges::replace(normalized, '\\', '/');
 
@@ -43,6 +49,7 @@ namespace Dolas
         std::size_t prefix_size{};
         std::string_view canonical_prefix;
 
+        // Require an explicit mount so path resolution is never ambiguous.
         if (normalized.starts_with(k_engine_prefix))
         {
             mount = AssetMount::Engine;
@@ -63,6 +70,7 @@ namespace Dolas
         const std::string_view input_relative_path{normalized.data() + prefix_size, normalized.size() - prefix_size};
         std::string relative_path;
 
+        // Collapse empty and current-directory segments while rejecting traversal.
         std::size_t segment_begin{};
         while (segment_begin <= input_relative_path.size())
         {
@@ -98,6 +106,7 @@ namespace Dolas
             return std::nullopt;
         }
 
+        // Preserve the mount prefix in the stable form used for identity and hashing.
         std::string canonical_path{canonical_prefix};
         canonical_path.append(relative_path);
         return AssetPath{mount, std::move(relative_path), std::move(canonical_path)};
@@ -120,6 +129,7 @@ namespace Dolas
 
     std::size_t AssetPathHash::operator()(const AssetPath& path) const noexcept
     {
+        // Equivalent input spellings share the same canonical hash key.
         return std::hash<std::string_view>{}(path.GetCanonicalPath());
     }
 }
