@@ -15,10 +15,10 @@ endforeach()
 target_sources(DolasCommon PRIVATE ${SOURCES} ${HEADERS})
 
 target_include_directories(DolasCommon PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/public/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/public
 )
 target_include_directories(DolasCommon PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
 )
 
 target_link_libraries(DolasCommon PRIVATE spdlog::spdlog_header_only)

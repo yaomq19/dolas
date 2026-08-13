@@ -33,10 +33,10 @@ if(WIN32)
 endif()
 
 target_include_directories(DolasPlatform PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/public/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/public
 )
 target_include_directories(DolasPlatform PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
 )
 
 target_compile_features(DolasPlatform PRIVATE cxx_std_20)

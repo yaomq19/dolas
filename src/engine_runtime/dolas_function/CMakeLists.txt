@@ -22,10 +22,10 @@ endforeach()
 target_sources(DolasFunction PRIVATE ${SOURCES} ${HEADERS})
 
 target_include_directories(DolasFunction PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/public/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/public
 )
 target_include_directories(DolasFunction PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
     ${CMAKE_SOURCE_DIR}/third_party/ImGuizmo
 )
 

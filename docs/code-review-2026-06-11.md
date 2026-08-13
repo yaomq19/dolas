@@ -7,7 +7,7 @@
 
 ### 1. RenderResource 在纹理创建失败后仍注册，且多个 ID 未初始化
 
-**File:** `src/engine_runtime/dolas_function/public/include/render/dolas_render_resource.h:19`, `src/engine_runtime/dolas_function/private/src/manager/dolas_render_resource_manager.cpp:37`
+**File:** `src/engine_runtime/dolas_function/public/render/dolas_render_resource.h:19`, `src/engine_runtime/dolas_function/private/manager/dolas_render_resource_manager.cpp:37`
 **Rule:** CC-153 / PP-36
 
 **Problem:** `RenderResource` 内的 `TextureID` 成员没有默认初始化；`CreateRenderResourceByID` 中每个纹理创建失败时只是不赋值，最后仍执行 `m_render_resources[render_resource_id] = render_resource` 并返回 `true`。
@@ -23,7 +23,7 @@
 
 ### 1. TextureManager 忽略 DirectXTex 加载失败，初始化仍返回成功
 
-**File:** `src/engine_runtime/dolas_function/private/src/manager/dolas_texture_manager.cpp:561`, `src/engine_runtime/dolas_function/public/include/render/dolas_dx_trace.h:5`
+**File:** `src/engine_runtime/dolas_function/private/manager/dolas_texture_manager.cpp:561`, `src/engine_runtime/dolas_function/public/render/dolas_dx_trace.h:5`
 **Rule:** CC-153 / PP-36
 
 **Problem:** `Initialize` 无条件返回 `true`；`CreateTextureFromHDRFile/DDS/PNG` 通过 `HR(...)` 调用加载函数但不检查返回值，Release 下 `HR` 只是表达式执行。
@@ -37,7 +37,7 @@
 
 ### 2. BufferManager 在 Clear 和创建失败路径泄漏 Buffer 对象
 
-**File:** `src/engine_runtime/dolas_function/private/src/manager/dolas_buffer_manager.cpp:26`
+**File:** `src/engine_runtime/dolas_function/private/manager/dolas_buffer_manager.cpp:26`
 **Rule:** PP-40
 
 **Problem:** `Clear` 只调用 `buffer->Release()` 后清空 map，没有 `DOLAS_DELETE(buffer)`；多个 `Create*Buffer` 分支在 `CreateResource` 失败后直接返回，也没有删除刚分配的 `Buffer`。
@@ -51,7 +51,7 @@
 
 ### 3. RenderResourceManager::Clear 泄漏 RenderResource 对象
 
-**File:** `src/engine_runtime/dolas_function/private/src/manager/dolas_render_resource_manager.cpp:20`
+**File:** `src/engine_runtime/dolas_function/private/manager/dolas_render_resource_manager.cpp:20`
 **Rule:** PP-40
 
 **Problem:** `CreateRenderResourceByID` 使用 `DOLAS_NEW(RenderResource)`，但 `Clear` 直接 `m_render_resources.clear()`。
@@ -65,7 +65,7 @@
 
 ### 4. RSD enum 解析把非法字符串静默映射为 0
 
-**File:** `src/engine_runtime/dolas_resource/private/src/dolas_asset_manager.cpp:145`
+**File:** `src/engine_runtime/dolas_resource/private/dolas_asset_manager.cpp:145`
 **Rule:** CC-153 / PP-36
 
 **Problem:** `EnumUInt` 字符串匹配失败后直接 `strtoul`，且不检查 `endptr`，非法枚举名会得到 `0`。
@@ -81,7 +81,7 @@
 
 ### 1. RenderPipelineManager 查询缺失 ID 时会污染 map
 
-**File:** `src/engine_runtime/dolas_function/private/src/manager/dolas_render_pipeline_manager.cpp:39`
+**File:** `src/engine_runtime/dolas_function/private/manager/dolas_render_pipeline_manager.cpp:39`
 **Rule:** CC-153
 
 **Problem:** `GetRenderPipelineByID` 使用 `m_render_pipelines[id]`，缺失 ID 会插入空项。
@@ -90,7 +90,7 @@
 
 ### 2. 仓库跟踪了编辑器备份文件
 
-**File:** `src/engine_runtime/dolas_function/public/include/manager/dolas_render_primitive_manager.h~`
+**File:** `src/engine_runtime/dolas_function/public/manager/dolas_render_primitive_manager.h~`
 **Rule:** CC-58
 
 **Problem:** `*.h~` 备份文件进入版本库，增加重复源码和误改风险。

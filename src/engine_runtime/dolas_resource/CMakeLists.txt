@@ -21,11 +21,11 @@ endforeach()
 
 target_sources(DolasResource PRIVATE ${SOURCES} ${HEADERS})
 target_include_directories(DolasResource BEFORE PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/public/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/third_party/tinyxml2
 )
 target_include_directories(DolasResource PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
 )
 target_link_libraries(DolasResource PRIVATE DolasCommon)
 target_link_libraries(DolasResource PRIVATE DolasCore)

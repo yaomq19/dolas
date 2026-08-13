@@ -22,10 +22,10 @@ endforeach()
 target_sources(DolasCore PRIVATE ${SOURCES} ${HEADERS})
 
 target_include_directories(DolasCore PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/public/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/public
 )
 target_include_directories(DolasCore PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
 )
 
 target_link_libraries(DolasCore PRIVATE DolasCommon)

@@ -48,14 +48,14 @@ target_link_libraries(DolasFunction PRIVATE imguizmo)
 
 # 添加头文件路径
 target_include_directories(DolasFunction PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/private/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/private
     ${CMAKE_SOURCE_DIR}/third_party/ImGuizmo
 )
 ```
 
 ### 3. 在 ImGuiManager 中添加 ImGuizmo 包含
 
-在 `src/engine_runtime/dolas_function/private/src/manager/dolas_imgui_manager.cpp` 中添加：
+在 `src/engine_runtime/dolas_function/private/manager/dolas_imgui_manager.cpp` 中添加：
 ```cpp
 #include <ImGuizmo.h>
 ```
