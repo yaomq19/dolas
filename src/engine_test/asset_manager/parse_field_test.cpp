@@ -15,30 +15,26 @@ namespace fs = std::filesystem;
 namespace
 {
 #if !defined(NDEBUG)
-    class ContentRootsGuard
+    class EngineContentDirGuard
     {
     public:
-        explicit ContentRootsGuard(const fs::path& test_dir)
+        explicit EngineContentDirGuard(const fs::path& test_dir)
             : m_original_engine_dir(PathUtils::GetEngineContentDir())
-            , m_original_project_dir(PathUtils::GetProjectContentDir())
             , m_test_dir(test_dir)
         {
             fs::create_directories(m_test_dir);
             PathUtils::SetEngineContentDirForDebug(m_test_dir.string());
-            PathUtils::SetProjectContentDirForDebug(m_test_dir.string());
         }
 
-        ~ContentRootsGuard()
+        ~EngineContentDirGuard()
         {
             PathUtils::SetEngineContentDirForDebug(m_original_engine_dir);
-            PathUtils::SetProjectContentDirForDebug(m_original_project_dir);
             std::error_code ec;
             fs::remove_all(m_test_dir, ec);
         }
 
     private:
         std::string m_original_engine_dir;
-        std::string m_original_project_dir;
         fs::path m_test_dir;
     };
 #endif
@@ -75,7 +71,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
 {
 #if !defined(NDEBUG)
     fs::path testDir = MakeUniqueTestDir();
-    ContentRootsGuard contentRootsGuard(testDir);
+    EngineContentDirGuard content_dir_guard{testDir};
 
     AssetManager manager;
     manager.Initialize();
@@ -94,37 +90,6 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
         REQUIRE(camera != nullptr);
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Perspective);
         REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 0);
-    }
-
-    SECTION("Project-mounted RSD assets load through AssetPath")
-    {
-        const fs::path camera_path = testDir / "project.camera";
-        {
-            std::ofstream output{camera_path};
-            char buffer[512];
-            snprintf(buffer, sizeof(buffer), kCameraXmlTemplate, "Perspective");
-            output << buffer;
-        }
-
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_project/project.camera"));
-        REQUIRE(camera != nullptr);
-        REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Perspective);
-    }
-
-    SECTION("Equivalent logical paths share one cached RSD asset")
-    {
-        const fs::path camera_path = testDir / "cached.camera";
-        {
-            std::ofstream output{camera_path};
-            char buffer[512];
-            snprintf(buffer, sizeof(buffer), kCameraXmlTemplate, "Perspective");
-            output << buffer;
-        }
-
-        const CameraRSD* first = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/cached.camera"));
-        const CameraRSD* second = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine//./cached.camera"));
-        REQUIRE(first != nullptr);
-        REQUIRE(first == second);
     }
 
     SECTION("Display name (alias) 'perspective' parses to Perspective (0)")

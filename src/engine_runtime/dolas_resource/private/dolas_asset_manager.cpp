@@ -40,6 +40,20 @@ namespace Dolas
         return true;
     }
 
+    bool AssetManager::ValidateRsdFileSuffix(const AssetPath& asset_path, std::string_view expected_suffix)
+    {
+        if (asset_path.GetRelativePath().ends_with(expected_suffix))
+        {
+            return true;
+        }
+
+        LOG_ERROR(
+            "RSD asset path '{}' does not match expected suffix '{}'",
+            asset_path.GetCanonicalPath(),
+            expected_suffix);
+        return false;
+    }
+
     static Bool LoadXmlFileInternal(const std::string& file_path, tinyxml2::XMLDocument& xml_doc)
     {
         const auto ret = xml_doc.LoadFile(file_path.c_str());
@@ -433,82 +447,4 @@ namespace Dolas
         return ok;
     }
 
-    AssetManagerNew::AssetManagerNew()
-    {
-    }
-
-    AssetManagerNew::~AssetManagerNew()
-    {
-    }
-
-    const AssetBase* AssetManagerNew::GetAsset(const AssetPath& asset_path)
-    {
-        if (const auto it = m_assets.find(asset_path); it != m_assets.end())
-        {
-            return it->second.get();
-        }
-        
-        LoadAsset(asset_path);
-        
-        if (const auto it = m_assets.find(asset_path); it != m_assets.end())
-        {
-            return it->second.get();
-        }
-        return nullptr;
-    }
-
-    std::unique_ptr<XmlAsset> AssetManagerNew::LoadXmlAsset(const std::string& absolute_path)
-    {
-        tinyxml2::XMLDocument doc;
-        if (doc.LoadFile(absolute_path.c_str()) != tinyxml2::XML_SUCCESS)
-        {
-            LOG_ERROR("Failed to load XML asset file: {}", absolute_path);
-            return nullptr;
-        }
-
-        tinyxml2::XMLElement* root = doc.RootElement();
-        if (!root)
-        {
-            LOG_ERROR("XML asset file has no root element: {}", absolute_path);
-            return nullptr;
-        }
-
-        
-        return std::make_unique<XmlAsset>();
-    }
-
-    std::unique_ptr<RawAsset> AssetManagerNew::LoadRawAsset(const std::string& absolute_path)
-    {
-        return nullptr; // to do
-    }
-
-    Bool AssetManagerNew::LoadAsset(const AssetPath& asset_path)
-    {
-        const auto absolute_path = PathUtils::ResolveAssetPath(asset_path);
-        if (!absolute_path)
-        {
-            LOG_ERROR("Failed to resolve asset path: {}", asset_path.GetCanonicalPath());
-            return false;
-        }
-
-        const std::string absolute_path_string = absolute_path->string();
-        if (absolute_path_string.ends_with(".ast"))
-        {
-            if (auto result = LoadXmlAsset(absolute_path_string))
-            {
-                m_assets[asset_path] = std::move(result);
-                return true;
-            }
-        }
-        else
-        {
-            if (auto result = LoadRawAsset(absolute_path_string))
-            {
-                m_assets[asset_path] = std::move(result);
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
