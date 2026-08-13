@@ -7,8 +7,8 @@ Dolas is a lightweight game engine built with C++20, targeting Windows. It featu
 ## Features
 
 - **Deferred Rendering Pipeline**: Multi-pass pipeline (Clear → GBuffer → DeferredShading → ForwardShading → Skybox → Debug → ImGUI → PostProcess → Present), currently D3D11-based with D3D12 migration in progress.
-- **Modular Architecture**: Four-layer design — `DolasPlatform` (windowing, D3D12 device init, logging, thread pool), `DolasCore` (math, hashing, path utilities), `DolasResource` (RSD asset system with XML deserialization), `DolasFunction` (18 managers, render layer, editor layer).
-- **Asset System**: RSD (Resource Schema Definition) based asset pipeline with `AssetManager` for loading/deserializing typed assets from XML.
+- **Modular Architecture**: Four-layer design — `DolasPlatform` (windowing, D3D12 device init, logging, thread pool), `DolasCore` (math, hashing, path utilities), `DolasResource` (C++-defined asset system with XML deserialization), `DolasFunction` (18 managers, render layer, editor layer).
+- **Asset System**: Authoritative C++ asset descriptions with reflected fields, stable type/field IDs, typed references, validation, and `AssetManager` caching.
 - **Editor**: ImGui-based scene editor with docking and multi-viewport support, including content browser for asset management.
 - **Performance Profiling**: Integrated Tracy profiler for real-time performance analysis.
 - **Resource Processing**: DDS texture loading via DirectXTex, 3D model import via Assimp.
@@ -22,7 +22,7 @@ dolas/
 │   ├── engine_runtime/
 │   │   ├── dolas_platform/     # Platform abstraction (window, D3D12 device, logging, file system, thread pool)
 │   │   ├── dolas_core/         # Core types, math library, hash utilities, path resolution
-│   │   ├── dolas_resource/     # RSD asset system (AssetManager, XML deserialization)
+│   │   ├── dolas_resource/     # C++ asset descriptions, reflection, loading, and caching
 │   │   └── dolas_function/     # Engine layer: managers, render pipeline, editor GUI
 │   ├── engine_tool/
 │   │   ├── dolas_editor/       # Scene/engine editor executable
@@ -96,7 +96,7 @@ DolasEditor (app)        ShaderCompiler (standalone tool)
 
 - **DolasPlatform** — Lowest layer. Window creation, D3D12 `RenderHardwareInterface`, logging macros, file system, thread pool.
 - **DolasCore** — Fundamental types, math library (`dolas_math.h`), hash utilities (`STRING_ID` macro, `HashConverter`), path resolution.
-- **DolasResource** — RSD asset system. `AssetManager` loads typed assets (Material, Mesh, Entity, Camera, Scene) from XML.
+- **DolasResource** — C++-defined asset system. `AssetManager` validates and loads typed Material, Mesh, Entity, Camera, and Scene descriptions from XML.
 - **DolasFunction** — The main engine library, organized into three areas:
   - **Manager layer**: `DolasEngine` singleton owns 18 managers (`MeshManager`, `TextureManager`, `ShaderManager`, `MaterialManager`, `RenderPipelineManager`, `ImGuiManager`, `TaskManager`, etc.).
   - **Render layer**: `DolasRHI` (D3D11-based, migrating to D3D12), multi-pass `RenderPipeline`, resource wrappers (`Buffer`, `Texture`, `Shader`, `Material`).
@@ -128,6 +128,7 @@ All managed via git submodules under `third_party/`:
 ## Documentation
 
 - [Developer.md](docs/Developer.md) — Coding conventions and resource ID hashing guidelines
+- [资产系统后续路线图.md](docs/资产系统后续路线图.md) — C++ asset architecture decisions, remaining work, editor, Lua, and cook roadmap
 - [docs/](docs/) — Detailed design docs, DX12 migration plan, editor development notes
 
 ## License

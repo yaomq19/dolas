@@ -20,11 +20,11 @@ namespace Dolas
 
         bool Initialize();
         bool Clear();
-        // SceneRSD 的解析/实体创建由 RenderSceneManager 完成（RenderSceneManager 是 friend）
+        // Asset description parsing and entity creation are owned by RenderSceneManager.
 		const std::vector<RenderEntityID>& GetRenderEntities() const { return m_render_entities; }
     private:
         std::vector<RenderEntityID> m_render_entities;
     }; // class RenderScene
 } // namespace Dolas
 
-#endif // DOLAS_RENDER_SCENE_H 
+#endif // DOLAS_RENDER_SCENE_H

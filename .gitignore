@@ -8,9 +8,6 @@ content/mesh/
 content/scene/**/textures/*.png
 content/texture/*.hdr
 
-# RSD -> .h auto-generated headers (precompile output)
-src/engine/rsd/
-
 imgui.ini
 *~
 

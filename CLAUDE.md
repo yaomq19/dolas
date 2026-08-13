@@ -39,7 +39,7 @@ DolasEditor (app)        ShaderCompiler (standalone tool, no engine deps)
 
 - **DolasPlatform** — Lowest layer. Window creation, D3D12 device initialization (`RenderHardwareInterface`), logging macros (LOG_TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL wrapping spdlog), file system, thread pool.
 - **DolasCore** — Fundamental types (`dolas_base.h` type aliases and typed IDs), math library (`dolas_math.h`), hash utilities (`STRING_ID` macro, `HashConverter`), path resolution (`PathUtils`).
-- **DolasResource** — RSD (Resource Schema Definition) asset system. `AssetManager` loads/deserializes typed assets from XML. Defines `RsdFieldType` enum and RSD structs: `MaterialRSD`, `MeshRSD`, `EntityRSD`, `CameraRSD`, `SceneRSD`.
+- **DolasResource** — C++-defined asset system. `AssetManager` validates, loads, and caches reflected asset descriptions from XML. Built-in descriptions are `MaterialAssetDesc`, `MeshAssetDesc`, `EntityAssetDesc`, `CameraAssetDesc`, and `SceneAssetDesc`; serialized contracts use stable type IDs, schema versions, and field IDs.
 - **DolasFunction** — The main engine library, organized into three areas:
   - **Manager layer** (18 manager classes): `DolasEngine` owns all managers via `g_dolas_engine` singleton. Key managers: `MeshManager`, `TextureManager`, `ShaderManager`, `MaterialManager`, `BufferManager`, `RenderSceneManager`, `RenderPipelineManager`, `ImGuiManager`, `TaskManager` (async via `ThreadPool`), `TimerManager`, `TickManager`.
   - **Render layer**: `DolasRHI` (D3D11-based for now), `RenderPipeline` (multi-pass: Clear → GBuffer → DeferredShading → ForwardShading → Skybox → Debug → ImGUI → PostProcess → Present), resource wrappers (`Buffer`, `Texture`, `Shader`, `Material`), transform/camera/entity/primitive/scene/view definitions.

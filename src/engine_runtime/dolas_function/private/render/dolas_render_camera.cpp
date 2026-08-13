@@ -3,7 +3,6 @@
 #include <cmath>
 #include "dolas_asset_manager.h"
 #include "dolas_log_system_manager.h"
-#include "rsd/camera.h"
 namespace Dolas
 {
     static const Float wheel_affect_scale = 0.005f;
@@ -362,15 +361,14 @@ namespace Dolas
             -m_near_plane);
     }
 
-    void RenderCameraPerspective::BuildFromRsd(const CameraRSD* camera_rsd)
+    void RenderCameraPerspective::BuildFromAsset(const CameraAssetDesc& camera_desc)
     {
-        if (!camera_rsd) return;
-		SetPosition(camera_rsd->position);
-		SetForwardAndUp(camera_rsd->forward, camera_rsd->up);
-		SetNearPlane(camera_rsd->near_plane);
-		SetFarPlane(camera_rsd->far_plane);
-		SetFov(camera_rsd->fov);
-		SetAspectRatio(camera_rsd->aspect_ratio);
+		SetPosition(camera_desc.position);
+		SetForwardAndUp(camera_desc.forward, camera_desc.up);
+		SetNearPlane(camera_desc.near_plane);
+		SetFarPlane(camera_desc.far_plane);
+		SetFov(camera_desc.fov);
+		SetAspectRatio(camera_desc.aspect_ratio);
     }
 
     /* Render Camera Orthographic */
@@ -451,14 +449,13 @@ namespace Dolas
             -m_near_plane);
     }
 
-    void RenderCameraOrthographic::BuildFromRsd(const CameraRSD* camera_rsd)
+    void RenderCameraOrthographic::BuildFromAsset(const CameraAssetDesc& camera_desc)
     {
-        if (!camera_rsd) return;
-		SetPosition(camera_rsd->position);
-		SetForwardAndUp(camera_rsd->forward, camera_rsd->up);
-		SetNearPlane(camera_rsd->near_plane);
-		SetFarPlane(camera_rsd->far_plane);
-		SetWindowWidth(camera_rsd->window_width);
-		SetWindowHeight(camera_rsd->window_height);
+		SetPosition(camera_desc.position);
+		SetForwardAndUp(camera_desc.forward, camera_desc.up);
+		SetNearPlane(camera_desc.near_plane);
+		SetFarPlane(camera_desc.far_plane);
+		SetWindowWidth(camera_desc.window_width);
+		SetWindowHeight(camera_desc.window_height);
     }
-} // namespace Dolas 
+} // namespace Dolas

@@ -1,4 +1,4 @@
-﻿<asset>
-  <meshes type="DynamicArray" element_type="AssetReference:MeshRSD">
+﻿<asset type="dolas.entity" version="1">
+  <meshes>
   </meshes>
 </asset>

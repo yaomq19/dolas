@@ -1,24 +1,24 @@
-﻿<asset>
-  <camera_perspective_type type="Enum">Orthographic</camera_perspective_type>
-  <position type="Vector3">
+﻿<asset type="dolas.camera" version="1">
+  <camera_perspective_type>Orthographic</camera_perspective_type>
+  <position>
     <x>163</x>
     <y>0</y>
     <z>0</z>
   </position>
-  <forward type="Vector3">
+  <forward>
     <x>0</x>
     <y>0</y>
-    <z>0</z>
+    <z>1</z>
   </forward>
-  <up type="Vector3">
+  <up>
     <x>0</x>
-    <y>0</y>
+    <y>1</y>
     <z>0</z>
   </up>
-  <near_plane type="Float">0</near_plane>
-  <far_plane type="Float">0</far_plane>
-  <fov type="Float">0</fov>
-  <aspect_ratio type="Float">0</aspect_ratio>
-  <window_width type="Float">0</window_width>
-  <window_height type="Float">0</window_height>
+  <near_plane>0.1</near_plane>
+  <far_plane>2000</far_plane>
+  <fov>90</fov>
+  <aspect_ratio>1.77</aspect_ratio>
+  <window_width>5</window_width>
+  <window_height>5</window_height>
 </asset>

@@ -8,22 +8,23 @@
 #include <string_view>
 #include <system_error>
 
+#include "asset_types/camera_asset.h"
+#include "asset_types/entity_asset.h"
 #include "dolas_asset_manager.h"
 #include "dolas_asset_path.h"
 #include "dolas_paths.h"
-#include "rsd/camera.h"
 
 using namespace Dolas;
 namespace fs = std::filesystem;
 
 namespace
 {
-    struct NotAnRsdType
+    struct NotAnAssetDescription
     {
     };
 
-    static_assert(RsdType<CameraRSD>);
-    static_assert(!RsdType<NotAnRsdType>);
+    static_assert(AssetDescription<CameraAssetDesc>);
+    static_assert(!AssetDescription<NotAnAssetDescription>);
 
 #if !defined(NDEBUG)
     class ProjectContentDirGuard
@@ -69,16 +70,16 @@ namespace
         std::ofstream output{file_path};
         REQUIRE(output.is_open());
         output
-            << "<root>\n"
+            << "<asset type=\"dolas.camera\" version=\"1\">\n"
             << "    <camera_perspective_type>" << perspective_type << "</camera_perspective_type>\n"
             << "    <position x=\"0\" y=\"0\" z=\"0\"/>\n"
             << "    <forward x=\"0\" y=\"0\" z=\"1\"/>\n"
             << "    <up x=\"0\" y=\"1\" z=\"0\"/>\n"
-            << "</root>\n";
+            << "</asset>\n";
     }
 }
 
-TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
+TEST_CASE("AssetManager loads and caches typed C++ assets", "[AssetManager]")
 {
 #if !defined(NDEBUG)
     const fs::path test_dir = MakeUniqueTestDir();
@@ -91,18 +92,18 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
     {
         WriteCameraAsset(test_dir / "valid.camera", "Perspective");
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/valid.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/valid.camera"));
 
         REQUIRE(load_result.HasValue());
         REQUIRE(load_result.GetError() == AssetLoadError::None);
         REQUIRE(load_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
     }
 
-    SECTION("Rejects a path whose suffix does not match the requested RSD type")
+    SECTION("Rejects a path whose suffix does not match the requested asset type")
     {
         WriteCameraAsset(test_dir / "wrong.scene", "Perspective");
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/wrong.scene"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/wrong.scene"));
 
         REQUIRE_FALSE(load_result.HasValue());
         REQUIRE(load_result.GetAsset() == nullptr);
@@ -113,7 +114,7 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
     {
         PathUtils::SetProjectContentDirForDebug("");
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/unresolved.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/unresolved.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
         REQUIRE(load_result.GetError() == AssetLoadError::PathResolutionFailed);
@@ -124,9 +125,9 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
         const fs::path file_path = test_dir / "cached.camera";
         WriteCameraAsset(file_path, "Perspective");
 
-        const auto first_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/cached.camera"));
+        const auto first_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/cached.camera"));
         WriteCameraAsset(file_path, "Orthographic");
-        const auto second_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project//./cached.camera"));
+        const auto second_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project//./cached.camera"));
 
         REQUIRE(first_result.HasValue());
         REQUIRE(second_result.HasValue());
@@ -137,12 +138,12 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
     SECTION("A missing file is not cached as a failure")
     {
         const AssetPath asset_path = RequireAssetPath("_project/missing.camera");
-        const auto missing_result = manager.LoadRsdAsset<CameraRSD>(asset_path);
+        const auto missing_result = manager.LoadAsset<CameraAssetDesc>(asset_path);
         REQUIRE_FALSE(missing_result.HasValue());
         REQUIRE(missing_result.GetError() == AssetLoadError::FileReadFailed);
 
         WriteCameraAsset(test_dir / "missing.camera", "Perspective");
-        const auto loaded_result = manager.LoadRsdAsset<CameraRSD>(asset_path);
+        const auto loaded_result = manager.LoadAsset<CameraAssetDesc>(asset_path);
 
         REQUIRE(loaded_result.HasValue());
         REQUIRE(loaded_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
@@ -157,7 +158,7 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
             output << "This is not XML content";
         }
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/malformed.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/malformed.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
         REQUIRE(load_result.GetError() == AssetLoadError::XmlParseFailed);
@@ -172,20 +173,20 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
             output << "<?xml version=\"1.0\"?><!-- no root element -->";
         }
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/no_root.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/no_root.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
         REQUIRE(load_result.GetError() == AssetLoadError::XmlRootMissing);
     }
 
-    SECTION("Reports malformed RSD fields")
+    SECTION("Reports malformed asset fields")
     {
         WriteCameraAsset(test_dir / "invalid_field.camera", "NotACameraPerspective");
 
-        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_project/invalid_field.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/invalid_field.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
-        REQUIRE(load_result.GetError() == AssetLoadError::RsdFieldParseFailed);
+        REQUIRE(load_result.GetError() == AssetLoadError::AssetFieldParseFailed);
     }
 
     SECTION("Clear discards cached assets")
@@ -194,14 +195,14 @@ TEST_CASE("AssetManager loads and caches typed RSD assets", "[AssetManager]")
         const AssetPath asset_path = RequireAssetPath("_project/clear.camera");
         WriteCameraAsset(file_path, "Perspective");
 
-        const auto first_result = manager.LoadRsdAsset<CameraRSD>(asset_path);
+        const auto first_result = manager.LoadAsset<CameraAssetDesc>(asset_path);
         REQUIRE(first_result.HasValue());
         REQUIRE(first_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
 
         WriteCameraAsset(file_path, "Orthographic");
         REQUIRE(manager.Clear());
 
-        const auto reloaded_result = manager.LoadRsdAsset<CameraRSD>(asset_path);
+        const auto reloaded_result = manager.LoadAsset<CameraAssetDesc>(asset_path);
         REQUIRE(reloaded_result.HasValue());
         REQUIRE(reloaded_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Orthographic);
     }

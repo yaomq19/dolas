@@ -1,3 +1,4 @@
+#include "asset_types/scene_asset.h"
 #include "dolas_base.h"
 #include "manager/dolas_render_scene_manager.h"
 #include "render/dolas_render_scene.h"
@@ -6,9 +7,6 @@
 #include "dolas_asset_manager.h"
 #include "dolas_log_system_manager.h"
 #include "manager/dolas_render_entity_manager.h"
-#include "tinyxml2.h"
-#include <cstdlib>
-#include "rsd/scene.h"
 namespace Dolas
 {
     const RenderSceneID RenderSceneManager::RENDER_SCENE_ID_MAIN = STRING_ID(main_render_scene);
@@ -52,7 +50,7 @@ namespace Dolas
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<SceneRSD>(asset_path);
+		const auto load_result = g_dolas_engine.m_asset_manager->LoadAsset<SceneAssetDesc>(asset_path);
         if (!load_result)
         {
             LOG_ERROR(
@@ -62,29 +60,24 @@ namespace Dolas
             return false;
         }
 
-		const SceneRSD* scene_rsd = load_result.GetAsset();
+		const SceneAssetDesc* scene_desc = load_result.GetAsset();
 
 		RenderScene* render_scene = DOLAS_NEW(RenderScene);
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);
 
-        // 直接从 SceneRSD 构建 RenderScene（不再依赖旧 SceneAsset/SceneEntity）
-        for (const auto& item : scene_rsd->entities)
+        for (const auto& item : scene_desc->entities)
         {
-            const auto entity_asset_path = AssetPath::Parse(item.entities);
-            if (!entity_asset_path)
-            {
-                LOG_ERROR("Invalid entity asset path in scene {0}: {1}", asset_path.GetCanonicalPath(), item.entities);
-                continue;
-            }
+            // Required references have already been validated by AssetManager.
+            const AssetPath& entity_asset_path = item.entity->GetPath();
 
-            const Vector3 position = item.entity_positions;
-            const Vector3 scale = item.entity_scales;
+            const Vector3 position = item.position;
+            const Vector3 scale = item.scale;
 
             // Rotation stored as Vector4(x,y,z,w) in XML; Quaternion ctor is (w,x,y,z).
-            const Vector4 rotv = item.entity_rotations;
+            const Vector4 rotv = item.rotation;
             const Quaternion rotation(rotv.w, rotv.x, rotv.y, rotv.z);
 
-            RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(*entity_asset_path, position, rotation, scale);
+            RenderEntityID render_entity_id = g_dolas_engine.m_render_entity_manager->CreateRenderEntityFromFile(entity_asset_path, position, rotation, scale);
             if (render_entity_id != RENDER_ENTITY_ID_EMPTY)
             {
                 render_scene->m_render_entities.push_back(render_entity_id);

@@ -6,9 +6,8 @@
 - Shader 反射系统
 - 实现DebugDrawManager，优先支持圆柱体的渲染，来实现世界坐标系
 - 显示世界坐标系
-- 制作简易RSD系统
-- 制作C#工具项目，第一个工具：ShaderCompiler
-    - 制作完成后，Shader 从此完全切换为离线编译
+- 使用 C++ 与 ImGui 扩展资产编辑工具
+- 完善 ShaderCompiler，使 Shader 完全切换为离线编译
 - 实现 Logic Render Swap Buffer
 - 确定 spdlog 的线程安全性
 - 实现 ColorManager
@@ -35,4 +34,4 @@
 - `AssetPath` 会统一路径分隔符、折叠重复分隔符并移除 `.` 路径段。
 - 绝对路径、空资产路径、未知挂载、`..` 目录穿越和非便携文件名字符均视为非法。
 - 所有资产加载接口都接收 `AssetPath`；资产文件中的引用也必须显式包含 `_engine/` 或 `_project/` 挂载前缀。
-- `LoadRsdAsset<T>()` 仅接受满足 `RsdType` 约束的类型，且资产路径后缀必须与 `T::kFileSuffix` 完全一致。返回的 `AssetLoadResult<T>` 会在失败时提供具体的 `AssetLoadError`，其中的资产指针在 `AssetManager::Clear()` 或析构后失效。
+- `LoadAsset<T>()` 仅接受满足 `AssetDescription` 约束并已注册的 C++ 资产描述，且路径后缀必须与 `T::kFileSuffix` 完全一致。序列化文件必须声明匹配的稳定类型 ID 与 schema 版本；返回的 `AssetLoadResult<T>` 会提供具体的 `AssetLoadError`，其中的资产指针在 `AssetManager::Clear()` 或析构后失效。

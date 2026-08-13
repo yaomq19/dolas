@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string_view>
 
+#include "asset_types/material_asset.h"
 #include "dolas_engine.h"
 #include "manager/dolas_shader_manager.h"
 #include "manager/dolas_material_manager.h"
@@ -12,7 +13,6 @@
 #include "dolas_asset_manager.h"
 #include "manager/dolas_texture_manager.h"
 #include "dolas_log_system_manager.h"
-#include "rsd/material.h"
 
 namespace Dolas
 {
@@ -75,8 +75,8 @@ namespace Dolas
 
     MaterialID MaterialManager::CreateMaterial(const AssetPath& asset_path)
     {
-        // 其他系统不需要知道 XML：统一通过 RSD 资产读取
-        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MaterialRSD>(asset_path);
+        // Runtime systems consume the authoritative C++ description, not the XML format.
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadAsset<MaterialAssetDesc>(asset_path);
         if (!load_result)
         {
             LOG_ERROR(
@@ -86,67 +86,47 @@ namespace Dolas
             return MATERIAL_ID_EMPTY;
         }
 
-        const MaterialRSD* material_rsd = load_result.GetAsset();
+        const MaterialAssetDesc* material_desc = load_result.GetAsset();
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);
         material->m_file_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
         // 顶点着色器
-        if (!material_rsd->vertex_shader.empty())
+        if (material_desc->vertex_shader)
         {
-            const auto vertex_shader_path = AssetPath::Parse(material_rsd->vertex_shader);
-            if (vertex_shader_path)
-            {
-                material->m_vertex_context = CreateVertexContext(*vertex_shader_path, "VS");
-            }
-            else
-            {
-                LOG_ERROR("Invalid vertex shader asset path in material {0}: {1}", asset_path.GetCanonicalPath(), material_rsd->vertex_shader);
-            }
+            material->m_vertex_context = CreateVertexContext(material_desc->vertex_shader->GetPath(), "VS");
         }
 
         // 像素着色器
-        if (!material_rsd->pixel_shader.empty())
+        if (material_desc->pixel_shader)
         {
-            const auto pixel_shader_path = AssetPath::Parse(material_rsd->pixel_shader);
-            if (pixel_shader_path)
-            {
-                material->m_pixel_context = CreatePixelContext(*pixel_shader_path, "PS");
-            }
-            else
-            {
-                LOG_ERROR("Invalid pixel shader asset path in material {0}: {1}", asset_path.GetCanonicalPath(), material_rsd->pixel_shader);
-            }
+            material->m_pixel_context = CreatePixelContext(material_desc->pixel_shader->GetPath(), "PS");
         }
 
         // 纹理（目前只做 pixel_shader_texture，跟你现有 content 对齐）
         if (material->m_pixel_context)
         {
-            for (const auto& kv : material_rsd->pixel_shader_texture)
+            for (const auto& kv : material_desc->pixel_shader_texture)
             {
                 const std::string& texture_name = kv.first;
-                const std::string& texture_file_name = kv.second;
+                const AssetPath& texture_asset_path = kv.second.GetPath();
 
 				TextureID texture_id = TEXTURE_ID_EMPTY;
-				const auto texture_asset_path = AssetPath::Parse(texture_file_name);
-				if (!texture_asset_path)
-				{
-					LOG_ERROR("Invalid texture asset path in material {0}: {1}", asset_path.GetCanonicalPath(), texture_file_name);
-					continue;
-				}
-
-				const std::string_view relative_path = texture_asset_path->GetRelativePath();
+				const std::string_view relative_path = texture_asset_path.GetRelativePath();
 				if (relative_path.ends_with(".dds") || relative_path.ends_with(".DDS"))
                 {
-                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(*texture_asset_path);
+                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromDDSFile(texture_asset_path);
                 }
                 else if (relative_path.ends_with(".png") || relative_path.ends_with(".PNG"))
                 {
-                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromPNGFile(*texture_asset_path);
+                    texture_id = g_dolas_engine.m_texture_manager->CreateTextureFromPNGFile(texture_asset_path);
                 }
                 else
                 {
-                    LOG_ERROR("Unsupported texture format for material: {0}, texture: {1}", asset_path.GetCanonicalPath(), texture_file_name);
+                    LOG_ERROR(
+                        "Unsupported texture format for material: {0}, texture: {1}",
+                        asset_path.GetCanonicalPath(),
+                        texture_asset_path.GetCanonicalPath());
                     continue;
 				}
 
@@ -163,12 +143,12 @@ namespace Dolas
         // 全局变量
         if (material->m_vertex_context)
         {
-            for (const auto& kv : material_rsd->vertex_shader_global_variables)
+            for (const auto& kv : material_desc->vertex_shader_global_variables)
                 material->m_vertex_context->SetGlobalVariable(kv.first, kv.second);
         }
         if (material->m_pixel_context)
         {
-            for (const auto& kv : material_rsd->pixel_shader_global_variables)
+            for (const auto& kv : material_desc->pixel_shader_global_variables)
                 material->m_pixel_context->SetGlobalVariable(kv.first, kv.second);
         }
 

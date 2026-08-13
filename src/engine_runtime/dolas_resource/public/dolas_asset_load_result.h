@@ -14,7 +14,11 @@ namespace Dolas
         FileReadFailed,
         XmlParseFailed,
         XmlRootMissing,
-        RsdFieldParseFailed,
+        AssetTypeNotRegistered,
+        AssetMetadataInvalid,
+        AssetVersionUnsupported,
+        AssetFieldParseFailed,
+        AssetValidationFailed,
     };
 
     // Returns a stable, human-readable name suitable for diagnostics.
@@ -34,8 +38,16 @@ namespace Dolas
             return "XML parse failed";
         case AssetLoadError::XmlRootMissing:
             return "XML root missing";
-        case AssetLoadError::RsdFieldParseFailed:
-            return "RSD field parse failed";
+        case AssetLoadError::AssetTypeNotRegistered:
+            return "asset type not registered";
+        case AssetLoadError::AssetMetadataInvalid:
+            return "asset metadata invalid";
+        case AssetLoadError::AssetVersionUnsupported:
+            return "asset version unsupported";
+        case AssetLoadError::AssetFieldParseFailed:
+            return "asset field parse failed";
+        case AssetLoadError::AssetValidationFailed:
+            return "asset validation failed";
         }
 
         return "unknown asset load error";

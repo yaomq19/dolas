@@ -1,57 +1,57 @@
-<asset>
-  <entities type="DynamicArray" element="OneEntity">
+<asset type="dolas.scene" version="1">
+  <entities>
     <item>
-      <entities type="AssetReference">_engine/scene/default_scene/entities/ground_plane/ground_plane.entity</entities>
-      <entity_positions type="Vector3">
+      <entities>_engine/scene/default_scene/entities/ground_plane/ground_plane.entity</entities>
+      <entity_positions>
         <x>0</x>
         <y>0</y>
         <z>0</z>
       </entity_positions>
-      <entity_rotations type="Vector4">
+      <entity_rotations>
         <x>0</x>
         <y>0</y>
         <z>0</z>
         <w>1</w>
       </entity_rotations>
-      <entity_scales type="Vector3">
+      <entity_scales>
         <x>1.5</x>
         <y>1.5</y>
         <z>0.1</z>
       </entity_scales>
     </item>
     <item>
-      <entities type="AssetReference">_engine/scene/default_scene/entities/sphere_0/sphere_0.entity</entities>
-      <entity_positions type="Vector3">
+      <entities>_engine/scene/default_scene/entities/sphere_0/sphere_0.entity</entities>
+      <entity_positions>
         <x>0</x>
         <y>0</y>
         <z>2</z>
       </entity_positions>
-      <entity_rotations type="Vector4">
+      <entity_rotations>
         <x>0</x>
         <y>0</y>
         <z>0</z>
         <w>1</w>
       </entity_rotations>
-      <entity_scales type="Vector3">
+      <entity_scales>
         <x>0.75</x>
         <y>0.75</y>
         <z>0.75</z>
       </entity_scales>
     </item>
     <item>
-      <entities type="AssetReference">_engine/scene/default_scene/entities/hammer/hammer.entity</entities>
-      <entity_positions type="Vector3">
+      <entities>_engine/scene/default_scene/entities/hammer/hammer.entity</entities>
+      <entity_positions>
         <x>0</x>
         <y>0</y>
         <z>3</z>
       </entity_positions>
-      <entity_rotations type="Vector4">
+      <entity_rotations>
         <x>0</x>
         <y>0</y>
         <z>0</z>
         <w>1</w>
       </entity_rotations>
-      <entity_scales type="Vector3">
+      <entity_scales>
         <x>0.75</x>
         <y>0.75</y>
         <z>0.75</z>

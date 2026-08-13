@@ -5,6 +5,7 @@
 #include <cmath>
 #include <tuple>
 
+#include "asset_types/mesh_asset.h"
 #include "dolas_hash.h"
 #include "dolas_engine.h"
 #include "manager/dolas_buffer_manager.h"
@@ -13,7 +14,6 @@
 #include "dolas_log_system_manager.h"
 #include "render/dolas_rhi_common.h"
 #include "dolas_log_system_manager.h"
-#include "rsd/mesh.h"
 namespace Dolas
 {
     RenderPrimitiveManager::RenderPrimitiveManager()
@@ -55,7 +55,7 @@ namespace Dolas
 
     RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const AssetPath& asset_path)
     {
-        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MeshRSD>(asset_path);
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadAsset<MeshAssetDesc>(asset_path);
         if (!load_result)
         {
             LOG_ERROR(
@@ -65,7 +65,7 @@ namespace Dolas
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
-        const MeshRSD* mesh_rsd = load_result.GetAsset();
+        const MeshAssetDesc* mesh_desc = load_result.GetAsset();
         RenderPrimitiveID primitive_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
 
         // 如果已经创建过，直接返回
@@ -78,42 +78,42 @@ namespace Dolas
         InputLayoutType layout_type = InputLayoutType::InputLayoutType_POS_3;
         std::vector<std::vector<Float>> vertices;
 
-        bool has_pos = !mesh_rsd->position.empty();
-        bool has_uv = !mesh_rsd->uv0.empty();
-        bool has_normal = !mesh_rsd->normal.empty();
-        bool has_tangent = !mesh_rsd->tangent.empty();
+        bool has_pos = !mesh_desc->position.empty();
+        bool has_uv = !mesh_desc->uv0.empty();
+        bool has_normal = !mesh_desc->normal.empty();
+        bool has_tangent = !mesh_desc->tangent.empty();
 
         if (has_pos && has_uv && has_normal && has_tangent)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3_TANG_3;
-            vertices.push_back(mesh_rsd->position);
-            vertices.push_back(mesh_rsd->uv0);
-            vertices.push_back(mesh_rsd->normal);
-            vertices.push_back(mesh_rsd->tangent);
+            vertices.push_back(mesh_desc->position);
+            vertices.push_back(mesh_desc->uv0);
+            vertices.push_back(mesh_desc->normal);
+            vertices.push_back(mesh_desc->tangent);
         }
         else if (has_pos && has_uv && has_normal)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2_NORM_3;
-            vertices.push_back(mesh_rsd->position);
-            vertices.push_back(mesh_rsd->uv0);
-            vertices.push_back(mesh_rsd->normal);
+            vertices.push_back(mesh_desc->position);
+            vertices.push_back(mesh_desc->uv0);
+            vertices.push_back(mesh_desc->normal);
         }
         else if (has_pos && has_uv)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3_UV_2;
-            vertices.push_back(mesh_rsd->position);
-            vertices.push_back(mesh_rsd->uv0);
+            vertices.push_back(mesh_desc->position);
+            vertices.push_back(mesh_desc->uv0);
         }
         else if (has_pos && has_normal)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3_NORM_3;
-            vertices.push_back(mesh_rsd->position);
-            vertices.push_back(mesh_rsd->normal);
+            vertices.push_back(mesh_desc->position);
+            vertices.push_back(mesh_desc->normal);
         }
         else if (has_pos)
         {
             layout_type = InputLayoutType::InputLayoutType_POS_3;
-            vertices.push_back(mesh_rsd->position);
+            vertices.push_back(mesh_desc->position);
         }
         else
         {
@@ -122,11 +122,11 @@ namespace Dolas
         }
 
         PrimitiveTopology topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
-        if (mesh_rsd->topology == TopologyType::TriangleList)
+        if (mesh_desc->topology == TopologyType::TriangleList)
         {
             topology = PrimitiveTopology::PrimitiveTopology_TriangleList;
         }
-        else if (mesh_rsd->topology == TopologyType::TriangleStrip)
+        else if (mesh_desc->topology == TopologyType::TriangleStrip)
         {
             topology = PrimitiveTopology::PrimitiveTopology_TriangleStrip;
         }
@@ -136,7 +136,7 @@ namespace Dolas
             topology,
             layout_type,
             vertices,
-            mesh_rsd->indices);
+            mesh_desc->indices);
 
         if (!success)
         {

@@ -20,17 +20,17 @@ foreach(source IN LISTS SOURCES HEADERS)
 endforeach()
 
 target_sources(DolasResource PRIVATE ${SOURCES} ${HEADERS})
-target_include_directories(DolasResource BEFORE PUBLIC
+target_include_directories(DolasResource PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/public
-    ${CMAKE_SOURCE_DIR}/third_party/tinyxml2
 )
-target_include_directories(DolasResource PRIVATE
+target_include_directories(DolasResource BEFORE PRIVATE
+    ${CMAKE_SOURCE_DIR}/third_party/tinyxml2
     ${CMAKE_CURRENT_SOURCE_DIR}/private
 )
 target_link_libraries(DolasResource PRIVATE DolasCommon)
 target_link_libraries(DolasResource PRIVATE DolasCore)
 target_link_libraries(DolasResource PRIVATE DolasPlatform)
-target_link_libraries(DolasResource PUBLIC tinyxml2)
+target_link_libraries(DolasResource PRIVATE tinyxml2)
 target_compile_features(DolasResource PRIVATE cxx_std_20)
 dolas_enable_utf8(DolasResource)
 set_target_properties(DolasResource PROPERTIES FOLDER "EngineRuntime")

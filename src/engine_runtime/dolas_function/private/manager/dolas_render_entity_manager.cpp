@@ -1,3 +1,5 @@
+#include "asset_types/entity_asset.h"
+#include "asset_types/mesh_asset.h"
 #include "dolas_base.h"
 #include "dolas_asset_path.h"
 #include "dolas_engine.h"
@@ -7,8 +9,6 @@
 #include "dolas_asset_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "dolas_log_system_manager.h"
-#include "rsd/entity.h"
-#include "rsd/mesh.h"
 namespace Dolas
 {
     RenderEntityManager::RenderEntityManager()
@@ -48,7 +48,7 @@ namespace Dolas
     {
         RenderEntityID result_id = RENDER_ENTITY_ID_EMPTY;
 
-        const auto entity_load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<EntityRSD>(asset_path);
+        const auto entity_load_result = g_dolas_engine.m_asset_manager->LoadAsset<EntityAssetDesc>(asset_path);
         if (!entity_load_result)
         {
             LOG_ERROR(
@@ -58,7 +58,7 @@ namespace Dolas
             return result_id;
         }
 
-        const EntityRSD* entity_rsd = entity_load_result.GetAsset();
+        const EntityAssetDesc* entity_desc = entity_load_result.GetAsset();
 
         // 创建 RenderEntity
         RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
@@ -68,42 +68,27 @@ namespace Dolas
         render_entity->m_pose.m_scale = scale;
 
         // 遍历所有 Mesh 并加载
-        for (const auto& mesh_file : entity_rsd->meshes)
+        for (const auto& mesh_ref : entity_desc->meshes)
         {
-            if (mesh_file.empty()) continue;
-
-            const auto mesh_asset_path = AssetPath::Parse(mesh_file);
-            if (!mesh_asset_path)
-            {
-                LOG_ERROR("Invalid mesh asset path in entity {0}: {1}", asset_path.GetCanonicalPath(), mesh_file);
-                continue;
-            }
+            const AssetPath& mesh_asset_path = mesh_ref.GetPath();
 
             // 加载 Mesh 数据
-            RenderPrimitiveID primitive_id = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitiveFromMeshFile(*mesh_asset_path);
+            RenderPrimitiveID primitive_id = g_dolas_engine.m_render_primitive_manager->CreateRenderPrimitiveFromMeshFile(mesh_asset_path);
             if (primitive_id == RENDER_PRIMITIVE_ID_EMPTY) continue;
 
             // 从 Mesh 资产中获取材质路径
-            const auto mesh_load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MeshRSD>(*mesh_asset_path);
+            const auto mesh_load_result = g_dolas_engine.m_asset_manager->LoadAsset<MeshAssetDesc>(mesh_asset_path);
             MaterialID material_id = MATERIAL_ID_EMPTY;
             if (!mesh_load_result)
             {
                 LOG_ERROR(
                     "Failed to reload mesh asset {0}: {1}",
-                    mesh_asset_path->GetCanonicalPath(),
+                    mesh_asset_path.GetCanonicalPath(),
                     GetAssetLoadErrorName(mesh_load_result.GetError()));
             }
-            else if (const MeshRSD* mesh_rsd = mesh_load_result.GetAsset(); !mesh_rsd->material.empty())
+            else if (const MeshAssetDesc* mesh_desc = mesh_load_result.GetAsset(); mesh_desc->material)
             {
-                const auto material_asset_path = AssetPath::Parse(mesh_rsd->material);
-                if (material_asset_path)
-                {
-                    material_id = g_dolas_engine.m_material_manager->CreateMaterial(*material_asset_path);
-                }
-                else
-                {
-                    LOG_ERROR("Invalid material asset path in mesh {0}: {1}", mesh_asset_path->GetCanonicalPath(), mesh_rsd->material);
-                }
+                material_id = g_dolas_engine.m_material_manager->CreateMaterial(mesh_desc->material->GetPath());
             }
 
             render_entity->AddComponent(primitive_id, material_id);

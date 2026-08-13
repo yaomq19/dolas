@@ -1,3 +1,4 @@
+#include "asset_types/camera_asset.h"
 #include "dolas_base.h"
 #include "manager/dolas_render_camera_manager.h"
 #include "render/dolas_render_camera.h"
@@ -11,7 +12,6 @@
 #include "dolas_log_system_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "render/dolas_render_view.h"
-#include "rsd/camera.h"
 namespace Dolas
 {
     RenderCameraManager::RenderCameraManager()
@@ -92,7 +92,7 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<CameraRSD>(asset_path);
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadAsset<CameraAssetDesc>(asset_path);
         if (!load_result)
         {
             LOG_ERROR(
@@ -102,25 +102,25 @@ namespace Dolas
             return false;
         }
 
-        const CameraRSD* camera_rsd = load_result.GetAsset();
+        const CameraAssetDesc& camera_desc = *load_result.GetAsset();
 
 		RenderCamera* render_camera = nullptr;
 
-        if (camera_rsd->camera_perspective_type == CameraPerspectiveType::Perspective)
+        if (camera_desc.camera_perspective_type == CameraPerspectiveType::Perspective)
 		{
             RenderCameraPerspective* perspective_render_camera = DOLAS_NEW(RenderCameraPerspective);
-            perspective_render_camera->BuildFromRsd(camera_rsd);
+            perspective_render_camera->BuildFromAsset(camera_desc);
             render_camera = perspective_render_camera;
 		}
-		else if (camera_rsd->camera_perspective_type == CameraPerspectiveType::Orthographic)
+		else if (camera_desc.camera_perspective_type == CameraPerspectiveType::Orthographic)
 		{
 			RenderCameraOrthographic* ortho_render_camera = DOLAS_NEW(RenderCameraOrthographic);
-			ortho_render_camera->BuildFromRsd(camera_rsd);
+			ortho_render_camera->BuildFromAsset(camera_desc);
             render_camera = ortho_render_camera;
 		}
 		else
 		{
-			LOG_ERROR("Unknown camera perspective type (numeric): {0}", (UInt)camera_rsd->camera_perspective_type);
+			LOG_ERROR("Unknown camera perspective type (numeric): {0}", (UInt)camera_desc.camera_perspective_type);
 			return false;
 		}
 		DOLAS_RETURN_FALSE_IF_NULL(render_camera);

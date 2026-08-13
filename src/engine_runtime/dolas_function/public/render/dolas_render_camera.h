@@ -3,9 +3,9 @@
 
 #include <DirectXMath.h>
 #include <string>
+#include "asset_types/camera_asset.h"
 #include "dolas_hash.h"
 #include "dolas_math.h"
-#include "rsd/camera.h"
 namespace Dolas
 {
     class RenderCamera
@@ -41,7 +41,7 @@ namespace Dolas
         void ProcessKeyboardInput(bool move_forward, bool move_backward, bool move_left, bool move_right, 
                                 bool move_up, bool move_down, Float delta_time);
 
-        virtual void BuildFromRsd(const CameraRSD* camera_rsd) = 0;
+        virtual void BuildFromAsset(const CameraAssetDesc& camera_desc) = 0;
 
         void PrintDebugInfo();
         protected:
@@ -82,7 +82,7 @@ namespace Dolas
         Float GetFov() const;
 
         virtual void UpdateProjectionMatrix() override;
-        virtual void BuildFromRsd(const CameraRSD* camera_rsd) override;
+        virtual void BuildFromAsset(const CameraAssetDesc& camera_desc) override;
 
         protected:
         Float m_aspect_ratio;
@@ -106,7 +106,7 @@ namespace Dolas
         Float GetWindowHeight() const;
 
         virtual void UpdateProjectionMatrix() override;
-		virtual void BuildFromRsd(const CameraRSD* camera_rsd) override;
+		virtual void BuildFromAsset(const CameraAssetDesc& camera_desc) override;
 
         protected:
         Float m_window_width;
@@ -114,4 +114,4 @@ namespace Dolas
     };
 } // namespace Dolas
 
-#endif // DOLAS_RENDER_CAMERA_H 
+#endif // DOLAS_RENDER_CAMERA_H

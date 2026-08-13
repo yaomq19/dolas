@@ -1,48 +1,34 @@
 #ifndef DOLAS_ASSET_MANAGER_H
 #define DOLAS_ASSET_MANAGER_H
 
-#include <concepts>
-#include <cstddef>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <typeindex>
 #include <unordered_map>
 #include <utility>
 
 #include "dolas_asset_load_result.h"
 #include "dolas_asset_path.h"
+#include "dolas_asset_schema.h"
 #include "dolas_base.h"
 #include "dolas_paths.h"
-#include "rsd_field.h"
 
 namespace Dolas
 {
-    // Describes a generated RSD type that AssetManager can load and cache.
-    template<class TRsd>
-    concept RsdType = std::default_initializable<TRsd>
-        && std::move_constructible<TRsd>
-        && requires
-        {
-            { TRsd::kFileSuffix } -> std::convertible_to<const char*>;
-            { TRsd::kFields.data() } -> std::same_as<const RsdFieldDesc*>;
-            { TRsd::kFields.size() } -> std::same_as<std::size_t>;
-        };
-
-    // 按类型自动创建/缓存的 RSD 容器（type-erasure），避免新增资产类型时还要改 AssetManager 成员。
-    struct IRsdCache
+    // Type-erased cache interface; concrete maps still retain their asset type.
+    struct IAssetCache
     {
-        virtual ~IRsdCache() = default;
+        virtual ~IAssetCache() = default;
         virtual void Clear() = 0;
     };
 
-    template<RsdType TRsd>
-    struct RsdCache final : IRsdCache
+    template<AssetDescription TAsset>
+    struct AssetCache final : IAssetCache
     {
-        std::unordered_map<AssetPath, TRsd, AssetPathHash> map;
+        std::unordered_map<AssetPath, TAsset, AssetPathHash> map;
         void Clear() override { map.clear(); }
     };
-
-    // 旧的 CameraAsset / SceneAsset 已废弃：渲染与管理全部改为直接依赖 CameraRSD / SceneRSD
 
     class AssetManager
     {
@@ -53,33 +39,39 @@ namespace Dolas
         Bool Initialize();
         Bool Clear(); 
 
-        template<RsdType TRsd>
-        [[nodiscard]] AssetLoadResult<TRsd> LoadRsdAsset(const AssetPath& asset_path);
+        // Loads a registered C++ asset description and caches it by canonical path.
+        template<AssetDescription TAsset>
+        [[nodiscard]] AssetLoadResult<TAsset> LoadAsset(const AssetPath& asset_path);
 
     private:
-        // Keeps the XML implementation out of the public template interface.
-        AssetLoadError LoadAndParseRsdFile(
-            const std::string& file_path,
-            void* out_base,
-            const RsdFieldDesc* fields,
-            std::size_t field_count);
+        using AssetFileLoader = AssetLoadError (*)(const std::string&, void*);
 
-        template<RsdType TRsd>
-        RsdCache<TRsd>& GetTypedCache()
+        // Keeps XML and type-erasure details out of the public template interface.
+        AssetLoadError LoadAndParseAssetFile(
+            std::string_view type_id,
+            const std::string& file_path,
+            void* output_asset) const;
+
+        template<AssetDescription TAsset>
+        AssetCache<TAsset>& GetTypedCache()
         {
-            const std::type_index k(typeid(TRsd));
-            auto& ptr = m_rsd_caches[k];
-            if (!ptr) ptr = std::make_unique<RsdCache<TRsd>>();
-            return *static_cast<RsdCache<TRsd>*>(ptr.get());
+            const std::type_index asset_type{typeid(TAsset)};
+            auto& cache = m_asset_caches[asset_type];
+            if (!cache)
+            {
+                cache = std::make_unique<AssetCache<TAsset>>();
+            }
+            return *static_cast<AssetCache<TAsset>*>(cache.get());
         }
 
-        std::unordered_map<std::type_index, std::unique_ptr<IRsdCache>> m_rsd_caches;
+        std::unordered_map<std::string, AssetFileLoader> m_asset_loaders;
+        std::unordered_map<std::type_index, std::unique_ptr<IAssetCache>> m_asset_caches;
     };
 
-    template<RsdType TRsd>
-    AssetLoadResult<TRsd> AssetManager::LoadRsdAsset(const AssetPath& asset_path)
+    template<AssetDescription TAsset>
+    AssetLoadResult<TAsset> AssetManager::LoadAsset(const AssetPath& asset_path)
     {
-        if (!asset_path.GetRelativePath().ends_with(TRsd::kFileSuffix))
+        if (!asset_path.GetRelativePath().ends_with(TAsset::kFileSuffix))
         {
             return {nullptr, AssetLoadError::FileSuffixMismatch};
         }
@@ -90,7 +82,7 @@ namespace Dolas
             return {nullptr, AssetLoadError::PathResolutionFailed};
         }
 
-        auto& cache = GetTypedCache<TRsd>().map;
+        auto& cache = GetTypedCache<TAsset>().map;
         const auto it = cache.find(asset_path);
 
         if (it != cache.end())
@@ -98,12 +90,11 @@ namespace Dolas
             return {&it->second, AssetLoadError::None};
         }
 
-        TRsd value{};
-        const AssetLoadError error = LoadAndParseRsdFile(
+        TAsset value{};
+        const AssetLoadError error = LoadAndParseAssetFile(
+            TAsset::kTypeId,
             file_path->string(),
-            &value,
-            TRsd::kFields.data(),
-            TRsd::kFields.size());
+            &value);
         if (error != AssetLoadError::None)
         {
             return {nullptr, error};

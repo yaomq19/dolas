@@ -44,8 +44,6 @@ target_compile_definitions(DolasFunction PRIVATE SPDLOG_USE_STD_FORMAT)
 # 启用 Tracy 性能分析（仅在需要时）
 target_compile_definitions(DolasFunction PRIVATE TRACY_ENABLE)
 
-# 链接 TinyXML2（来自 third_party 子模块）
-target_link_libraries(DolasFunction PRIVATE tinyxml2)
 # 链接 Assimp（来自 third_party 子模块）
 target_link_libraries(DolasFunction PRIVATE assimp)
 if(WIN32)
