@@ -14,14 +14,8 @@ src/engine/rsd/
 imgui.ini
 *~
 
-draft/
-
 .vscode/
-.cursor/
-.opencode/
 .claude/
 .idea/
-
-AGENTS.md
 
 ruff_cache/
