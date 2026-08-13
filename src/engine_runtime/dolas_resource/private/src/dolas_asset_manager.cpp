@@ -1,6 +1,7 @@
 #include "dolas_asset_manager.h"
 #include "dolas_base.h"
 #include "dolas_log_system_manager.h"
+#include "dolas_math.h"
 #include "tinyxml2.h"
 #include <unordered_map>
 #include <string>
@@ -37,6 +38,23 @@ namespace Dolas
         m_rsd_caches.clear();
 
         return true;
+    }
+
+    std::optional<AssetPath> AssetManager::ParseLegacyAssetPath(std::string_view file_name)
+    {
+        if (file_name.empty())
+        {
+            return std::nullopt;
+        }
+
+        if (file_name.front() == '_' || file_name.front() == '/' || file_name.front() == '\\')
+        {
+            return AssetPath::Parse(file_name);
+        }
+
+        std::string mounted_path{"_engine/"};
+        mounted_path.append(file_name);
+        return AssetPath::Parse(mounted_path);
     }
 
     static Bool LoadXmlFileInternal(const std::string& file_path, tinyxml2::XMLDocument& xml_doc)

@@ -69,7 +69,7 @@ namespace Dolas
         std::string material_file_path = PathUtils::GetEngineContentDir() + file_name;
 
         // 其他系统不需要知道 XML：统一通过 RSD 资产读取
-        MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MaterialRSD>(file_name);
+        const MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MaterialRSD>(file_name);
         if (material_rsd == nullptr)
             return MATERIAL_ID_EMPTY;
 

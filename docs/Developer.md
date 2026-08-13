@@ -28,3 +28,10 @@
   - 代码中“逻辑名、资源名、枚举名”用 `STRING_ID`；
   - 磁盘上的“真实文件路径”用 `HashConverter::StringHash`；
   - 避免在 `CreateXXXFromFile` 这类函数中直接使用 `STRING_ID(变量名)`。
+
+## 资产路径约定
+- 引擎资产使用 `_engine/<relative-path>`，项目资产使用 `_project/<relative-path>`。
+- 新接口应传递 `AssetPath`，不要在调用处拼接 Content 根目录和文件名。
+- `AssetPath` 会统一路径分隔符、折叠重复分隔符并移除 `.` 路径段。
+- 绝对路径、空资产路径、未知挂载、`..` 目录穿越和非便携文件名字符均视为非法。
+- `AssetManager::GetRsdAsset(std::string_view)` 仅用于兼容旧代码；没有挂载前缀时按 `_engine/` 解析。新增调用应显式构造 `AssetPath`。

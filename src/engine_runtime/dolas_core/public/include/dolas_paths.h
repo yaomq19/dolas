@@ -1,7 +1,11 @@
 #ifndef DOLAS_PATHS_H
 #define DOLAS_PATHS_H
+
+#include <filesystem>
 #include <optional>
 #include <string>
+
+#include "dolas_asset_path.h"
 
 namespace Dolas {
     class PathUtils
@@ -10,6 +14,7 @@ namespace Dolas {
         static void SetProjectDirectoryPath(const std::string& project_content_dir);
         static std::string GetEngineContentDir();
         static std::string GetProjectContentDir();
+        [[nodiscard]] static std::optional<std::filesystem::path> ResolveAssetPath(const AssetPath& asset_path);
         static std::optional<std::string> CombineToFullPath(const std::string& relative_path);
         static std::string GetShadersSourceDir();
 

@@ -3,11 +3,34 @@
 
 using namespace Dolas;
 
+namespace
+{
+#if !defined(NDEBUG)
+    class PathRootsGuard
+    {
+    public:
+        PathRootsGuard()
+            : m_engine_root{PathUtils::GetEngineContentDir()}
+            , m_project_root{PathUtils::GetProjectContentDir()}
+        {
+        }
+
+        ~PathRootsGuard()
+        {
+            PathUtils::SetEngineContentDirForDebug(m_engine_root);
+            PathUtils::SetProjectContentDirForDebug(m_project_root);
+        }
+
+    private:
+        std::string m_engine_root;
+        std::string m_project_root;
+    };
+#endif
+}
+
 TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
 #if !defined(NDEBUG)
-    // 准备测试环境
-    std::string originalEngineDir = PathUtils::GetEngineContentDir();
-    std::string originalProjectDir = PathUtils::GetProjectContentDir();
+    const PathRootsGuard roots_guard;
 
     // 设置一个已知的路径用于测试（故意带斜杠）
     PathUtils::SetEngineContentDirForDebug("C:/Engine/Content/");
@@ -18,15 +41,9 @@ TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
         REQUIRE(result.has_value());
         REQUIRE(result.value() == "C:/Engine/Content/textures/stone.png"); // 应该没有双斜杠
 
-        // 测试只有前缀（不带斜杠）
-        auto resultOnlyPrefix = PathUtils::CombineToFullPath("_engine");
-        REQUIRE(resultOnlyPrefix.has_value());
-        REQUIRE(resultOnlyPrefix.value() == "C:/Engine/Content/");
-
-        // 测试前缀带斜杠
-        auto resultPrefixWithSlash = PathUtils::CombineToFullPath("_engine/");
-        REQUIRE(resultPrefixWithSlash.has_value());
-        REQUIRE(resultPrefixWithSlash.value() == "C:/Engine/Content/");
+        auto normalized = PathUtils::CombineToFullPath("_engine\\textures//./stone.png/");
+        REQUIRE(normalized.has_value());
+        REQUIRE(normalized.value() == "C:/Engine/Content/textures/stone.png");
     }
 
     SECTION("Testing _project prefix") {
@@ -47,11 +64,12 @@ TEST_CASE("PathUtils::CombineToFullPath Tests", "[PathUtils]") {
         REQUIRE_FALSE(PathUtils::CombineToFullPath("engine/text.txt").has_value());
         REQUIRE_FALSE(PathUtils::CombineToFullPath("/_engine/text.txt").has_value());
         REQUIRE_FALSE(PathUtils::CombineToFullPath("").has_value());
+        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine").has_value());
+        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/").has_value());
+        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine2/text.txt").has_value());
+        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/../text.txt").has_value());
+        REQUIRE_FALSE(PathUtils::CombineToFullPath("_engine/C:/text.txt").has_value());
     }
-
-    // 恢复原始状态
-    PathUtils::SetEngineContentDirForDebug(originalEngineDir);
-    PathUtils::SetProjectContentDirForDebug(originalProjectDir);
 #else
     // Release build - skip this test as debug-only functions are not available
     SUCCEED("Test skipped in Release build (debug-only functions not available)");

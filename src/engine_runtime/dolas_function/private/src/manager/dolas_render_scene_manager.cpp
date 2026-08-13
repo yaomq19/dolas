@@ -51,7 +51,7 @@ namespace Dolas
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(file_name);
+		const SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(file_name);
 		DOLAS_RETURN_FALSE_IF_NULL(scene_rsd);
 
 		RenderScene* render_scene = DOLAS_NEW(RenderScene);

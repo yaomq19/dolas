@@ -51,7 +51,7 @@ namespace Dolas
 
         std::string render_entity_file_path = PathUtils::GetEngineContentDir() + entity_file_name;
 
-        EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(entity_file_name);
+        const EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(entity_file_name);
         if (entity_rsd == nullptr)
             return result_id;
 
@@ -72,7 +72,7 @@ namespace Dolas
             if (primitive_id == RENDER_PRIMITIVE_ID_EMPTY) continue;
 
             // 从 Mesh 资产中获取材质路径
-            MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file);
+            const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file);
             MaterialID material_id = MATERIAL_ID_EMPTY;
             if (mesh_rsd && !mesh_rsd->material.empty())
             {

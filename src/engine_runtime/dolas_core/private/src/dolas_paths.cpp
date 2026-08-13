@@ -1,4 +1,5 @@
 #include "dolas_paths.h"
+
 namespace Dolas
 {
 #define SHADER_DIR_NAME "shader/"
@@ -21,45 +22,36 @@ namespace Dolas
 		return g_project_content_directory_path;
 	}
 
+	std::optional<std::filesystem::path> PathUtils::ResolveAssetPath(const AssetPath& asset_path)
+	{
+		const std::string& root_directory = asset_path.GetMount() == AssetMount::Engine
+			? g_engine_content_directory_path
+			: g_project_content_directory_path;
+
+		if (root_directory.empty())
+		{
+			return std::nullopt;
+		}
+
+		const std::filesystem::path relative_path{std::string{asset_path.GetRelativePath()}};
+		if (relative_path.empty() || relative_path.has_root_path())
+		{
+			return std::nullopt;
+		}
+
+		return (std::filesystem::path{root_directory} / relative_path).lexically_normal();
+	}
+
 	std::optional<std::string> PathUtils::CombineToFullPath(const std::string& relative_path)
 	{
-		std::string prefix;
-		std::string base_path;
-
-		if (relative_path.starts_with("_engine"))
+		const auto asset_path = AssetPath::Parse(relative_path);
+		if (!asset_path)
 		{
-			prefix = "_engine";
-			base_path = g_engine_content_directory_path;
-		}
-		else if (relative_path.starts_with("_project"))
-		{
-			if (g_project_content_directory_path.empty())
-			{
-				return std::nullopt; // Project content directory not set
-			}
-			prefix = "_project";
-			base_path = g_project_content_directory_path;
-		}
-		else
-		{
-			return std::nullopt; // Invalid prefix
+			return std::nullopt;
 		}
 
-		std::string sub_path = relative_path.substr(prefix.length());
-		
-		// 统一处理 base_path 后缀：确保它以斜杠结尾
-		if (!base_path.empty() && base_path.back() != '/' && base_path.back() != '\\')
-		{
-			base_path += "/";
-		}
-
-		// 统一处理 sub_path 前缀：如果是以斜杠开头，去掉它（因为 base_path 已经保证有斜杠了）
-		if (!sub_path.empty() && (sub_path.front() == '/' || sub_path.front() == '\\'))
-		{
-			sub_path = sub_path.substr(1);
-		}
-
-		return base_path + sub_path;
+		const auto full_path = ResolveAssetPath(*asset_path);
+		return full_path ? std::optional<std::string>{full_path->generic_string()} : std::nullopt;
 	}
 
 	std::string PathUtils::GetShadersSourceDir() {

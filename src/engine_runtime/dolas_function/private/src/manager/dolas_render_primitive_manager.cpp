@@ -56,7 +56,7 @@ namespace Dolas
 
     RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const std::string& mesh_file_name)
     {
-        MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file_name);
+        const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(mesh_file_name);
         if (!mesh_rsd)
         {
             LOG_ERROR("Failed to load mesh file: {0}", mesh_file_name);

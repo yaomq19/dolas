@@ -92,7 +92,7 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(file_name);
+        const CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(file_name);
         DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
 
 		RenderCamera* render_camera = nullptr;

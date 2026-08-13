@@ -1,14 +1,19 @@
 #ifndef DOLAS_ASSET_MANAGER_H
 #define DOLAS_ASSET_MANAGER_H
 
-#include <string>
-#include <unordered_map>
-#include <typeindex>
 #include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <typeindex>
+#include <unordered_map>
+#include <utility>
+
+#include "dolas_asset_path.h"
 #include "dolas_base.h"
 #include "dolas_paths.h"
+#include "rsd_field.h"
 
-#include "rsd/material.h"
 namespace Dolas
 {
     // 按类型自动创建/缓存的 RSD 容器（type-erasure），避免新增资产类型时还要改 AssetManager 成员。
@@ -37,11 +42,16 @@ namespace Dolas
         Bool Clear(); 
 
         template<class TRsd>
-        TRsd* GetRsdAsset(const std::string& file_name);
+        [[nodiscard]] const TRsd* GetRsdAsset(const AssetPath& asset_path);
+
+        // Compatibility entry point. Unmounted paths are interpreted as engine assets.
+        template<class TRsd>
+        [[nodiscard]] const TRsd* GetRsdAsset(std::string_view file_name);
 
     protected:
         // 只在 cpp 内部实现（避免其他模块感知 XML/tinyxml2）
         bool LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount);
+        [[nodiscard]] static std::optional<AssetPath> ParseLegacyAssetPath(std::string_view file_name);
 
         template<class TRsd>
         RsdCache<TRsd>& GetTypedCache()
@@ -52,44 +62,42 @@ namespace Dolas
             return *static_cast<RsdCache<TRsd>*>(ptr.get());
         }
 
-        static bool IsAbsolutePathLike(const std::string& p)
-        {
-            if (p.size() >= 2 && ((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) && p[1] == ':')
-                return true; // Windows: C:\...
-            if (!p.empty() && (p[0] == '/' || p[0] == '\\'))
-                return true;
-            return false;
-        }
-
         std::unordered_map<std::type_index, std::unique_ptr<IRsdCache>> m_rsd_caches;
     };
 
     template<class TRsd>
-    TRsd* AssetManager::GetRsdAsset(const std::string& file_name)
+    const TRsd* AssetManager::GetRsdAsset(const AssetPath& asset_path)
     {
-		// Accepts an absolute path; otherwise, concatenates with the content's relative path.
-        // If an absolute path is provided, use it directly; otherwise, resolve it relative to the content directory.
-        const std::string file_path = IsAbsolutePathLike(file_name) ? file_name : (PathUtils::GetEngineContentDir() + file_name);
+        const auto file_path = PathUtils::ResolveAssetPath(asset_path);
+        if (!file_path)
+        {
+            return nullptr;
+        }
+
         std::unordered_map<std::string, TRsd>& cache = GetTypedCache<TRsd>().map;
-        auto it = cache.find(file_path);
+        const auto it = cache.find(asset_path.GetString());
 
         if (it != cache.end())
         {
-            // Cache hit
-			return &it->second;
+            return &it->second;
         }
-        else
-        {
-            // Cache miss
-			TRsd value{};
-            if (!LoadAndParseRsdFile(file_path, &value, TRsd::kFields.data(), TRsd::kFields.size()))
-            {
-                return nullptr;
-            }
 
-			auto [ins, _] = cache.emplace(file_path, std::move(value));
-			return &ins->second;
+        TRsd value{};
+        if (!LoadAndParseRsdFile(file_path->string(), &value, TRsd::kFields.data(), TRsd::kFields.size()))
+        {
+            return nullptr;
         }
+
+        const auto [inserted, was_inserted] = cache.emplace(asset_path.GetString(), std::move(value));
+        (void)was_inserted;
+        return &inserted->second;
+    }
+
+    template<class TRsd>
+    const TRsd* AssetManager::GetRsdAsset(std::string_view file_name)
+    {
+        const auto asset_path = ParseLegacyAssetPath(file_name);
+        return asset_path ? GetRsdAsset<TRsd>(*asset_path) : nullptr;
     }
 
     class AssetBase
