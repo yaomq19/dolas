@@ -40,26 +40,6 @@ namespace Dolas
         return true;
     }
 
-    bool AssetManager::ValidateRsdFileSuffix(const AssetPath& asset_path, std::string_view expected_suffix)
-    {
-        if (asset_path.GetRelativePath().ends_with(expected_suffix))
-        {
-            return true;
-        }
-
-        LOG_ERROR(
-            "RSD asset path '{}' does not match expected suffix '{}'",
-            asset_path.GetCanonicalPath(),
-            expected_suffix);
-        return false;
-    }
-
-    static Bool LoadXmlFileInternal(const std::string& file_path, tinyxml2::XMLDocument& xml_doc)
-    {
-        const auto ret = xml_doc.LoadFile(file_path.c_str());
-        return ret == tinyxml2::XML_SUCCESS;
-    }
-
     static const char* GetScalarTextCompat(const tinyxml2::XMLElement* el)
     {
         if (!el) return nullptr;
@@ -388,19 +368,6 @@ namespace Dolas
         }
     }
 
-    template <typename TRsd>
-    static bool ParseRsdFromXml(const tinyxml2::XMLElement* root, TRsd& out)
-    {
-        bool ok = true;
-        for (std::size_t i = 0; i < TRsd::kFields.size(); i++)
-        {
-            const auto& f = TRsd::kFields[i];
-            if (!ParseFieldInto(&out, f, root))
-                ok = false;
-        }
-        return ok;
-	}
-
     bool ParseRsdObjectFromXmlElement(const tinyxml2::XMLElement* root, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount)
     {
         if (!root || !outBase || !fields || fieldCount == 0)
@@ -415,36 +382,43 @@ namespace Dolas
         return ok;
     }
 
-    bool AssetManager::LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount)
+    AssetLoadError AssetManager::LoadAndParseRsdFile(
+        const std::string& file_path,
+        void* out_base,
+        const RsdFieldDesc* fields,
+        std::size_t field_count)
     {
         tinyxml2::XMLDocument doc;
-        if (!LoadXmlFileInternal(file_path, doc))
+        const tinyxml2::XMLError load_error = doc.LoadFile(file_path.c_str());
+        switch (load_error)
         {
-            LOG_ERROR("Failed to load xml: {}", file_path);
-            return false;
+        case tinyxml2::XML_SUCCESS:
+            break;
+        case tinyxml2::XML_ERROR_FILE_NOT_FOUND:
+        case tinyxml2::XML_ERROR_FILE_COULD_NOT_BE_OPENED:
+        case tinyxml2::XML_ERROR_FILE_READ_ERROR:
+            return AssetLoadError::FileReadFailed;
+        case tinyxml2::XML_ERROR_EMPTY_DOCUMENT:
+            return AssetLoadError::XmlRootMissing;
+        default:
+            return AssetLoadError::XmlParseFailed;
         }
 
         const tinyxml2::XMLElement* root = doc.RootElement();
         if (!root)
         {
-            LOG_ERROR("Invalid xml root: {}", file_path);
-            return false;
+            return AssetLoadError::XmlRootMissing;
         }
 
-        bool ok = true;
-        for (std::size_t i = 0; i < fieldCount; i++)
+        for (std::size_t index = 0; index < field_count; index++)
         {
-            if (!ParseFieldInto(outBase, fields[i], root))
+            if (!ParseFieldInto(out_base, fields[index], root))
             {
-                ok = false;
+                return AssetLoadError::RsdFieldParseFailed;
             }
         }
-        if (!ok)
-        {
-            LOG_ERROR("Failed to parse RSD from xml: {}", file_path);
-        }
-        
-        return ok;
+
+        return AssetLoadError::None;
     }
 
 }

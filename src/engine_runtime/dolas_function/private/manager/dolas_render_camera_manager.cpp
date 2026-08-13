@@ -92,8 +92,17 @@ namespace Dolas
     {
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_cameras.find(render_camera_id) == m_render_cameras.end());
 
-        const CameraRSD* camera_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<CameraRSD>(asset_path);
-        DOLAS_RETURN_FALSE_IF_NULL(camera_rsd);
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<CameraRSD>(asset_path);
+        if (!load_result)
+        {
+            LOG_ERROR(
+                "Failed to load camera asset {0}: {1}",
+                asset_path.GetCanonicalPath(),
+                GetAssetLoadErrorName(load_result.GetError()));
+            return false;
+        }
+
+        const CameraRSD* camera_rsd = load_result.GetAsset();
 
 		RenderCamera* render_camera = nullptr;
 

@@ -55,13 +55,17 @@ namespace Dolas
 
     RenderPrimitiveID RenderPrimitiveManager::CreateRenderPrimitiveFromMeshFile(const AssetPath& asset_path)
     {
-        const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(asset_path);
-        if (!mesh_rsd)
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MeshRSD>(asset_path);
+        if (!load_result)
         {
-            LOG_ERROR("Failed to load mesh file: {0}", asset_path.GetCanonicalPath());
+            LOG_ERROR(
+                "Failed to load mesh asset {0}: {1}",
+                asset_path.GetCanonicalPath(),
+                GetAssetLoadErrorName(load_result.GetError()));
             return RENDER_PRIMITIVE_ID_EMPTY;
         }
 
+        const MeshRSD* mesh_rsd = load_result.GetAsset();
         RenderPrimitiveID primitive_id = HashConverter::StringHash(asset_path.GetCanonicalPath());
 
         // 如果已经创建过，直接返回

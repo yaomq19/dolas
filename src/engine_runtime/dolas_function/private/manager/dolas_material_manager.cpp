@@ -76,9 +76,17 @@ namespace Dolas
     MaterialID MaterialManager::CreateMaterial(const AssetPath& asset_path)
     {
         // 其他系统不需要知道 XML：统一通过 RSD 资产读取
-        const MaterialRSD* material_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MaterialRSD>(asset_path);
-        if (material_rsd == nullptr)
+        const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MaterialRSD>(asset_path);
+        if (!load_result)
+        {
+            LOG_ERROR(
+                "Failed to load material asset {0}: {1}",
+                asset_path.GetCanonicalPath(),
+                GetAssetLoadErrorName(load_result.GetError()));
             return MATERIAL_ID_EMPTY;
+        }
+
+        const MaterialRSD* material_rsd = load_result.GetAsset();
 
         // 创建材质对象
         Material* material = DOLAS_NEW(Material);

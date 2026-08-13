@@ -5,11 +5,11 @@
 #include <cstddef>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <typeindex>
 #include <unordered_map>
 #include <utility>
 
+#include "dolas_asset_load_result.h"
 #include "dolas_asset_path.h"
 #include "dolas_base.h"
 #include "dolas_paths.h"
@@ -54,12 +54,15 @@ namespace Dolas
         Bool Clear(); 
 
         template<RsdType TRsd>
-        [[nodiscard]] const TRsd* GetRsdAsset(const AssetPath& asset_path);
+        [[nodiscard]] AssetLoadResult<TRsd> LoadRsdAsset(const AssetPath& asset_path);
 
-    protected:
-        // 只在 cpp 内部实现（避免其他模块感知 XML/tinyxml2）
-        bool LoadAndParseRsdFile(const std::string& file_path, void* outBase, const RsdFieldDesc* fields, std::size_t fieldCount);
-        [[nodiscard]] static bool ValidateRsdFileSuffix(const AssetPath& asset_path, std::string_view expected_suffix);
+    private:
+        // Keeps the XML implementation out of the public template interface.
+        AssetLoadError LoadAndParseRsdFile(
+            const std::string& file_path,
+            void* out_base,
+            const RsdFieldDesc* fields,
+            std::size_t field_count);
 
         template<RsdType TRsd>
         RsdCache<TRsd>& GetTypedCache()
@@ -74,17 +77,17 @@ namespace Dolas
     };
 
     template<RsdType TRsd>
-    const TRsd* AssetManager::GetRsdAsset(const AssetPath& asset_path)
+    AssetLoadResult<TRsd> AssetManager::LoadRsdAsset(const AssetPath& asset_path)
     {
-        if (!ValidateRsdFileSuffix(asset_path, TRsd::kFileSuffix))
+        if (!asset_path.GetRelativePath().ends_with(TRsd::kFileSuffix))
         {
-            return nullptr;
+            return {nullptr, AssetLoadError::FileSuffixMismatch};
         }
 
         const auto file_path = PathUtils::ResolveAssetPath(asset_path);
         if (!file_path)
         {
-            return nullptr;
+            return {nullptr, AssetLoadError::PathResolutionFailed};
         }
 
         auto& cache = GetTypedCache<TRsd>().map;
@@ -92,18 +95,23 @@ namespace Dolas
 
         if (it != cache.end())
         {
-            return &it->second;
+            return {&it->second, AssetLoadError::None};
         }
 
         TRsd value{};
-        if (!LoadAndParseRsdFile(file_path->string(), &value, TRsd::kFields.data(), TRsd::kFields.size()))
+        const AssetLoadError error = LoadAndParseRsdFile(
+            file_path->string(),
+            &value,
+            TRsd::kFields.data(),
+            TRsd::kFields.size());
+        if (error != AssetLoadError::None)
         {
-            return nullptr;
+            return {nullptr, error};
         }
 
         const auto [inserted, was_inserted] = cache.emplace(asset_path, std::move(value));
         (void)was_inserted;
-        return &inserted->second;
+        return {&inserted->second, AssetLoadError::None};
     }
 }
 #endif // DOLAS_ASSET_MANAGER_H

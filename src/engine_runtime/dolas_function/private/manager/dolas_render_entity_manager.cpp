@@ -4,7 +4,7 @@
 #include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_entity_manager.h"
 #include "render/dolas_render_entity.h"
-#include "dolas_asset_manager.h" // GetRsdAsset<>
+#include "dolas_asset_manager.h"
 #include "manager/dolas_render_primitive_manager.h"
 #include "dolas_log_system_manager.h"
 #include "rsd/entity.h"
@@ -48,9 +48,17 @@ namespace Dolas
     {
         RenderEntityID result_id = RENDER_ENTITY_ID_EMPTY;
 
-        const EntityRSD* entity_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<EntityRSD>(asset_path);
-        if (entity_rsd == nullptr)
+        const auto entity_load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<EntityRSD>(asset_path);
+        if (!entity_load_result)
+        {
+            LOG_ERROR(
+                "Failed to load entity asset {0}: {1}",
+                asset_path.GetCanonicalPath(),
+                GetAssetLoadErrorName(entity_load_result.GetError()));
             return result_id;
+        }
+
+        const EntityRSD* entity_rsd = entity_load_result.GetAsset();
 
         // 创建 RenderEntity
         RenderEntity* render_entity = DOLAS_NEW(RenderEntity);
@@ -76,9 +84,16 @@ namespace Dolas
             if (primitive_id == RENDER_PRIMITIVE_ID_EMPTY) continue;
 
             // 从 Mesh 资产中获取材质路径
-            const MeshRSD* mesh_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<MeshRSD>(*mesh_asset_path);
+            const auto mesh_load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<MeshRSD>(*mesh_asset_path);
             MaterialID material_id = MATERIAL_ID_EMPTY;
-            if (mesh_rsd && !mesh_rsd->material.empty())
+            if (!mesh_load_result)
+            {
+                LOG_ERROR(
+                    "Failed to reload mesh asset {0}: {1}",
+                    mesh_asset_path->GetCanonicalPath(),
+                    GetAssetLoadErrorName(mesh_load_result.GetError()));
+            }
+            else if (const MeshRSD* mesh_rsd = mesh_load_result.GetAsset(); !mesh_rsd->material.empty())
             {
                 const auto material_asset_path = AssetPath::Parse(mesh_rsd->material);
                 if (material_asset_path)

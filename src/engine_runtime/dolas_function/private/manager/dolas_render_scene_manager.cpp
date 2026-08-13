@@ -52,8 +52,17 @@ namespace Dolas
     {
         DOLAS_RETURN_FALSE_IF_FALSE(m_render_scenes.find(id) == m_render_scenes.end());
 
-		const SceneRSD* scene_rsd = g_dolas_engine.m_asset_manager->GetRsdAsset<SceneRSD>(asset_path);
-		DOLAS_RETURN_FALSE_IF_NULL(scene_rsd);
+		const auto load_result = g_dolas_engine.m_asset_manager->LoadRsdAsset<SceneRSD>(asset_path);
+        if (!load_result)
+        {
+            LOG_ERROR(
+                "Failed to load scene asset {0}: {1}",
+                asset_path.GetCanonicalPath(),
+                GetAssetLoadErrorName(load_result.GetError()));
+            return false;
+        }
+
+		const SceneRSD* scene_rsd = load_result.GetAsset();
 
 		RenderScene* render_scene = DOLAS_NEW(RenderScene);
         DOLAS_RETURN_FALSE_IF_NULL(render_scene);

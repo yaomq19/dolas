@@ -52,6 +52,14 @@ namespace
         REQUIRE(asset_path.has_value());
         return *asset_path;
     }
+
+    const CameraRSD* RequireCameraAsset(AssetManager& manager, std::string_view asset_path)
+    {
+        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath(asset_path));
+        REQUIRE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::None);
+        return load_result.GetAsset();
+    }
 }
 
 // CameraRSD XML template for RSD parsing tests
@@ -86,8 +94,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/canonical.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/canonical.camera");
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Perspective);
         REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 0);
     }
@@ -102,8 +109,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/alias.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/alias.camera");
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Perspective);
     }
 
@@ -117,8 +123,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/upper.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/upper.camera");
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Perspective);
     }
 
@@ -132,8 +137,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/numeric.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/numeric.camera");
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Orthographic);
         REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 1);
     }
@@ -148,8 +152,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/ortho.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/ortho.camera");
         REQUIRE(camera->camera_perspective_type == CameraPerspectiveType::Orthographic);
     }
 
@@ -169,8 +172,7 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
 )";
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/default.camera"));
-        REQUIRE(camera != nullptr);
+        const CameraRSD* camera = RequireCameraAsset(manager, "_engine/default.camera");
         REQUIRE(static_cast<UInt>(camera->camera_perspective_type) == 0);
     }
 
@@ -184,8 +186,9 @@ TEST_CASE("AssetManager ParseFieldInto - CameraRSD enum parsing", "[AssetManager
             ofs << buf;
         }
 
-        const CameraRSD* camera = manager.GetRsdAsset<CameraRSD>(RequireAssetPath("_engine/invalid_enum.camera"));
-        REQUIRE(camera == nullptr);
+        const auto load_result = manager.LoadRsdAsset<CameraRSD>(RequireAssetPath("_engine/invalid_enum.camera"));
+        REQUIRE_FALSE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::RsdFieldParseFailed);
     }
 
 #else
