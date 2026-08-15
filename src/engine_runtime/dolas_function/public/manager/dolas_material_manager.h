@@ -29,16 +29,16 @@ namespace Dolas
         ~MaterialManager();
         bool Initialize();
         bool Clear();
-        void InitializeGlobalMaterial();
         MaterialID CreateMaterial(const AssetPath& asset_path);
         Material* GetMaterialByID(MaterialID material_id);
         Material* GetGlobalMaterial(GlobalMaterialType global_material_type);
     private:
+        bool InitializeGlobalMaterials();
         std::shared_ptr<VertexContext> CreateVertexContext(const AssetPath& asset_path, const std::string& entry_point);
         std::shared_ptr<PixelContext>  CreatePixelContext(const AssetPath& asset_path, const std::string& entry_point);
 
         std::unordered_map<MaterialID, Material*> m_materials;
-        std::array<MaterialID, static_cast<UInt>(GlobalMaterialType::Count)> m_global_materials;
+        std::array<MaterialID, static_cast<UInt>(GlobalMaterialType::Count)> m_global_materials{};
     };// class MaterialManager
 }// namespace Dolas
 #endif // DOLAS_MATERIAL_MANAGER_H

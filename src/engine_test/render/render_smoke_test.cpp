@@ -9,6 +9,7 @@
 
 #include "dolas_engine.h"
 #include "dolas_render_hardware_interface.h"
+#include "manager/dolas_material_manager.h"
 #include "manager/dolas_render_view_manager.h"
 #include "manager/dolas_tick_manager.h"
 #include "render/dolas_render_view.h"
@@ -137,6 +138,14 @@ TEST_CASE("Windows renderer initializes and renders one frame", "[render][smoke]
 
     REQUIRE(Dolas::g_dolas_engine.m_render_view_manager != nullptr);
     REQUIRE(Dolas::g_dolas_engine.m_render_view_manager->GetMainRenderView() != nullptr);
+
+    REQUIRE(Dolas::g_dolas_engine.m_material_manager != nullptr);
+    REQUIRE(Dolas::g_dolas_engine.m_material_manager->GetGlobalMaterial(
+        Dolas::GlobalMaterialType::DeferredShading) != nullptr);
+    REQUIRE(Dolas::g_dolas_engine.m_material_manager->GetGlobalMaterial(
+        Dolas::GlobalMaterialType::SkyBox) != nullptr);
+    REQUIRE(Dolas::g_dolas_engine.m_material_manager->GetGlobalMaterial(
+        Dolas::GlobalMaterialType::DebugDraw) != nullptr);
 
     REQUIRE(Dolas::g_dolas_engine.m_tick_manager != nullptr);
     REQUIRE_NOTHROW(Dolas::g_dolas_engine.m_tick_manager->Tick(1.0f / 60.0f));

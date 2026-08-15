@@ -35,8 +35,7 @@ namespace Dolas
 
     bool MaterialManager::Initialize()
     {
-        InitializeGlobalMaterial();
-        return true;
+        return InitializeGlobalMaterials();
     }
 
     bool MaterialManager::Clear()
@@ -54,23 +53,33 @@ namespace Dolas
             }
         }
         m_materials.clear();
+        m_global_materials.fill(MATERIAL_ID_EMPTY);
         return true;
     }
 
-    void MaterialManager::InitializeGlobalMaterial()
+    bool MaterialManager::InitializeGlobalMaterials()
     {
+        bool success = true;
+        m_global_materials.fill(MATERIAL_ID_EMPTY);
+
         for (UInt index = 0; index < static_cast<UInt>(GlobalMaterialType::Count); ++index)
         {
             const auto asset_path = AssetPath::Parse(k_global_material_asset_paths[index]);
             if (!asset_path)
             {
                 LOG_ERROR("Invalid global material asset path: {0}", k_global_material_asset_paths[index]);
-                m_global_materials[index] = MATERIAL_ID_EMPTY;
+                success = false;
                 continue;
             }
 
             m_global_materials[index] = CreateMaterial(*asset_path);
+            if (m_global_materials[index] == MATERIAL_ID_EMPTY)
+            {
+                success = false;
+            }
         }
+
+        return success;
     }
 
     MaterialID MaterialManager::CreateMaterial(const AssetPath& asset_path)
@@ -95,12 +104,24 @@ namespace Dolas
         if (material_desc->vertex_shader)
         {
             material->m_vertex_context = CreateVertexContext(material_desc->vertex_shader->GetPath(), "VS");
+            if (!material->m_vertex_context)
+            {
+                LOG_ERROR("Failed to create vertex shader for material {0}", asset_path.GetCanonicalPath());
+                DOLAS_DELETE(material);
+                return MATERIAL_ID_EMPTY;
+            }
         }
 
         // 像素着色器
         if (material_desc->pixel_shader)
         {
             material->m_pixel_context = CreatePixelContext(material_desc->pixel_shader->GetPath(), "PS");
+            if (!material->m_pixel_context)
+            {
+                LOG_ERROR("Failed to create pixel shader for material {0}", asset_path.GetCanonicalPath());
+                DOLAS_DELETE(material);
+                return MATERIAL_ID_EMPTY;
+            }
         }
 
         // 纹理（目前只做 pixel_shader_texture，跟你现有 content 对齐）

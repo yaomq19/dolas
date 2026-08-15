@@ -105,13 +105,16 @@ namespace Dolas
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_hardware_interface->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_rhi->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_imgui_manager->Initialize());
+
+		// Initialize resource providers before managers that load assets from them.
+		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
+		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
+
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_pipeline_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_material_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_entity_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_object_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_shader_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_asset_manager->Initialize());
-		DOLAS_RETURN_FALSE_IF_FALSE(m_texture_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_test_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_resource_manager->Initialize());
 		DOLAS_RETURN_FALSE_IF_FALSE(m_render_primitive_manager->Initialize());
