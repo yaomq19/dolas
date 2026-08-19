@@ -39,7 +39,7 @@ dolas/
 
 - **Operating System**: Windows 10 or later
 - **Compiler**: Visual Studio 2022 (v143) with C++20 support
-- **CMake**: 3.15 or later
+- **CMake**: 3.23 or later
 - **Git**: For cloning the repository and managing submodules
 
 ## Quick Start

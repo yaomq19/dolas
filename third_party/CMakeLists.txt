@@ -149,6 +149,11 @@ if(TARGET xmltest)
     set_target_properties(xmltest PROPERTIES FOLDER "ThirdParty")
 endif()
 
+# ============ reflect-cpp ============
+# C++20 reflection and JSON serialization
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/reflect-cpp EXCLUDE_FROM_ALL)
+set_target_properties(reflectcpp PROPERTIES FOLDER "ThirdParty")
+
 # ============ spdlog ============
 # spdlog - Fast C++ logging library
 set(SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)

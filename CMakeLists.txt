@@ -1,5 +1,5 @@
-# 指定CMake的最低版本要求为3.15
-cmake_minimum_required(VERSION 3.15)
+# 指定CMake的最低版本要求为3.23
+cmake_minimum_required(VERSION 3.23)
 
 # 定义项目名称为Dolas，版本为0.1.0，使用C++语言
 project(Dolas VERSION 0.1.0 LANGUAGES CXX)

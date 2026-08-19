@@ -22,3 +22,6 @@
 [submodule "third_party/ImGuizmo"]
 	path = third_party/ImGuizmo
 	url = https://github.com/yaomq19/ImGuizmo.git
+[submodule "third_party/reflect-cpp"]
+	path = third_party/reflect-cpp
+	url = https://github.com/getml/reflect-cpp.git

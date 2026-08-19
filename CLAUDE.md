@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build System
 
-Dolas is a C++20 game engine for **Windows only** (Visual Studio 2022, CMake >= 3.15).
+Dolas is a C++20 game engine for **Windows only** (Visual Studio 2022, CMake >= 3.23).
 
 ```bash
 # First-time setup (after git clone --recursive):
