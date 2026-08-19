@@ -11,7 +11,6 @@ target_sources(DolasTest PRIVATE ${SOURCES})
 target_link_libraries(DolasTest PRIVATE DolasCore)
 target_link_libraries(DolasTest PRIVATE DolasResource)
 target_link_libraries(DolasTest PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(DolasTest PRIVATE reflectcpp::reflectcpp)
 
 target_compile_features(DolasTest PRIVATE cxx_std_20)
 dolas_enable_utf8(DolasTest)

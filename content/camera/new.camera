@@ -1,24 +1,28 @@
-﻿<asset type="dolas.camera" version="1">
-  <camera_perspective_type>Orthographic</camera_perspective_type>
-  <position>
-    <x>163</x>
-    <y>0</y>
-    <z>0</z>
-  </position>
-  <forward>
-    <x>0</x>
-    <y>0</y>
-    <z>1</z>
-  </forward>
-  <up>
-    <x>0</x>
-    <y>1</y>
-    <z>0</z>
-  </up>
-  <near_plane>0.1</near_plane>
-  <far_plane>2000</far_plane>
-  <fov>90</fov>
-  <aspect_ratio>1.77</aspect_ratio>
-  <window_width>5</window_width>
-  <window_height>5</window_height>
-</asset>
+{
+  "type": "dolas.camera",
+  "version": 1,
+  "data": {
+    "camera_perspective_type": "Orthographic",
+    "position": {
+      "x": 163.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "forward": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    },
+    "up": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+    "near_plane": 0.1,
+    "far_plane": 2000.0,
+    "fov": 90.0,
+    "aspect_ratio": 1.77,
+    "window_width": 5.0,
+    "window_height": 5.0
+  }
+}

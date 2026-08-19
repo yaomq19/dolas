@@ -12,6 +12,7 @@ namespace Dolas
         FileSuffixMismatch,
         PathResolutionFailed,
         FileReadFailed,
+        JsonParseFailed,
         XmlParseFailed,
         XmlRootMissing,
         AssetTypeNotRegistered,
@@ -34,6 +35,8 @@ namespace Dolas
             return "path resolution failed";
         case AssetLoadError::FileReadFailed:
             return "file read failed";
+        case AssetLoadError::JsonParseFailed:
+            return "JSON parse failed";
         case AssetLoadError::XmlParseFailed:
             return "XML parse failed";
         case AssetLoadError::XmlRootMissing:

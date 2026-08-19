@@ -172,11 +172,10 @@ namespace Dolas
         AssetEnumReflection<TEnum>::GetValues();
     };
 
-    // A root asset is a reflected value type with stable serialized identity.
+    // A root asset is a value type with stable serialized identity.
     template<class TAsset>
     concept AssetDescription = std::default_initializable<TAsset>
         && std::move_constructible<TAsset>
-        && ReflectedAssetObject<TAsset>
         && requires
         {
             { TAsset::kTypeId } -> std::convertible_to<std::string_view>;

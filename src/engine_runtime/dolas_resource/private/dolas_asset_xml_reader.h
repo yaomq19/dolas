@@ -624,6 +624,7 @@ namespace Dolas::Detail
     }
 
     template<AssetDescription TAsset>
+        requires ReflectedAssetObject<TAsset>
     [[nodiscard]] AssetLoadError LoadXmlAssetFile(
         const std::string& file_path,
         void* output_asset)

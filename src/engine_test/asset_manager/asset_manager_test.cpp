@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -65,17 +66,25 @@ namespace
         return *asset_path;
     }
 
-    void WriteCameraAsset(const fs::path& file_path, std::string_view perspective_type)
+    void WriteCameraAsset(
+        const fs::path& file_path,
+        std::string_view perspective_type,
+        std::string_view type_id = CameraAssetDesc::kTypeId,
+        std::uint32_t version = CameraAssetDesc::kSchemaVersion)
     {
         std::ofstream output{file_path};
         REQUIRE(output.is_open());
         output
-            << "<asset type=\"dolas.camera\" version=\"1\">\n"
-            << "    <camera_perspective_type>" << perspective_type << "</camera_perspective_type>\n"
-            << "    <position x=\"0\" y=\"0\" z=\"0\"/>\n"
-            << "    <forward x=\"0\" y=\"0\" z=\"1\"/>\n"
-            << "    <up x=\"0\" y=\"1\" z=\"0\"/>\n"
-            << "</asset>\n";
+            << "{\n"
+            << "  \"type\": \"" << type_id << "\",\n"
+            << "  \"version\": " << version << ",\n"
+            << "  \"data\": {\n"
+            << "    \"camera_perspective_type\": \"" << perspective_type << "\",\n"
+            << "    \"position\": {\"x\": 0.0, \"y\": 0.0, \"z\": 0.0},\n"
+            << "    \"forward\": {\"x\": 0.0, \"y\": 0.0, \"z\": 1.0},\n"
+            << "    \"up\": {\"x\": 0.0, \"y\": 1.0, \"z\": 0.0}\n"
+            << "  }\n"
+            << "}\n";
     }
 }
 
@@ -97,6 +106,22 @@ TEST_CASE("AssetManager loads and caches typed C++ assets", "[AssetManager]")
         REQUIRE(load_result.HasValue());
         REQUIRE(load_result.GetError() == AssetLoadError::None);
         REQUIRE(load_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
+    }
+
+    SECTION("Uses C++ defaults for omitted data fields")
+    {
+        const fs::path file_path = test_dir / "defaults.camera";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.camera","version":1,"data":{}})";
+        }
+
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/defaults.camera"));
+
+        REQUIRE(load_result.HasValue());
+        REQUIRE(load_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
+        REQUIRE(load_result.GetAsset()->near_plane == 0.1f);
     }
 
     SECTION("Rejects a path whose suffix does not match the requested asset type")
@@ -149,34 +174,39 @@ TEST_CASE("AssetManager loads and caches typed C++ assets", "[AssetManager]")
         REQUIRE(loaded_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Perspective);
     }
 
-    SECTION("Rejects malformed XML")
+    SECTION("Rejects malformed JSON")
     {
         const fs::path file_path = test_dir / "malformed.camera";
         {
             std::ofstream output{file_path};
             REQUIRE(output.is_open());
-            output << "This is not XML content";
+            output << "This is not JSON content";
         }
 
         const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/malformed.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
-        REQUIRE(load_result.GetError() == AssetLoadError::XmlParseFailed);
+        REQUIRE(load_result.GetError() == AssetLoadError::JsonParseFailed);
     }
 
-    SECTION("Rejects XML without a root element")
+    SECTION("Rejects incorrect asset metadata")
     {
-        const fs::path file_path = test_dir / "no_root.camera";
-        {
-            std::ofstream output{file_path};
-            REQUIRE(output.is_open());
-            output << "<?xml version=\"1.0\"?><!-- no root element -->";
-        }
+        WriteCameraAsset(test_dir / "wrong_type.camera", "Perspective", "dolas.mesh");
 
-        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/no_root.camera"));
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/wrong_type.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
-        REQUIRE(load_result.GetError() == AssetLoadError::XmlRootMissing);
+        REQUIRE(load_result.GetError() == AssetLoadError::AssetMetadataInvalid);
+    }
+
+    SECTION("Rejects unsupported asset versions")
+    {
+        WriteCameraAsset(test_dir / "wrong_version.camera", "Perspective", CameraAssetDesc::kTypeId, 2);
+
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/wrong_version.camera"));
+
+        REQUIRE_FALSE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::AssetVersionUnsupported);
     }
 
     SECTION("Reports malformed asset fields")
@@ -186,7 +216,37 @@ TEST_CASE("AssetManager loads and caches typed C++ assets", "[AssetManager]")
         const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/invalid_field.camera"));
 
         REQUIRE_FALSE(load_result.HasValue());
-        REQUIRE(load_result.GetError() == AssetLoadError::AssetFieldParseFailed);
+        REQUIRE(load_result.GetError() == AssetLoadError::JsonParseFailed);
+    }
+
+    SECTION("Rejects unknown asset fields")
+    {
+        const fs::path file_path = test_dir / "unknown_field.camera";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.camera","version":1,"data":{"typo":true}})";
+        }
+
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/unknown_field.camera"));
+
+        REQUIRE_FALSE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::JsonParseFailed);
+    }
+
+    SECTION("Rejects out-of-range camera values")
+    {
+        const fs::path file_path = test_dir / "invalid_camera.camera";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.camera","version":1,"data":{"fov":180.0}})";
+        }
+
+        const auto load_result = manager.LoadAsset<CameraAssetDesc>(RequireAssetPath("_project/invalid_camera.camera"));
+
+        REQUIRE_FALSE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::AssetValidationFailed);
     }
 
     SECTION("Clear discards cached assets")

@@ -46,7 +46,7 @@ namespace Dolas
     private:
         using AssetFileLoader = AssetLoadError (*)(const std::string&, void*);
 
-        // Keeps XML and type-erasure details out of the public template interface.
+        // Keeps file-format and type-erasure details out of the public template interface.
         AssetLoadError LoadAndParseAssetFile(
             std::string_view type_id,
             const std::string& file_path,
