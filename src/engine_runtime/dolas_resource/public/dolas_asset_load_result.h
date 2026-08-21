@@ -47,6 +47,7 @@ namespace Dolas
             return "asset validation failed";
         }
 
+        // MSVC cannot prove the switch exhaustive (C4715) without this.
         return "unknown asset load error";
     }
 

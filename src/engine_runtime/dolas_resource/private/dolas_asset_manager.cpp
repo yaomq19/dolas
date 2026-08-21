@@ -42,13 +42,6 @@ namespace
 
 namespace Dolas
 {
-    AssetManager::AssetManager() = default;
-
-    AssetManager::~AssetManager()
-    {
-        Clear();
-    }
-
     Bool AssetManager::Initialize()
     {
         Clear();
@@ -73,14 +66,6 @@ namespace Dolas
 
     Bool AssetManager::Clear()
     {
-        for (auto& [asset_type, cache] : m_asset_caches)
-        {
-            (void)asset_type;
-            if (cache)
-            {
-                cache->Clear();
-            }
-        }
         m_asset_caches.clear();
         return true;
     }

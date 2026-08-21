@@ -16,25 +16,23 @@
 
 namespace Dolas
 {
-    // Type-erased cache interface; concrete maps still retain their asset type.
+    // Type-erased cache base; concrete maps still retain their asset type.
     struct IAssetCache
     {
         virtual ~IAssetCache() = default;
-        virtual void Clear() = 0;
     };
 
     template<AssetDescription TAsset>
     struct AssetCache final : IAssetCache
     {
         std::unordered_map<AssetPath, TAsset, AssetPathHash> map;
-        void Clear() override { map.clear(); }
     };
 
     class AssetManager
     {
     public:
-        AssetManager();
-        ~AssetManager();
+        AssetManager() = default;
+        ~AssetManager() = default;
 
         Bool Initialize();
         Bool Clear(); 
