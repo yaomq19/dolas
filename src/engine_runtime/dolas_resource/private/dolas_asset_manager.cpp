@@ -6,7 +6,6 @@
 #include "asset_types/mesh_asset.h"
 #include "asset_types/scene_asset.h"
 #include "dolas_asset_json_reader.h"
-#include "dolas_asset_xml_reader.h"
 
 namespace
 {
@@ -59,16 +58,16 @@ namespace Dolas
             &LoadCameraAssetFile);
         m_asset_loaders.emplace(
             EntityAssetDesc::kTypeId,
-            &Detail::LoadXmlAssetFile<EntityAssetDesc>);
+            &Detail::LoadJsonAssetFile<EntityAssetDesc>);
         m_asset_loaders.emplace(
             MaterialAssetDesc::kTypeId,
-            &Detail::LoadXmlAssetFile<MaterialAssetDesc>);
+            &Detail::LoadJsonAssetFile<MaterialAssetDesc>);
         m_asset_loaders.emplace(
             MeshAssetDesc::kTypeId,
-            &Detail::LoadXmlAssetFile<MeshAssetDesc>);
+            &Detail::LoadJsonAssetFile<MeshAssetDesc>);
         m_asset_loaders.emplace(
             SceneAssetDesc::kTypeId,
-            &Detail::LoadXmlAssetFile<SceneAssetDesc>);
+            &Detail::LoadJsonAssetFile<SceneAssetDesc>);
         return true;
     }
 

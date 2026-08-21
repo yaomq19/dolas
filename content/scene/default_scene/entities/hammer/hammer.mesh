@@ -1,11 +1,8 @@
-<asset type="dolas.mesh" version="1">
-  <position />
-  <normal />
-  <tangent />
-  <uv0 />
-  <uv1 />
-  <color />
-  <indices />
-  <topology>TriangleList</topology>
-  <material>_engine/scene/default_scene/entities/hammer/hammer.material</material>
-</asset>
+{
+  "type": "dolas.mesh",
+  "version": 1,
+  "data": {
+    "topology": "TriangleList",
+    "material": "_engine/scene/default_scene/entities/hammer/hammer.material"
+  }
+}

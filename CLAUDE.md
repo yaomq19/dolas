@@ -39,7 +39,7 @@ DolasEditor (app)        ShaderCompiler (standalone tool, no engine deps)
 
 - **DolasPlatform** — Lowest layer. Window creation, D3D12 device initialization (`RenderHardwareInterface`), logging macros (LOG_TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL wrapping spdlog), file system, thread pool.
 - **DolasCore** — Fundamental types (`dolas_base.h` type aliases and typed IDs), math library (`dolas_math.h`), hash utilities (`STRING_ID` macro, `HashConverter`), path resolution (`PathUtils`).
-- **DolasResource** — C++-defined asset system. `AssetManager` validates, loads, and caches reflected asset descriptions from XML. Built-in descriptions are `MaterialAssetDesc`, `MeshAssetDesc`, `EntityAssetDesc`, `CameraAssetDesc`, and `SceneAssetDesc`; serialized contracts use stable type IDs, schema versions, and field IDs.
+- **DolasResource** — C++-defined asset system. `AssetManager` validates, loads, and caches reflected asset descriptions from JSON (via reflect-cpp). Built-in descriptions are `MaterialAssetDesc`, `MeshAssetDesc`, `EntityAssetDesc`, `CameraAssetDesc`, and `SceneAssetDesc`; serialized contracts use stable type IDs and schema versions.
 - **DolasFunction** — The main engine library, organized into three areas:
   - **Manager layer** (18 manager classes): `DolasEngine` owns all managers via `g_dolas_engine` singleton. Key managers: `MeshManager`, `TextureManager`, `ShaderManager`, `MaterialManager`, `BufferManager`, `RenderSceneManager`, `RenderPipelineManager`, `ImGuiManager`, `TaskManager` (async via `ThreadPool`), `TimerManager`, `TickManager`.
   - **Render layer**: `DolasRHI` (D3D11-based for now), `RenderPipeline` (multi-pass: Clear → GBuffer → DeferredShading → ForwardShading → Skybox → Debug → ImGUI → PostProcess → Present), resource wrappers (`Buffer`, `Texture`, `Shader`, `Material`), transform/camera/entity/primitive/scene/view definitions.
@@ -63,7 +63,7 @@ When implementing DX12 features, follow the RHI interface designs in the migrati
 
 ## Third-Party Dependencies
 
-All in `third_party/` via git submodules: ImGui (docking), Assimp, DirectXTex, Tracy, Catch2, spdlog, tinyxml2, ImGuizmo. The repo uses forks under `github.com/yaomq19/` for most.
+All in `third_party/` via git submodules: ImGui (docking), Assimp, DirectXTex, Tracy, Catch2, spdlog, reflect-cpp, ImGuizmo. The repo uses forks under `github.com/yaomq19/` for most.
 
 ## Tests
 

@@ -1,4 +1,5 @@
-﻿<asset type="dolas.entity" version="1">
-  <meshes>
-  </meshes>
-</asset>
+{
+  "type": "dolas.entity",
+  "version": 1,
+  "data": {}
+}

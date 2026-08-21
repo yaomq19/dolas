@@ -125,29 +125,9 @@ if(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "ThirdParty")
 endif()
 
-# ============ TinyXML2 ============
-# TinyXML2 - Simple XML parser
-set(TINYXML2_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tinyxml2)
-
-# 配置 TinyXML2 构建选项
+# 全局第三方构建选项（影响后续所有 add_subdirectory）
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-set(tinyxml2_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(tinyxml2_INSTALL_PKGCONFIG OFF CACHE BOOL "" FORCE)
-
-# 添加 TinyXML2 子目录
-add_subdirectory(${TINYXML2_DIR} EXCLUDE_FROM_ALL)
-
-# 将 TinyXML2 组织到 IDE 的 "ThirdParty" 文件夹中
-if(TARGET tinyxml2)
-    set_target_properties(tinyxml2 PROPERTIES FOLDER "ThirdParty")
-endif()
-if(TARGET tinyxml2_static)
-    set_target_properties(tinyxml2_static PROPERTIES FOLDER "ThirdParty")
-endif()
-if(TARGET xmltest)
-    set_target_properties(xmltest PROPERTIES FOLDER "ThirdParty")
-endif()
 
 # ============ reflect-cpp ============
 # C++20 reflection and JSON serialization

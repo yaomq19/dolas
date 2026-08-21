@@ -67,7 +67,11 @@ namespace Dolas
 
         for (const auto& item : scene_desc->entities)
         {
-            // Required references have already been validated by AssetManager.
+            if (!item.entity)
+            {
+                LOG_ERROR("Scene asset {0} contains an entity without a reference", asset_path.GetCanonicalPath());
+                continue;
+            }
             const AssetPath& entity_asset_path = item.entity->GetPath();
 
             const Vector3 position = item.position;

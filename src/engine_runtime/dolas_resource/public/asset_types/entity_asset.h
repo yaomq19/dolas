@@ -7,7 +7,6 @@
 
 #include "asset_types/mesh_asset.h"
 #include "dolas_asset_ref.h"
-#include "dolas_asset_schema.h"
 
 namespace Dolas
 {
@@ -18,17 +17,6 @@ namespace Dolas
         static constexpr std::uint32_t kSchemaVersion{1};
 
         std::vector<AssetRef<MeshAssetDesc>> meshes;
-    };
-
-    template<>
-    struct AssetReflection<EntityAssetDesc>
-    {
-        [[nodiscard]] static consteval auto GetSchema()
-        {
-            using T = EntityAssetDesc;
-            return MakeAssetSchema<T>(
-                MakeAssetField<1, &T::meshes>("meshes"));
-        }
     };
 }
 

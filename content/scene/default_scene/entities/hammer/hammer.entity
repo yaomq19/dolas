@@ -1,5 +1,9 @@
-<asset type="dolas.entity" version="1">
-  <meshes>
-    <item>_engine/scene/default_scene/entities/hammer/hammer.mesh</item>
-  </meshes>
-</asset>
+{
+  "type": "dolas.entity",
+  "version": 1,
+  "data": {
+    "meshes": [
+      "_engine/scene/default_scene/entities/hammer/hammer.mesh"
+    ]
+  }
+}

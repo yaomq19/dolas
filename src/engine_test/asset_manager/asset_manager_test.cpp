@@ -11,6 +11,8 @@
 
 #include "asset_types/camera_asset.h"
 #include "asset_types/entity_asset.h"
+#include "asset_types/mesh_asset.h"
+#include "asset_types/scene_asset.h"
 #include "dolas_asset_manager.h"
 #include "dolas_asset_path.h"
 #include "dolas_paths.h"
@@ -265,6 +267,80 @@ TEST_CASE("AssetManager loads and caches typed C++ assets", "[AssetManager]")
         const auto reloaded_result = manager.LoadAsset<CameraAssetDesc>(asset_path);
         REQUIRE(reloaded_result.HasValue());
         REQUIRE(reloaded_result.GetAsset()->camera_perspective_type == CameraPerspectiveType::Orthographic);
+    }
+#else
+    SUCCEED("Test skipped in Release builds because path root overrides are debug-only");
+#endif
+}
+
+TEST_CASE("AssetManager loads JSON assets with references", "[AssetManager]")
+{
+#if !defined(NDEBUG)
+    const fs::path test_dir = MakeUniqueTestDir();
+    const ProjectContentDirGuard content_dir_guard{test_dir};
+
+    AssetManager manager;
+    REQUIRE(manager.Initialize());
+
+    SECTION("Loads a mesh with a material reference")
+    {
+        const fs::path file_path = test_dir / "referenced.mesh";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.mesh","version":1,"data":{)"
+                   << R"("topology":"TriangleStrip",)"
+                   << R"("material":"_project/referenced.material"}})";
+        }
+
+        const auto load_result = manager.LoadAsset<MeshAssetDesc>(RequireAssetPath("_project/referenced.mesh"));
+
+        REQUIRE(load_result.HasValue());
+        REQUIRE(load_result.GetAsset()->topology == TopologyType::TriangleStrip);
+        REQUIRE(load_result.GetAsset()->position.empty());
+        REQUIRE(load_result.GetAsset()->material.has_value());
+        REQUIRE(
+            load_result.GetAsset()->material->GetPath().GetCanonicalPath()
+            == "_project/referenced.material");
+    }
+
+    SECTION("Loads a scene with entity references and transforms")
+    {
+        const fs::path file_path = test_dir / "referenced.scene";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.scene","version":1,"data":{"entities":[{)"
+                   << R"("entity":"_project/referenced.entity",)"
+                   << R"("position":{"x":1.0,"y":2.0,"z":3.0},)"
+                   << R"("rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},)"
+                   << R"("scale":{"x":0.75,"y":0.75,"z":0.75}}]}})";
+        }
+
+        const auto load_result = manager.LoadAsset<SceneAssetDesc>(RequireAssetPath("_project/referenced.scene"));
+
+        REQUIRE(load_result.HasValue());
+        REQUIRE(load_result.GetAsset()->entities.size() == 1);
+        const SceneEntityDesc& entity = load_result.GetAsset()->entities.front();
+        REQUIRE(entity.entity.has_value());
+        REQUIRE(entity.entity->GetPath().GetCanonicalPath() == "_project/referenced.entity");
+        REQUIRE(entity.position.z == 3.0f);
+        REQUIRE(entity.scale.x == 0.75f);
+    }
+
+    SECTION("Rejects an asset reference that is not a valid path")
+    {
+        const fs::path file_path = test_dir / "bad_reference.mesh";
+        {
+            std::ofstream output{file_path};
+            REQUIRE(output.is_open());
+            output << R"({"type":"dolas.mesh","version":1,"data":{"material":"no-mount-prefix.mesh"}})";
+        }
+
+        const auto load_result = manager.LoadAsset<MeshAssetDesc>(RequireAssetPath("_project/bad_reference.mesh"));
+
+        REQUIRE_FALSE(load_result.HasValue());
+        REQUIRE(load_result.GetError() == AssetLoadError::JsonParseFailed);
     }
 #else
     SUCCEED("Test skipped in Release builds because path root overrides are debug-only");
