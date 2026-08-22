@@ -14,9 +14,7 @@
 #include "asset_types/material_asset.h"
 #include "asset_types/mesh_asset.h"
 #include "asset_types/scene_asset.h"
-#include "dolas_asset_load_result.h"
 #include "dolas_asset_ref.h"
-#include "dolas_asset_schema.h"
 #include "dolas_log_system_manager.h"
 #include "dolas_math.h"
 
@@ -134,8 +132,9 @@ namespace rfl
         }
     };
 
-    // Asset references serialize as their canonical logical path string.
-    template<Dolas::AssetDescription TAsset>
+    // Asset references (typed and raw) serialize as their canonical logical path string.
+    // TAsset is a phantom parameter, so one Reflector covers every AssetRef instantiation.
+    template<class TAsset>
     struct Reflector<Dolas::AssetRef<TAsset>>
     {
         using ReflType = std::string;
@@ -146,22 +145,6 @@ namespace rfl
         }
 
         [[nodiscard]] static ReflType from(const Dolas::AssetRef<TAsset>& value)
-        {
-            return std::string{value.GetPath().GetCanonicalPath()};
-        }
-    };
-
-    template<>
-    struct Reflector<Dolas::RawAssetRef>
-    {
-        using ReflType = std::string;
-
-        [[nodiscard]] static Dolas::RawAssetRef to(const ReflType& value)
-        {
-            return Dolas::RawAssetRef{Dolas::ParseAssetRefPath(value)};
-        }
-
-        [[nodiscard]] static ReflType from(const Dolas::RawAssetRef& value)
         {
             return std::string{value.GetPath().GetCanonicalPath()};
         }
